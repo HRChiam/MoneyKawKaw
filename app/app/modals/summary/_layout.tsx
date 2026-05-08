@@ -29,7 +29,6 @@ export default function SummaryScreen() {
 
   const renderSummaryTab = () => (
     <View>
-      {/* Timeframe Filters */}
       <View style={styles.filterContainer}>
         <TouchableOpacity
           style={[
@@ -76,7 +75,6 @@ export default function SummaryScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Charts */}
       <View style={styles.chartsContainer}>
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.chartTitle, { color: colors.text }]}>Income Graph</Text>
@@ -93,7 +91,6 @@ export default function SummaryScreen() {
         </View>
       </View>
 
-      {/* Spending Category List */}
       <View style={styles.listSection}>
         <View style={styles.listHeader}>
           <Text style={[styles.listTitle, { color: colors.text }]}>Spending Category</Text>
@@ -121,13 +118,11 @@ export default function SummaryScreen() {
 
   const renderTaxTab = () => (
     <View>
-      {/* Total Tracker */}
       <View style={[styles.totalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.totalLabel, { color: colors.secondary }]}>Monthly Total</Text>
         <Text style={[styles.totalAmount, { color: colors.primary }]}>RM 449</Text>
       </View>
 
-      {/* Tax Items List */}
       <View style={styles.listSection}>
         <Text style={[styles.listTitle, { color: colors.text }]}>Tax Exemption Suggestion</Text>
 
@@ -158,7 +153,6 @@ export default function SummaryScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       scrollEventThrottle={16}
     >
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <IconSymbol size={24} name="chevron.left" color={colors.text} />
@@ -166,7 +160,6 @@ export default function SummaryScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Tabs */}
       <View style={[styles.tabContainer, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           style={[
@@ -213,7 +206,6 @@ export default function SummaryScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Tab Content */}
       <View style={styles.tabContent}>
         {activeTab === 'summary' ? renderSummaryTab() : renderTaxTab()}
       </View>

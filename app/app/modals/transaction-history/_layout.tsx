@@ -9,7 +9,6 @@ export default function TransactionHistoryScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  // Mock transaction history data
   const transactions = [
     {
       date: '07 May 2026',
@@ -38,7 +37,6 @@ export default function TransactionHistoryScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       scrollEventThrottle={16}
     >
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <IconSymbol size={24} name="chevron.left" color={colors.text} />
@@ -46,7 +44,6 @@ export default function TransactionHistoryScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Transactions */}
       <View style={styles.transactionSection}>
         {transactions.map((dayGroup, dayIndex) => (
           <View key={dayIndex} style={styles.dayGroup}>

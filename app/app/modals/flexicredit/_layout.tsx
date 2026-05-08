@@ -34,7 +34,6 @@ export default function FlexiCreditScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       scrollEventThrottle={16}
     >
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <IconSymbol size={24} name="chevron.left" color={colors.text} />
@@ -42,7 +41,6 @@ export default function FlexiCreditScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Credit Amount Input */}
       <View style={styles.section}>
         <Text style={[styles.inputLabel, { color: colors.text }]}>Select credit amount</Text>
         <View
@@ -63,7 +61,6 @@ export default function FlexiCreditScreen() {
         </View>
       </View>
 
-      {/* Simulator Chart */}
       <View
         style={[
           styles.chartContainer,
@@ -73,15 +70,12 @@ export default function FlexiCreditScreen() {
         <Text style={[styles.chartTitle, { color: colors.text }]}>Simulator</Text>
 
         <View style={styles.chartContent}>
-          {/* Y-Axis Label */}
           <View style={styles.yAxisContainer}>
             <Text style={[styles.yAxisLabel, { color: colors.secondary }]}>Credit Amount</Text>
             <Text style={[styles.yAxisLabelSecond, { color: colors.secondary }]}>Interest</Text>
           </View>
 
-          {/* Chart Bars */}
           <View style={styles.barsContainer}>
-            {/* Credit Bar */}
             <View style={styles.barGroup}>
               <View
                 style={[
@@ -97,7 +91,6 @@ export default function FlexiCreditScreen() {
               </Text>
             </View>
 
-            {/* Interest Line */}
             <View style={styles.barGroup}>
               <View
                 style={[
@@ -115,12 +108,10 @@ export default function FlexiCreditScreen() {
             </View>
           </View>
 
-          {/* X-Axis Label */}
           <Text style={[styles.xAxisLabel, { color: colors.secondary }]}>Pay by Month</Text>
         </View>
       </View>
 
-      {/* Description */}
       <View style={styles.section}>
         <View
           style={[
@@ -136,7 +127,6 @@ export default function FlexiCreditScreen() {
         </View>
       </View>
 
-      {/* Apply Now Button */}
       <View style={styles.section}>
         <TouchableOpacity
           style={[

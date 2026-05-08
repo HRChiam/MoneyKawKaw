@@ -10,7 +10,6 @@ export default function CategoryScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  // Mock transaction data
   const transactions = [
     {
       date: '07 May 2026',
@@ -28,7 +27,6 @@ export default function CategoryScreen() {
     },
   ];
 
-  // Get balance based on category name
   const getCategoryBalance = () => {
     const balances: { [key: string]: number } = {
       Saving: 50,
@@ -45,7 +43,6 @@ export default function CategoryScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       scrollEventThrottle={16}
     >
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <IconSymbol size={24} name="chevron.left" color={colors.text} />
@@ -53,13 +50,11 @@ export default function CategoryScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Balance Indicator */}
       <View style={[styles.balanceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.balanceLabel, { color: colors.secondary }]}>Balance Remaining</Text>
         <Text style={[styles.balanceAmount, { color: colors.primary }]}>RM {balance}</Text>
       </View>
 
-      {/* Transactions */}
       <View style={styles.transactionSection}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Transactions</Text>
 

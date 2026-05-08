@@ -35,7 +35,7 @@ export default function OnboardingScreen() {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/01-home');
     }, 2000);
   };
 

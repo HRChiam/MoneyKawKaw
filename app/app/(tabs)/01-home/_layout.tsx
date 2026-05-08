@@ -18,22 +18,18 @@ export default function HomeScreen() {
   ];
 
   const handleTransfer = () => {
-    // Navigate to transaction form (Screen 4)
     router.push('/modals/transaction');
   };
 
   const handleExploreCredit = () => {
-    // Navigate to FlexiCredit simulator (Screen 9)
     router.push('/modals/flexicredit');
   };
 
   const handleInsights = () => {
-    // Navigate to Summary & Tax (Screen 7)
     router.push('/modals/summary');
   };
 
   const handleTransactionHistory = () => {
-    // Navigate to Transaction History (Screen 5)
     router.push('/modals/transaction-history');
   };
 
@@ -108,10 +104,9 @@ export default function HomeScreen() {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
                 },
-                // Add left margin to second column
                 (index + 1) % 2 === 0 && { marginLeft: 8 },
               ]}
-              onPress={() => router.push(`/modals/category/${pocket.name}`)}
+              onPress={() => router.push(`/category/${pocket.name}`)}
             >
               <Text style={[styles.pocketName, { color: colors.text }]}>{pocket.name}</Text>
               <Text style={[styles.pocketBalance, { color: colors.primary }]}>RM {pocket.balance}</Text>
