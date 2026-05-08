@@ -5,8 +5,11 @@
 
 import { Platform } from 'react-native';
 
+// MoneyKawKaw Color Scheme
 const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const primaryGradientStart = '#A855F7'; // Purple
+const primaryGradientEnd = '#EC4899'; // Pink
+const tintColorDark = primaryGradientStart;
 
 export const Colors = {
   light: {
@@ -19,11 +22,20 @@ export const Colors = {
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: '#000000', // Pure black background
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    tabIconSelected: primaryGradientEnd,
+    // MoneyKawKaw specific colors
+    primary: primaryGradientStart,
+    primaryEnd: primaryGradientEnd,
+    secondary: '#64748B',
+    success: '#10B981',
+    warning: '#F59E0B',
+    error: '#EF4444',
+    card: '#1F2937',
+    border: '#374151',
   },
 };
 

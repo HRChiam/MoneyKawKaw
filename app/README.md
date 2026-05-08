@@ -1,3 +1,11 @@
+# 说人话
+- remember to cd to app directory orhhh
+- npm install
+- npx expo start
+- then you can either open the app with **Android Studio emulator** or **phone**
+   - Android Studio emulator: press "a" in the terminal
+   - phone: scan the QR code shown in the terminal using Expo Go app
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
