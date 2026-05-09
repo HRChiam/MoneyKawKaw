@@ -7,35 +7,63 @@ import { Platform } from 'react-native';
 
 // MoneyKawKaw Color Scheme
 const tintColorLight = '#0a7ea4';
-const primaryGradientStart = '#A855F7'; // Purple
-const primaryGradientEnd = '#EC4899'; // Pink
+const primaryGradientStart = '#771fff'; // Purple
+const primaryGradientEnd = '#f8326d'; // Pink
 const tintColorDark = primaryGradientStart;
 
+// Dark color scheme for both light and dark modes
+const darkColorScheme = {
+  text: '#ECEDEE',
+  background: '#0C0121',
+  tint: tintColorDark,
+  icon: '#9BA1A6',
+  tabIconDefault: '#9BA1A6',
+  tabIconSelected: primaryGradientEnd,
+  // MoneyKawKaw specific colors
+  primary: primaryGradientStart,
+  primaryEnd: primaryGradientEnd,
+  secondary: '#64748B',
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
+  card: '#2a2336',
+  border: '#3f3751',
+};
+
 export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+  light: darkColorScheme,
+  dark: darkColorScheme,
+};
+
+/**
+ * Reusable Gradient Configurations
+ * Use with GradientView component for buttons, backgrounds, text, etc.
+ */
+export const Gradients = {
+  primary: {
+    colors: [primaryGradientStart, primaryGradientEnd],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
   },
-  dark: {
-    text: '#ECEDEE',
-    background: '#000000', // Pure black background
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: primaryGradientEnd,
-    // MoneyKawKaw specific colors
-    primary: primaryGradientStart,
-    primaryEnd: primaryGradientEnd,
-    secondary: '#64748B',
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    card: '#1F2937',
-    border: '#374151',
+  primaryReverse: {
+    colors: [primaryGradientEnd, primaryGradientStart],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
+  horizontal: {
+    colors: [primaryGradientStart, primaryGradientEnd],
+    start: { x: 0, y: 0.5 },
+    end: { x: 1, y: 0.5 },
+  },
+  vertical: {
+    colors: [primaryGradientStart, primaryGradientEnd],
+    start: { x: 0.5, y: 0 },
+    end: { x: 0.5, y: 1 },
+  },
+  diagonalReverse: {
+    colors: [primaryGradientEnd, primaryGradientStart],
+    start: { x: 1, y: 0 },
+    end: { x: 0, y: 1 },
   },
 };
 

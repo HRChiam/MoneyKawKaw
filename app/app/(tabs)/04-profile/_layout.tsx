@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
   memberBadgeText: {
     fontSize: 12,
-    color: '#A855F7',
+    color: '#771fff',
     fontWeight: '500',
   },
   statsContainer: {
