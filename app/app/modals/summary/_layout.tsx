@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Feather } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -153,11 +154,11 @@ export default function SummaryScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       scrollEventThrottle={16}
     >
-      <View style={styles.header}>
+      <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol size={24} name="chevron.left" color={colors.text} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Summary</Text>
+          <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.text }]}>Summary</Text>
       </View>
 
       <View style={[styles.tabContainer, { borderBottomColor: colors.border }]}>
@@ -219,22 +220,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+  headerRow: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
   },
-  headerTitle: {
+  title: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   tabContainer: {
     flexDirection: 'row',

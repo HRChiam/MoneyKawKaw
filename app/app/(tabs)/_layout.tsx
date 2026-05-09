@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { Platform } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -22,6 +23,9 @@ export default function TabLayout() {
           backgroundColor: Colors[colorScheme ?? 'light'].background,
           borderTopColor: Colors[colorScheme ?? 'light'].border,
           borderTopWidth: 1,
+          height: Platform.OS === 'ios' ? 90 : 70,
+          paddingTop: 12,
+          paddingBottom: Platform.OS === 'ios' ? 30 : 12,
         },
       }}>
       <Tabs.Screen

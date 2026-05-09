@@ -33,9 +33,9 @@ export default function HomeScreen() {
   };
 
   const getTrafficImage = () => {
-    if (spendingProgress < 0.5) return require('@/assets/images/green.png');
-    if (spendingProgress < 0.8) return require('@/assets/images/orange.png');
-    return require('@/assets/images/red2.png');
+    if (spendingProgress < 0.5) return require('../../../assets/images/green.png');
+    if (spendingProgress < 0.8) return require('../../../assets/images/orange.png');
+    return require('../../../assets/images/red2.png');
   };
 
   const trafficColor = getTrafficColor();
