@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
@@ -20,6 +20,26 @@ export default function HomeScreen() {
 
   const mainAccountBalance = 0.00; // Hardcoded to 0 per instructions
   const pocketsTotal = pockets.reduce((s, p) => s + p.balance, 0);
+  
+  const spent = 194; // Current mock spent
+  const limit = 200;
+  const spendingProgress = spent / limit;
+
+  // Traffic light logic with soft, mature colors
+  const getTrafficColor = () => {
+    if (spendingProgress < 0.5) return '#169e51'; // Soft Emerald
+    if (spendingProgress < 0.8) return '#e96e1df0'; // Soft Amber
+    return '#be3434'; // Soft Crimson
+  };
+
+  const getTrafficImage = () => {
+    if (spendingProgress < 0.5) return require('@/assets/images/green.png');
+    if (spendingProgress < 0.8) return require('@/assets/images/orange.png');
+    return require('@/assets/images/red2.png');
+  };
+
+  const trafficColor = getTrafficColor();
+  const trafficImage = getTrafficImage();
 
   // Helper to mask all numbers including dots
   const formatBalance = (amount: string | number) => {
@@ -42,6 +62,7 @@ export default function HomeScreen() {
     if (hour < 18) return "Good afternoon";
     return "Good evening";
   };
+  
 
   return (
     <ScrollView 
@@ -69,22 +90,29 @@ export default function HomeScreen() {
       </View>
 
       {/* Daily Spending Widget */}
-      <View style={[styles.spendingWidget, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <ImageBackground 
+        source={trafficImage}
+        style={[styles.spendingWidget, { borderColor: colors.border }]}
+        imageStyle={{ opacity: 0.8, borderRadius: 20 }}
+      >
         <View style={styles.spendingHeader}>
-          <Text style={[styles.spendingLabel, { color: colors.text }]}>Daily Limit</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={[styles.trafficLight, { backgroundColor: trafficColor }]} />
+            <Text style={[styles.spendingLabel, { color: colors.text }]}>Daily Limit</Text>
+          </View>
           <Text 
             style={[styles.spendingAmount, { color: colors.primary }]}
             numberOfLines={1} 
             adjustsFontSizeToFit
           >
             <Text style={{ fontSize: 16, fontWeight: '600' }}>RM </Text>
-            {formatBalance(0)} <Text style={{fontSize: 16, color: colors.secondary, fontWeight: '500'}}>/ RM {formatBalance(200)}</Text>
+            {formatBalance(spent)} <Text style={{ fontSize: 16, color: colors.text, fontWeight: '500'}}>/ RM {formatBalance(limit)}</Text>
           </Text>
         </View>
         <View style={[styles.spendingBar, { backgroundColor: colors.border }]}>
-          <View style={[styles.spendingProgress, { width: '0%', backgroundColor: colors.primaryEnd }]} />
+          <View style={[styles.spendingProgress, { width: `${Math.min(spendingProgress * 100, 100)}%`, backgroundColor: trafficColor }]} />
         </View>
-      </View>
+      </ImageBackground>
 
       {/* Quick Action Icons */}
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
@@ -222,6 +250,11 @@ const styles = StyleSheet.create({
   spendingLabel: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  trafficLight: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   spendingAmount: {
     fontSize: 22,
