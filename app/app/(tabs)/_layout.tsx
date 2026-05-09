@@ -5,6 +5,8 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -33,21 +35,21 @@ export default function TabLayout() {
         name="02-rewards"
         options={{
           title: 'Reward',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="star.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="gift" size={28} color={color}/>,
         }}
       />
       <Tabs.Screen
         name="03-notifications"
         options={{
           title: 'Notification',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bell.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="notifications" size={28} color={color}/>,
         }}
       />
       <Tabs.Screen
         name="04-profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          tabBarIcon: ({ color }) => <AntDesign name="profile" size={28} color={color}/>,
         }}
       />
     </Tabs>

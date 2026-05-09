@@ -1,171 +1,261 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import Animated, { useSharedValue, withTiming, Easing, useAnimatedStyle } from 'react-native-reanimated';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
+type OnboardingStep = 'logo' | 'income-expenses' | 'persona' | 'loading';
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('logo');
   const [income, setIncome] = useState('');
   const [selectedExpenses, setSelectedExpenses] = useState<string[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // New state to hold the monetary value for each selected expense
+  const [expenseAmounts, setExpenseAmounts] = useState<Record<string, string>>({});
+  
+  const logoOpacity = useSharedValue(0);
 
-  const expenses = ['Rent/Room', 'PTPTN', 'Car Loan', 'Insurance'];
+  const expenses = ['Room Rental', 'PTPTN', 'Car Loan', 'Insurance', 'Groceries', 'Utilities'];
   const personas = ['Conservative', 'Balanced', 'Aggressive'];
 
+  const logoAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: logoOpacity.value,
+    };
+  });
+
+  useEffect(() => {
+    if (currentStep === 'logo') {
+      logoOpacity.value = withTiming(1, {
+        duration: 3000,
+        easing: Easing.inOut(Easing.ease),
+      });
+      
+      const timer = setTimeout(() => {
+        setCurrentStep('income-expenses');
+      }, 4000); // slightly faster transition
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep, logoOpacity]);
+
+  useEffect(() => {
+    if (currentStep === 'loading') {
+      const timer = setTimeout(() => {
+        router.replace('../(tabs)/01-home');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep, router]);
+
   const toggleExpense = (expense: string) => {
-    setSelectedExpenses(prev =>
-      prev.includes(expense)
-        ? prev.filter(e => e !== expense)
-        : [...prev, expense]
-    );
+    setSelectedExpenses(prev => {
+      if (prev.includes(expense)) {
+        // Clean up the amount if the user deselects the expense
+        const newAmounts = { ...expenseAmounts };
+        delete newAmounts[expense];
+        setExpenseAmounts(newAmounts);
+        return prev.filter(e => e !== expense);
+      }
+      return [...prev, expense];
+    });
   };
 
-  const handleNext = async () => {
-    if (!income || selectedExpenses.length === 0 || !selectedPersona) {
-      alert('Please fill in all fields');
+  const updateExpenseAmount = (expense: string, amount: string) => {
+    setExpenseAmounts(prev => ({ ...prev, [expense]: amount }));
+  };
+
+  const handleIncomeExpensesNext = () => {
+    if (!income || selectedExpenses.length === 0) {
+      alert('Please fill in your income and select at least one expense.');
       return;
     }
 
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      router.replace('/(tabs)/01-home');
-    }, 2000);
+    // Validate that all selected expenses have an entered amount
+    const hasEmptyAmounts = selectedExpenses.some(
+      expense => !expenseAmounts[expense] || expenseAmounts[expense].trim() === ''
+    );
+
+    if (hasEmptyAmounts) {
+      alert('Please enter an amount for all your selected expenses.');
+      return;
+    }
+
+    setCurrentStep('persona');
+  };
+
+  const handlePersonaNext = () => {
+    if (!selectedPersona) {
+      alert('Please select an investment persona.');
+      return;
+    }
+    setCurrentStep('loading');
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        scrollEventThrottle={16}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.primary }]}>Money Kawkaw</Text>
-        </View>
+      {currentStep === 'logo' && (
+        <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
+          <Text style={[styles.logoTitle, { color: colors.primary }]}>MoneyKawKaw</Text>
+        </Animated.View>
+      )}
 
-        {/* Income Input */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.text }]}>Monthly Income</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.card,
-                color: colors.text,
-                borderColor: colors.border,
-              },
-            ]}
-            placeholder="Enter monthly input"
-            placeholderTextColor={colors.secondary}
-            value={income}
-            onChangeText={setIncome}
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Fixed Expenses */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.text }]}>Fixed Expenses</Text>
-          <View style={styles.chipContainer}>
-            {expenses.map(expense => (
-              <TouchableOpacity
-                key={expense}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: selectedExpenses.includes(expense)
-                      ? colors.primary
-                      : colors.card,
-                    borderColor: selectedExpenses.includes(expense)
-                      ? colors.primaryEnd
-                      : colors.border,
-                  },
-                ]}
-                onPress={() => toggleExpense(expense)}
-              >
-                <Text
-                  style={[
-                    styles.chipText,
-                    {
-                      color: selectedExpenses.includes(expense) ? '#fff' : colors.text,
-                    },
-                  ]}
-                >
-                  {expense}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Persona Selection */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.text }]}>Investment Persona</Text>
-          <View style={styles.personaContainer}>
-            {personas.map(persona => (
-              <TouchableOpacity
-                key={persona}
-                style={[
-                  styles.personaButton,
-                  {
-                    backgroundColor: selectedPersona === persona
-                      ? colors.primary
-                      : colors.card,
-                    borderColor: selectedPersona === persona
-                      ? colors.primaryEnd
-                      : colors.border,
-                  },
-                ]}
-                onPress={() => setSelectedPersona(persona)}
-              >
-                <Text
-                  style={[
-                    styles.personaText,
-                    {
-                      color: selectedPersona === persona ? '#fff' : colors.text,
-                    },
-                  ]}
-                >
-                  {persona}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-
-      {/* Next Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.nextButton,
-            { backgroundColor: colors.primary, borderColor: colors.primaryEnd },
-          ]}
-          onPress={handleNext}
-          disabled={isLoading}
+      {currentStep === 'income-expenses' && (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.nextButtonText}>Next</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Loading Overlay */}
-      {isLoading && (
-        <View style={[styles.loadingOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}>
-          <View style={[styles.loadingContent, { backgroundColor: colors.card }]}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.loadingText, { color: colors.text, marginTop: 16 }]}>
-              Please wait setting up personalised plan.
-            </Text>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: colors.primary }]}>MoneyKawKaw</Text>
+            <Text style={[styles.subtitle, { color: colors.secondary }]}>Let&apos;s set up your financial baseline</Text>
           </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.text }]}>Monthly Income</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.currencyPrefix, { color: colors.text }]}>RM</Text>
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                placeholder="0.00"
+                placeholderTextColor={colors.secondary}
+                value={income}
+                onChangeText={setIncome}
+                keyboardType="decimal-pad"
+              />
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.text }]}>What are your fixed expenses?</Text>
+            <View style={styles.chipContainer}>
+              {expenses.map(expense => (
+                <TouchableOpacity
+                  key={expense}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: selectedExpenses.includes(expense) ? colors.primary : colors.card,
+                      borderColor: selectedExpenses.includes(expense) ? colors.primaryEnd : colors.border,
+                    },
+                  ]}
+                  onPress={() => toggleExpense(expense)}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      { color: selectedExpenses.includes(expense) ? '#fff' : colors.text },
+                    ]}
+                  >
+                    {expense}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Dynamic Amount Inputs */}
+          {selectedExpenses.length > 0 && (
+            <Animated.View style={styles.dynamicInputsContainer}>
+              <Text style={[styles.label, { color: colors.text }]}>Enter Amounts</Text>
+              {selectedExpenses.map(expense => (
+                <View key={`input-${expense}`} style={styles.expenseAmountRow}>
+                  <Text style={[styles.expenseAmountLabel, { color: colors.text }]}>{expense}</Text>
+                  <View style={[styles.expenseInputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={[styles.currencyPrefixSmall, { color: colors.secondary }]}>RM</Text>
+                    <TextInput
+                      style={[styles.expenseInput, { color: colors.text }]}
+                      placeholder="0.00"
+                      placeholderTextColor={colors.secondary}
+                      value={expenseAmounts[expense] || ''}
+                      onChangeText={(text) => updateExpenseAmount(expense, text)}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                </View>
+              ))}
+            </Animated.View>
+          )}
+
+          <View style={{ height: 40 }} />
+          
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.nextButton, { backgroundColor: colors.primary }]}
+              onPress={handleIncomeExpensesNext}
+            >
+              <Text style={styles.nextButtonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
+
+      {currentStep === 'persona' && (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          scrollEventThrottle={16}
+        >
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: colors.primary }]}>MoneyKawKaw</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.text }]}>Investment Persona</Text>
+            <Text style={[styles.description, { color: colors.secondary }]}>
+              Choose your approach to growing your wealth
+            </Text>
+            <View style={styles.personaContainer}>
+              {personas.map(persona => (
+                <TouchableOpacity
+                  key={persona}
+                  style={[
+                    styles.personaButton,
+                    {
+                      backgroundColor: selectedPersona === persona ? colors.primary : colors.card,
+                      borderColor: selectedPersona === persona ? colors.primaryEnd : colors.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedPersona(persona)}
+                >
+                  <Text
+                    style={[
+                      styles.personaText,
+                      { color: selectedPersona === persona ? '#fff' : colors.text },
+                    ]}
+                  >
+                    {persona}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      )}
+
+      {currentStep === 'persona' && (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.nextButton, { backgroundColor: colors.primary }]}
+            onPress={handlePersonaNext}
+          >
+            <Text style={styles.nextButtonText}>Finish Setup</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {currentStep === 'loading' && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text, marginTop: 24 }]}>
+            Crunching the numbers...{"\n"}Setting up your custom plan.
+          </Text>
         </View>
       )}
     </View>
@@ -176,91 +266,166 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  logoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoTitle: {
+    fontSize: 48,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 32,
+    paddingHorizontal: 20,
+    paddingTop: 60,
     paddingBottom: 120,
   },
   header: {
-    alignItems: 'center',
     marginBottom: 40,
   },
   title: {
-    fontSize: 40,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  description: {
+    fontSize: 15,
+    marginTop: 4,
   },
   section: {
     marginBottom: 32,
   },
   label: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 60,
+  },
+  currencyPrefix: {
+    fontSize: 20,
     fontWeight: '600',
-    marginBottom: 12,
+    marginRight: 12,
   },
   input: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    borderWidth: 1,
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '600',
+    height: '100%',
   },
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
     borderWidth: 1,
   },
   chipText: {
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  dynamicInputsContainer: {
+    marginTop: 8,
+    backgroundColor: 'rgba(0,0,0,0.02)', // Subtle background to separate it
+    padding: 16,
+    borderRadius: 16,
+  },
+  expenseAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  expenseAmountLabel: {
+    fontSize: 16,
     fontWeight: '500',
+    flex: 1,
+  },
+  expenseInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+    width: 140, // Fixed width for clean alignment
+  },
+  currencyPrefixSmall: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  expenseInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    height: '100%',
   },
   personaContainer: {
     gap: 12,
+    marginTop: 16,
   },
   personaButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    alignItems: 'flex-start',
     borderWidth: 1,
   },
   personaText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
   },
   footer: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
   },
   nextButton: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  nextButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingContent: {
-    paddingHorizontal: 32,
-    paddingVertical: 24,
+    paddingVertical: 18,
     borderRadius: 16,
     alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  nextButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: 18,
     textAlign: 'center',
+    fontWeight: '600',
+    lineHeight: 28,
   },
 });

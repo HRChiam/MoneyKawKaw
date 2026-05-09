@@ -4,7 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFonts, Poppins_400Regular, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
@@ -44,14 +43,6 @@ export default function RootLayout() {
         />
         
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        
-        {/* Category Route
-        <Stack.Screen 
-          name="category" 
-          options={{ 
-            headerShown: false,
-          }} 
-        /> */}
         
         {/* Modals Group */}
         <Stack.Screen 
