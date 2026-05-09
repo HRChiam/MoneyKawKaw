@@ -3,6 +3,9 @@ import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import Feather from '@expo/vector-icons/Feather';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const { width } = Dimensions.get('window');
 
@@ -69,7 +72,7 @@ export default function HomeScreen() {
           style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={handleTransfer}
         >
-          <IconSymbol size={32} name="arrow.left.arrow.right" color={colors.primary} />
+          <Feather name="send" size={32} color={colors.primary} />
           <Text style={[styles.actionLabel, { color: colors.text }]}>Transfer</Text>
         </TouchableOpacity>
 
@@ -77,7 +80,7 @@ export default function HomeScreen() {
           style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={handleExploreCredit}
         >
-          <IconSymbol size={32} name="creditcard.fill" color={colors.primary} />
+          <AntDesign name="credit-card" size={32} color={colors.primary} />
           <Text style={[styles.actionLabel, { color: colors.text }]}>Explore Credit</Text>
         </TouchableOpacity>
 
@@ -85,7 +88,7 @@ export default function HomeScreen() {
           style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={handleInsights}
         >
-          <IconSymbol size={32} name="chart.bar.fill" color={colors.primary} />
+          <MaterialIcons name="insights" size={32} color={colors.primary} />
           <Text style={[styles.actionLabel, { color: colors.text }]}>Insights</Text>
         </TouchableOpacity>
       </View>
