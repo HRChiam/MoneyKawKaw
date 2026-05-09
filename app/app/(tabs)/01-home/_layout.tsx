@@ -38,7 +38,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={[styles.greetingSub, { color: colors.secondary }]}>Good morning,</Text>
+          <Text style={[styles.greetingSub, { color: colors.secondary }]}>Hi,</Text>
           <Text style={[styles.greeting, { color: colors.text }]}>xw</Text>
         </View>
         <TouchableOpacity style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
