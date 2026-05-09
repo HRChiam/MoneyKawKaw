@@ -1,8 +1,8 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Feather, Ionicons } from '@expo/vector-icons';
 
 export default function CategoryScreen() {
   const router = useRouter();
@@ -41,57 +41,68 @@ export default function CategoryScreen() {
   const balance = getCategoryBalance();
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      scrollEventThrottle={16}
-    >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol size={24} name="chevron.left" color={colors.text} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{name}</Text>
+          <Feather name="chevron-left" size={28} color={colors.text} />
         </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{name}</Text>
+        <View style={{ width: 40 }} /> {/* Spacer to perfectly center the title */}
       </View>
 
-      {/* Balance Indicator */}
-      <View style={[styles.balanceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.balanceLabel, { color: colors.secondary }]}>Balance Remaining</Text>
-        <Text style={[styles.balanceAmount, { color: colors.primary }]}>RM {balance}</Text>
-      </View>
-
-      {/* Transactions */}
-      <View style={styles.transactionSection}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Transactions</Text>
-
-        {transactions.map((dayGroup, dayIndex) => (
-          <View key={dayIndex} style={styles.dayGroup}>
-            <Text style={[styles.dateHeader, { color: colors.secondary }]}>{dayGroup.date}</Text>
-
-            {dayGroup.items.map((transaction, itemIndex) => (
-              <View
-                key={itemIndex}
-                style={[
-                  styles.transactionItem,
-                  { borderBottomColor: colors.border },
-                  itemIndex === dayGroup.items.length - 1 && { borderBottomWidth: 0 },
-                ]}
-              >
-                <View>
-                  <Text style={[styles.transactionDescription, { color: colors.text }]}>
-                    {transaction.description}
-                  </Text>
-                </View>
-                <Text style={[styles.transactionAmount, { color: colors.error }]}>
-                  RM{Math.abs(transaction.amount).toFixed(2)}
-                </Text>
-              </View>
-            ))}
+      <ScrollView showsVerticalScrollIndicator={false} scrollEventThrottle={16}>
+        {/* Balance Indicator (Styled like the Main Account Cards) */}
+        <View style={[styles.balanceCard, { backgroundColor: colors.primary }]}>
+          <View style={styles.cardTopRow}>
+            <Text style={styles.balanceLabel}>Pocket Balance</Text>
+            <Ionicons name="folder-open-outline" size={24} color="rgba(255,255,255,0.8)" />
           </View>
-        ))}
-      </View>
+          <Text style={styles.balanceAmount} numberOfLines={1} adjustsFontSizeToFit>
+            <Text style={styles.currencyPrefix}>RM </Text>
+            {balance.toFixed(2)}
+          </Text>
+        </View>
 
-      <View style={{ height: 20 }} />
-    </ScrollView>
+        {/* Transactions */}
+        <View style={styles.transactionSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Transactions</Text>
+
+          {transactions.map((dayGroup, dayIndex) => (
+            <View key={dayIndex} style={styles.dayGroup}>
+              <Text style={[styles.dateHeader, { color: colors.secondary }]}>{dayGroup.date}</Text>
+
+              <View style={[styles.transactionBlock, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {dayGroup.items.map((transaction, itemIndex) => (
+                  <View
+                    key={itemIndex}
+                    style={[
+                      styles.transactionItem,
+                      { borderBottomColor: colors.border },
+                      itemIndex === dayGroup.items.length - 1 && { borderBottomWidth: 0 },
+                    ]}
+                  >
+                    <View style={styles.transactionLeft}>
+                      <View style={[styles.transactionIcon, { backgroundColor: colors.background }]}>
+                        <Feather name="shopping-bag" size={18} color={colors.primary} />
+                      </View>
+                      <Text style={[styles.transactionDescription, { color: colors.text }]}>
+                        {transaction.description}
+                      </Text>
+                    </View>
+                    <Text style={[styles.transactionAmount, { color: colors.text }]}>
+                      - RM {Math.abs(transaction.amount).toFixed(2)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -101,66 +112,106 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   balanceCard: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 24,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
+    marginHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 32,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   balanceLabel: {
-    fontSize: 14,
-    marginBottom: 8,
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  currencyPrefix: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 20,
+    fontWeight: '600',
   },
   balanceAmount: {
-    fontSize: 32,
-    fontWeight: '700',
+    color: '#fff',
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: -1,
   },
   transactionSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
+    fontWeight: '700',
+    marginBottom: 20,
   },
   dayGroup: {
     marginBottom: 24,
   },
   dateHeader: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  transactionBlock: {
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   transactionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
+  },
+  transactionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  transactionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   transactionDescription: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   transactionAmount: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
