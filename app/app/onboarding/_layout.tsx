@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import Animated, { useSharedValue, withTiming, Easing, useAnimatedStyle } from 'react-native-reanimated';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -15,16 +16,32 @@ export default function OnboardingScreen() {
   const [income, setIncome] = useState('');
   const [selectedExpenses, setSelectedExpenses] = useState<string[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
+  
+  // Animated value for logo fade-in effect
+  const logoOpacity = useSharedValue(0);
 
   const expenses = ['Room Rental', 'PTPTN', 'Car Loan', 'Insurance'];
   const personas = ['Conservative', 'Balanced', 'Aggressive'];
 
+  // Animated style for logo
+  const logoAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: logoOpacity.value,
+    };
+  });
+
   // Auto-transition from logo screen after 2 seconds
   useEffect(() => {
     if (currentStep === 'logo') {
+      // Trigger fade-in animation when logo screen appears
+      logoOpacity.value = withTiming(1, {
+        duration: 3000,
+        easing: Easing.inOut(Easing.ease),
+      });
+      
       const timer = setTimeout(() => {
         setCurrentStep('income-expenses');
-      }, 2000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [currentStep]);
@@ -67,9 +84,9 @@ export default function OnboardingScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {currentStep === 'logo' && (
         // Screen 1: Logo Screen
-        <View style={styles.logoContainer}>
+        <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
           <Text style={[styles.logoTitle, { color: colors.primary }]}>MoneyKawKaw</Text>
-        </View>
+        </Animated.View>
       )}
 
       {currentStep === 'income-expenses' && (
