@@ -44,14 +44,6 @@ export default function RootLayout() {
         
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         
-        {/* Category Route
-        <Stack.Screen 
-          name="category" 
-          options={{ 
-            headerShown: false,
-          }} 
-        /> */}
-        
         {/* Modals Group */}
         <Stack.Screen 
           name="modals" 
