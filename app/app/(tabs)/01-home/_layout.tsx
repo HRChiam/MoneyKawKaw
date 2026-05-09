@@ -3,6 +3,9 @@ import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import Feather from '@expo/vector-icons/Feather';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const { width } = Dimensions.get('window');
 
@@ -18,22 +21,18 @@ export default function HomeScreen() {
   ];
 
   const handleTransfer = () => {
-    // Navigate to transaction form (Screen 4)
     router.push('/modals/transaction');
   };
 
   const handleExploreCredit = () => {
-    // Navigate to FlexiCredit simulator (Screen 9)
     router.push('/modals/flexicredit');
   };
 
   const handleInsights = () => {
-    // Navigate to Summary & Tax (Screen 7)
     router.push('/modals/summary');
   };
 
   const handleTransactionHistory = () => {
-    // Navigate to Transaction History (Screen 5)
     router.push('/modals/transaction-history');
   };
 
@@ -73,7 +72,7 @@ export default function HomeScreen() {
           style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={handleTransfer}
         >
-          <IconSymbol size={32} name="arrow.left.arrow.right" color={colors.primary} />
+          <Feather name="send" size={32} color={colors.primary} />
           <Text style={[styles.actionLabel, { color: colors.text }]}>Transfer</Text>
         </TouchableOpacity>
 
@@ -81,7 +80,7 @@ export default function HomeScreen() {
           style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={handleExploreCredit}
         >
-          <IconSymbol size={32} name="creditcard.fill" color={colors.primary} />
+          <AntDesign name="credit-card" size={32} color={colors.primary} />
           <Text style={[styles.actionLabel, { color: colors.text }]}>Explore Credit</Text>
         </TouchableOpacity>
 
@@ -89,7 +88,7 @@ export default function HomeScreen() {
           style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={handleInsights}
         >
-          <IconSymbol size={32} name="chart.bar.fill" color={colors.primary} />
+          <MaterialIcons name="insights" size={32} color={colors.primary} />
           <Text style={[styles.actionLabel, { color: colors.text }]}>Insights</Text>
         </TouchableOpacity>
       </View>
@@ -108,10 +107,9 @@ export default function HomeScreen() {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
                 },
-                // Add left margin to second column
                 (index + 1) % 2 === 0 && { marginLeft: 8 },
               ]}
-              onPress={() => router.push(`/modals/category/${pocket.name}`)}
+              onPress={() => router.push(`/category/${pocket.name}`)}
             >
               <Text style={[styles.pocketName, { color: colors.text }]}>{pocket.name}</Text>
               <Text style={[styles.pocketBalance, { color: colors.primary }]}>RM {pocket.balance}</Text>

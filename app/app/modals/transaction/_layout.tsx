@@ -26,11 +26,9 @@ export default function TransactionScreen() {
     }
 
     setIsLoading(true);
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
       setIsConfirmed(true);
-      // Return to home after 2 seconds
       setTimeout(() => {
         router.back();
       }, 1500);
@@ -58,7 +56,6 @@ export default function TransactionScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Input Fields */}
         <View style={styles.section}>
           <Text style={[styles.label, { color: colors.text }]}>To:</Text>
           <TextInput
@@ -114,7 +111,6 @@ export default function TransactionScreen() {
           />
         </View>
 
-        {/* Pocket Selector */}
         <View style={styles.section}>
           <Text style={[styles.label, { color: colors.text }]}>From Pocket:</Text>
           <View
@@ -163,7 +159,6 @@ export default function TransactionScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Confirm Button */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[
@@ -177,7 +172,6 @@ export default function TransactionScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Loading Overlay */}
       {isLoading && (
         <View style={[styles.loadingOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}>
           <View style={[styles.loadingContent, { backgroundColor: colors.card }]}>

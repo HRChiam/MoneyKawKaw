@@ -10,7 +10,6 @@ export default function InsufficientFundsScreen() {
   const colors = Colors[colorScheme ?? 'light'];
 
   const handleSacrificeOption = (option: string) => {
-    // Handle sacrifice option logic
     alert(`Selected: ${option}`);
     router.back();
   };
@@ -20,7 +19,6 @@ export default function InsufficientFundsScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       scrollEventThrottle={16}
     >
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <IconSymbol size={24} name="chevron.left" color={colors.text} />
@@ -31,7 +29,6 @@ export default function InsufficientFundsScreen() {
         </View>
       </View>
 
-      {/* Alert Container */}
       <View style={styles.alertSection}>
         <View
           style={[
@@ -49,7 +46,6 @@ export default function InsufficientFundsScreen() {
         </View>
       </View>
 
-      {/* Actionable Alternatives */}
       <View style={styles.alternativesSection}>
         <Text style={[styles.alternativesTitle, { color: colors.text }]}>
           Would you like to:

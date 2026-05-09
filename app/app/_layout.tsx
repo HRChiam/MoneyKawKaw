@@ -2,6 +2,8 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
@@ -13,8 +15,9 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-
+  
   return (
+    <SafeAreaView style={styles.container} edges={['top']}>
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack
         screenOptions={{
@@ -41,58 +44,31 @@ export default function RootLayout() {
         
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         
+        {/* Category Route
+        <Stack.Screen 
+          name="category" 
+          options={{ 
+            headerShown: false,
+          }} 
+        /> */}
+        
         {/* Modals Group */}
         <Stack.Screen 
-          name="modals/transaction" 
+          name="modals" 
           options={{ 
-            title: 'Transaction',
-            presentation: 'modal',
+            headerShown: false,
           }} 
         />
-        
-        <Stack.Screen 
-          name="modals/category/[name]" 
-          options={{ 
-            title: 'Category',
-            presentation: 'modal',
-          }} 
-        />
-        
-        <Stack.Screen 
-          name="modals/transaction-history" 
-          options={{ 
-            title: 'Transaction History',
-            presentation: 'modal',
-          }} 
-        />
-        
-        <Stack.Screen 
-          name="modals/insufficient-funds" 
-          options={{ 
-            title: 'Insufficient Funds',
-            presentation: 'modal',
-          }} 
-        />
-        
-        <Stack.Screen 
-          name="modals/summary" 
-          options={{ 
-            title: 'Summary',
-            presentation: 'modal',
-          }} 
-        />
-        
-        <Stack.Screen 
-          name="modals/flexicredit" 
-          options={{ 
-            title: 'FlexiCredit',
-            presentation: 'modal',
-          }} 
-        />
-        
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#000000",
+  },
+});
