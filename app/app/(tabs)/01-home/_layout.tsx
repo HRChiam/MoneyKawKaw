@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -8,6 +9,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
   // This would ideally come from a global state/context later
   const pockets = [
@@ -19,15 +21,27 @@ export default function HomeScreen() {
   const mainAccountBalance = 0.00; // Hardcoded to 0 per instructions
   const pocketsTotal = pockets.reduce((s, p) => s + p.balance, 0);
 
+  // Helper to mask all numbers including dots
+  const formatBalance = (amount: string | number) => {
+    return isBalanceVisible ? amount.toString() : '••••••';
+  };
+
   // Helper to add commas to large numbers (e.g. 10000 -> 10,000.00)
   const formatCurrency = (amount: number) => {
     return amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
-  const handleTransfer = () => router.push('../modals/transaction');
-  const handleExploreCredit = () => router.push('../modals/flexicredit');
-  const handleInsights = () => router.push('../modals/summary');
-  const handleTransactionHistory = () => router.push('../modals/transaction-history');
+  const handleTransfer = () => router.push('../modals/transaction' as any);
+  const handleExploreCredit = () => router.push('../modals/flexicredit' as any);
+  const handleInsights = () => router.push('../modals/summary' as any);
+  const handleTransactionHistory = () => router.push('../modals/transaction-history' as any);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
   return (
     <ScrollView 
@@ -38,12 +52,20 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={[styles.greetingSub, { color: colors.secondary }]}>Hi,</Text>
-          <Text style={[styles.greeting, { color: colors.text }]}>xw</Text>
+          <Text style={[styles.greetingSub, { color: colors.secondary }]}>{getGreeting()},</Text>
+          <Text style={[styles.greeting, { color: colors.text }]}>Xuan Wei</Text>
         </View>
-        <TouchableOpacity style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Feather name="user" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            onPress={() => setIsBalanceVisible(!isBalanceVisible)}
+            style={styles.visibilityBtn}
+          >
+            <Feather name={isBalanceVisible ? "eye" : "eye-off"} size={22} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="user" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Daily Spending Widget */}
@@ -56,7 +78,7 @@ export default function HomeScreen() {
             adjustsFontSizeToFit
           >
             <Text style={{ fontSize: 16, fontWeight: '600' }}>RM </Text>
-            0 <Text style={{fontSize: 16, color: colors.secondary, fontWeight: '500'}}>/ RM 200</Text>
+            {formatBalance(0)} <Text style={{fontSize: 16, color: colors.secondary, fontWeight: '500'}}>/ RM {formatBalance(200)}</Text>
           </Text>
         </View>
         <View style={[styles.spendingBar, { backgroundColor: colors.border }]}>
@@ -103,7 +125,7 @@ export default function HomeScreen() {
           {/* Use numberOfLines={1} to force a single line, and adjustsFontSizeToFit to shrink if too long */}
           <Text style={styles.cardAmountWhite} numberOfLines={1} adjustsFontSizeToFit>
             <Text style={styles.currencyPrefixWhite}>RM </Text>
-            {formatCurrency(mainAccountBalance)}
+            {formatBalance(formatCurrency(mainAccountBalance))}
           </Text>
           <Text style={styles.cardSubTextWhite}>Available</Text>
         </TouchableOpacity>
@@ -112,7 +134,7 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={[styles.pocketsOverviewCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           activeOpacity={0.8}
-          onPress={() => router.push('../modals/pockets')}
+          onPress={() => router.push('../modals/pockets' as any)}
         >
           <View style={styles.cardTopRow}>
             <Text style={[styles.cardLabel, { color: colors.secondary }]}>Pockets</Text>
@@ -121,7 +143,7 @@ export default function HomeScreen() {
           {/* Prevent wrapping and allow shrinking */}
           <Text style={[styles.cardAmount, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
             <Text style={styles.currencyPrefix}>RM </Text>
-            {formatCurrency(pocketsTotal)}
+            {formatBalance(formatCurrency(pocketsTotal))}
           </Text>
           <View style={styles.viewPocketsBtn}>
             <Text style={[styles.viewPocketsText, { color: colors.primary }]}>Manage</Text>
@@ -157,7 +179,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 20,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  visibilityBtn: {
+    padding: 8,
   },
   greetingSub: {
     fontSize: 16,

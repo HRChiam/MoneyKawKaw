@@ -1,20 +1,26 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 
 export default function PocketsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [pockets, setPockets] = useState([
     { id: 1, name: 'Saving', balance: 50 },
     { id: 2, name: 'Food', balance: 800 },
     { id: 3, name: 'Transport', balance: 200 },
   ]);
+
+  const formatBalance = (amount: string | number) => {
+    return isBalanceVisible ? amount.toString() : '••••••';
+  };
 
   // Add Pocket State
   const [showAdd, setShowAdd] = useState(false);
@@ -32,6 +38,10 @@ export default function PocketsScreen() {
   const [moveSource, setMoveSource] = useState<number | 'main' | null>(null);
   const [moveTarget, setMoveTarget] = useState<number | 'main' | null>(null);
   const [moveAmount, setMoveAmount] = useState('');
+
+  // Delete Confirmation State
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [pocketToDelete, setPocketToDelete] = useState<{id: number, name: string, balance: number} | null>(null);
 
   const totalBalance = pockets.reduce((acc, curr) => acc + curr.balance, 0);
 
@@ -69,6 +79,19 @@ export default function PocketsScreen() {
     setMoveModal(false);
   };
 
+  const startDelete = (id: number, name: string, balance: number) => {
+    setPocketToDelete({ id, name, balance });
+    setDeleteModal(true);
+  };
+
+  const applyDelete = () => {
+    if (pocketToDelete) {
+      setPockets(prev => prev.filter(p => p.id !== pocketToDelete.id));
+      setDeleteModal(false);
+      setPocketToDelete(null);
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}> 
       {/* Custom Header */}
@@ -77,17 +100,27 @@ export default function PocketsScreen() {
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Your Pockets</Text>
-        <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary + '15' }]} onPress={() => setShowAdd(true)}>
-          <Feather name="plus" size={20} color={colors.primary} />
-          <Text style={[styles.addButtonText, { color: colors.primary }]}>New</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          
+          <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary + '15' }]} onPress={() => setShowAdd(true)}>
+            <Feather name="plus" size={20} color={colors.primary} />
+            <Text style={[styles.addButtonText, { color: colors.primary }]}>New</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => setIsEditMode(!isEditMode)}
+            style={[styles.headerActionBtn, isEditMode && { backgroundColor: colors.error + '20' }]}
+          >
+            <Feather name="trash-2" size={20} color={isEditMode ? colors.error : colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.totalContainer}>
         <Text style={[styles.totalLabel, { color: colors.secondary }]}>Total Balance</Text>
         <Text style={[styles.totalAmount, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
           <Text style={styles.currencyPrefix}>RM </Text>
-          {totalBalance.toFixed(2)}
+          {formatBalance(totalBalance.toFixed(2))}
         </Text>
       </View>
 
@@ -100,6 +133,7 @@ export default function PocketsScreen() {
               style={styles.pocketInfoTouchable} 
               activeOpacity={0.7}
               onPress={() => router.push(`../category/${p.name}`)}
+              disabled={isEditMode}
             >
               <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '10' }]}>
                 <Ionicons name="folder-outline" size={24} color={colors.primary} />
@@ -107,23 +141,59 @@ export default function PocketsScreen() {
               <View style={styles.pocketTextGroup}>
                 <Text style={[styles.pocketName, { color: colors.text }]}>{p.name}</Text>
                 <Text style={[styles.pocketBalance, { color: colors.text }]} numberOfLines={1}>
-                  <Text style={{ fontSize: 14 }}>RM </Text>{p.balance.toFixed(2)}
+                  <Text style={{ fontSize: 14 }}>RM </Text>{formatBalance(p.balance.toFixed(2))}
                 </Text>
               </View>
             </TouchableOpacity>
 
             {/* Independent Action Buttons */}
             <View style={styles.rowActions}>
-              <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => startRename(p.id, p.name)}>
-                <Feather name="edit-2" size={16} color={colors.secondary} />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => startMove(p.id)}>
-                <Feather name="repeat" size={16} color={colors.primary} />
-              </TouchableOpacity>
+              {isEditMode ? (
+                <TouchableOpacity 
+                  style={[styles.iconBtn, { backgroundColor: colors.error + '10', borderColor: colors.error + '30' }]} 
+                  onPress={() => startDelete(p.id, p.name, p.balance)}
+                >
+                  <Feather name="trash-2" size={16} color={colors.error} />
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => startRename(p.id, p.name)}>
+                    <Feather name="edit-2" size={16} color={colors.secondary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => startMove(p.id)}>
+                    <Feather name="repeat" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         ))}
       </ScrollView>
+
+      {/* --- DELETE CONFIRMATION MODAL (Centered Pop-out) --- */}
+      <Modal visible={deleteModal} animationType="fade" transparent={true}>
+        <View style={styles.modalCenterOverlay}>
+          <View style={[styles.modalCenterCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+            <View style={styles.alertIconCenter}>
+              <Feather name="alert-triangle" size={32} color={colors.error} />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.text, textAlign: 'center', marginBottom: 8 }]}>Delete Pocket?</Text>
+            <Text style={[styles.modalSubTitle, { color: colors.secondary, textAlign: 'center', marginBottom: 24 }]}>
+              Are you sure you want to delete "{pocketToDelete?.name}"?
+              {pocketToDelete && pocketToDelete.balance > 0 && `\n\nRM ${formatBalance(pocketToDelete.balance.toFixed(2))} will be moved back to Main Account.`}
+            </Text>
+            
+            <View style={styles.modalRowActions}>
+              <TouchableOpacity style={[styles.modalBtnHalf, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => setDeleteModal(false)}>
+                <Text style={[styles.modalActionText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtnHalf, { backgroundColor: colors.error }]} onPress={applyDelete}>
+                <Text style={styles.modalActionTextWhite}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* --- ADD POCKET MODAL --- */}
       <Modal visible={showAdd} animationType="slide" transparent={true}>
@@ -247,8 +317,28 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     flexDirection: 'row', 
-    justifyContent: 'space-between', 
     alignItems: 'center' 
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 40,
+    gap: 0,
+  },
+  visibilityBtn: {
+    padding: 8,
+  },
+  headerActionBtn: {
+    padding: 8,
+    borderRadius: 12,
+  },
+  alertIconCenter: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalSubTitle: {
+    fontSize: 15,
+    lineHeight: 22,
   },
   backButton: { width: 40, height: 40, justifyContent: 'center' },
   title: { fontSize: 20, fontWeight: '800' },
