@@ -21,6 +21,7 @@ export default function GxSpaceRoomView(props: Props) {
     ownsTable,
     ownsChair,
     ownsPlant,
+    ownsCurtain,
     activeTab,
     isStoreOpen,
     openStore,
@@ -54,6 +55,7 @@ export default function GxSpaceRoomView(props: Props) {
         {ownsTable && <Image source={require('@/assets/images/table.png')} style={[styles.item, styles.tablePos]} />}
         {ownsChair && <Image source={require('@/assets/images/chair.png')} style={[styles.item, styles.chairPos]} />}
         {ownsPlant && <Image source={require('@/assets/images/plant.png')} style={[styles.item, styles.plantPos]} />}
+        {ownsCurtain && <Image source={require('@/assets/images/curtain.png')} style={[styles.item, styles.curtainPos]} />}
       </Animated.View>
 
       <Animated.View style={[styles.storeSheet, { backgroundColor: 'rgba(28, 13, 51, 0.94)', borderColor: 'rgba(255,255,255,0.1)', transform: [{ translateY: storeTranslateY }] }]}>
@@ -136,23 +138,43 @@ export default function GxSpaceRoomView(props: Props) {
                 </TouchableOpacity>
               </>
             ) : (
-              <TouchableOpacity 
-                activeOpacity={0.7}
-                style={[styles.buyCard, { backgroundColor: colors.background, borderColor: ownsPlant ? colors.success : colors.border }]} 
-                onPress={() => !ownsPlant && handleIntentToBuy({ id: 'plant', name: 'Plant', cost: 150, image: require('@/assets/images/plant.png'), setter: props.setOwnsPlant as any })}
-              >
-                <View style={styles.cardImageContainer}>
-                  <Image source={require('@/assets/images/plant.png')} style={[styles.cardImage, ownsPlant && { opacity: 0.6 }]} resizeMode="contain" />
-                </View>
-                <Text style={[styles.itemLabel, { color: colors.text }]}>Plant</Text>
-                <Text style={[styles.priceLabel, { color: ownsPlant ? colors.success : colors.secondary }]}>{ownsPlant ? 'Owned' : '150 pts'}</Text>
-                {ownsPlant && (
-                  <View style={styles.placedBadge}>
-                    <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                    <Text style={[styles.placedText, { color: colors.success }]}>PLACED</Text>
+              <>
+                <TouchableOpacity 
+                  activeOpacity={0.7}
+                  style={[styles.buyCard, { backgroundColor: colors.background, borderColor: ownsPlant ? colors.success : colors.border }]} 
+                  onPress={() => !ownsPlant && handleIntentToBuy({ id: 'plant', name: 'Plant', cost: 150, image: require('@/assets/images/plant.png'), setter: props.setOwnsPlant as any })}
+                >
+                  <View style={styles.cardImageContainer}>
+                    <Image source={require('@/assets/images/plant.png')} style={[styles.cardImage, ownsPlant && { opacity: 0.6 }]} resizeMode="contain" />
                   </View>
-                )}
-              </TouchableOpacity>
+                  <Text style={[styles.itemLabel, { color: colors.text }]}>Plant</Text>
+                  <Text style={[styles.priceLabel, { color: ownsPlant ? colors.success : colors.secondary }]}>{ownsPlant ? 'Owned' : '150 pts'}</Text>
+                  {ownsPlant && (
+                    <View style={styles.placedBadge}>
+                      <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                      <Text style={[styles.placedText, { color: colors.success }]}>PLACED</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  activeOpacity={0.7}
+                  style={[styles.buyCard, { backgroundColor: colors.background, borderColor: ownsCurtain ? colors.success : colors.border }]} 
+                  onPress={() => !ownsCurtain && handleIntentToBuy({ id: 'curtain', name: 'Curtain', cost: 250, image: require('@/assets/images/curtain.png'), setter: props.setOwnsCurtain as any })}
+                >
+                  <View style={styles.cardImageContainer}>
+                    <Image source={require('@/assets/images/curtain.png')} style={[styles.cardImage, ownsCurtain && { opacity: 0.6 }]} resizeMode="contain" />
+                  </View>
+                  <Text style={[styles.itemLabel, { color: colors.text }]}>Curtain</Text>
+                  <Text style={[styles.priceLabel, { color: ownsCurtain ? colors.success : colors.secondary }]}>{ownsCurtain ? 'Owned' : '250 pts'}</Text>
+                  {ownsCurtain && (
+                    <View style={styles.placedBadge}>
+                      <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                      <Text style={[styles.placedText, { color: colors.success }]}>PLACED</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </>
             )}
           </View>
         </View>
@@ -184,13 +206,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, width: '100%', position: 'relative', backgroundColor: 'transparent', overflow: 'hidden' },
   roomContainer: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative' },
   backgroundImage: { width: '100%', height: '100%' },
-  avatarContainer: { position: 'absolute', bottom: '38%', zIndex: 100, alignItems: 'center' },
+  avatarContainer: { position: 'absolute', bottom: '36%', zIndex: 100, alignItems: 'center' },
   avatar: { width: 140, height: 140 },
-  item: { position: 'absolute', width: 120, height: 120, resizeMode: 'contain', zIndex: 50 },
-  lockerPos: { top: '47%', left: '26%' },
-  tablePos: { bottom: '35%', right: '21%' },
-  chairPos: { bottom: '35%', left: '55%' },
-  plantPos: { bottom: '36%', left: '17%' },
+  item: { position: 'absolute', width: 80, height: 80, resizeMode: 'contain', zIndex: 50 },
+  lockerPos: { top: '40%', left: '14%', width: 150, height: 150 },
+  tablePos: { bottom: '40%', right: '16%' },
+  chairPos: { bottom: '38%', left: '55%' },
+  plantPos: { bottom: '40%', left: '11%' },
+  curtainPos: { top: '32%', right: '15%', width: 120, height: 120 },
   storeSheet: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 350, borderTopLeftRadius: 32, borderTopRightRadius: 32, borderWidth: 1, borderBottomWidth: 0, shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 20 },
   tabBar: { height: 60, flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'center', borderBottomWidth: 1 },
   tabIconBtn: { alignItems: 'center', justifyContent: 'center', flex: 1 },

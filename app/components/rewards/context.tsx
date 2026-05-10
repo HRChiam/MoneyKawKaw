@@ -11,6 +11,8 @@ interface RewardsContextType {
   setOwnsPlant: React.Dispatch<React.SetStateAction<boolean>>;
   ownsTable: boolean;
   setOwnsTable: React.Dispatch<React.SetStateAction<boolean>>;
+  ownsCurtain: boolean;
+  setOwnsCurtain: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const RewardsContext = createContext<RewardsContextType | undefined>(undefined);
@@ -21,6 +23,7 @@ export const RewardsProvider = ({ children }: { children: ReactNode }) => {
   const [ownsLocker, setOwnsLocker] = useState(false);
   const [ownsPlant, setOwnsPlant] = useState(false);
   const [ownsTable, setOwnsTable] = useState(false);
+  const [ownsCurtain, setOwnsCurtain] = useState(false);
 
   return (
     <RewardsContext.Provider value={{
@@ -28,7 +31,8 @@ export const RewardsProvider = ({ children }: { children: ReactNode }) => {
       ownsChair, setOwnsChair,
       ownsLocker, setOwnsLocker,
       ownsPlant, setOwnsPlant,
-      ownsTable, setOwnsTable
+      ownsTable, setOwnsTable,
+      ownsCurtain, setOwnsCurtain
     }}>
       {children}
     </RewardsContext.Provider>
