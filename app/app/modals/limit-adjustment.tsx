@@ -6,21 +6,18 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
+import { useFinancial } from '@/context/FinancialContext';
+
 export default function LimitAdjustmentScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { income: ctxIncome, setIncome, expenses: ctxExpenses, setExpenses, syncPocketsWithExpenses } = useFinancial();
 
-  const [income, setIncome] = useState('5000');
-  const [expenseAmounts, setExpenseAmounts] = useState<Record<string, string>>({
-    'Room Rental': '1200',
-    'PTPTN': '200',
-    'Car Loan': '800',
-    'Insurance': '300',
-    'Groceries': '600',
-    'Utilities': '250',
-    'Other': '0'
-  });
+  const [income, setLocalIncome] = useState(ctxIncome.toString());
+  const [expenseAmounts, setLocalExpenseAmounts] = useState<Record<string, string>>(
+    Object.entries(ctxExpenses).reduce((acc, [k, v]) => ({ ...acc, [k]: v.toString() }), {})
+  );
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -28,13 +25,23 @@ export default function LimitAdjustmentScreen() {
   const labelColor = '#771FFF';
 
   const updateExpenseAmount = (expense: string, amount: string) => {
-    setExpenseAmounts(prev => ({ ...prev, [expense]: amount }));
+    setLocalExpenseAmounts(prev => ({ ...prev, [expense]: amount }));
   };
 
   const handleSave = () => {
     setIsSaving(true);
+    
+    // Update Context
+    setIncome(Number(income));
+    const newExpenses = Object.entries(expenseAmounts).reduce(
+      (acc, [k, v]) => ({ ...acc, [k]: Number(v) }), 
+      {} as Record<string, number>
+    );
+    setExpenses(newExpenses);
+    
     // Simulate API call
     setTimeout(() => {
+      syncPocketsWithExpenses();
       setIsSaving(false);
       setIsSuccess(true);
       
@@ -54,7 +61,7 @@ export default function LimitAdjustmentScreen() {
           </View>
           <Text style={[styles.successTitle, { color: colors.text }]}>Limits Updated!</Text>
           <Text style={[styles.successSubtitle, { color: colors.secondary }]}>
-            Your daily "Safe to Spend" has been recalculated.
+            Your daily &quot;Safe to Spend&quot; has been recalculated.
           </Text>
         </Animated.View>
       </View>
@@ -85,7 +92,7 @@ export default function LimitAdjustmentScreen() {
               <TextInput
                 style={[styles.input, { color: colors.text }]}
                 value={income}
-                onChangeText={setIncome}
+                onChangeText={setLocalIncome}
                 keyboardType="decimal-pad"
               />
             </View>
@@ -112,7 +119,7 @@ export default function LimitAdjustmentScreen() {
           <View style={[styles.infoCard, { backgroundColor: colors.card + '50', borderColor: colors.border }]}>
             <Feather name="info" size={20} color={labelColor} />
             <Text style={[styles.infoText, { color: colors.secondary }]}>
-              Changing these values will recalculate your "Safe to Spend" daily limit.
+              Changing these values will recalculate your &quot;Safe to Spend&quot; daily limit.
             </Text>
           </View>
         </Animated.View>
