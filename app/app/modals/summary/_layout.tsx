@@ -9,6 +9,37 @@ import { Feather, MaterialIcons } from '@expo/vector-icons';
 const { width } = Dimensions.get('window');
 
 export default function SummaryScreen() {
+  const handlePieTouch = (event: any) => {
+    // Get exact finger coordinates relative to the 120x120 box
+    const { locationX, locationY } = event.nativeEvent;
+    
+    // Calculate distance from the center (60, 60)
+    const dx = locationX - 60;
+    const dy = locationY - 60;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // If the tap is outside the pie radius, ignore it
+    if (distance > 56) return;
+
+    // Calculate the angle of the tap using Math.atan2
+    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    
+    // Adjust standard math angles to match our top-starting pie chart
+    angle = angle + 90;
+    if (angle < 0) angle += 360;
+
+    // Find which slice this angle belongs to
+    let accumulated = 0;
+    for (let i = 0; i < pieSlices.length; i++) {
+      const sliceAngle = (pieSlices[i].amount / totalCategorySpend) * 360;
+      if (angle >= accumulated && angle < accumulated + sliceAngle) {
+        // Toggle the slice
+        setActiveCategoryIndex(activeCategoryIndex === i ? null : i);
+        break;
+      }
+      accumulated += sliceAngle;
+    }
+  };
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -84,6 +115,7 @@ export default function SummaryScreen() {
 
   const PIE_RADIUS = 25; 
   const PIE_STROKE_WIDTH = 50; 
+// --- SPEND BREAKDOWN: PERFECT TOUCH FILLED WEDGES ---
   const totalCategorySpend = currentData.categories.reduce((sum, cat) => sum + cat.amount, 0);
 
   const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
@@ -103,15 +135,28 @@ export default function SummaryScreen() {
     const endAngle = accumulatedAngle + sliceAngle;
     accumulatedAngle += sliceAngle;
 
-    const start = polarToCartesian(60, 60, PIE_RADIUS, startAngle);
-    const end = polarToCartesian(60, 60, PIE_RADIUS, endAngle);
+    // Normal state radius is 50, Active (popped out) state radius is 56
+    const R_NORMAL = 50;
+    const R_ACTIVE = 56;
+    
+    const startNormal = polarToCartesian(60, 60, R_NORMAL, startAngle);
+    const endNormal = polarToCartesian(60, 60, R_NORMAL, endAngle);
+    
+    const startActive = polarToCartesian(60, 60, R_ACTIVE, startAngle);
+    const endActive = polarToCartesian(60, 60, R_ACTIVE, endAngle);
+
     const largeArcFlag = sliceAngle > 180 ? '1' : '0';
+    
+    // Draw a solid closed wedge: Move to center (60,60), line to edge, arc, line back to center (Z)
+    const dNormal = sliceAngle > 359.9 
+      ? `M 60 ${60 - R_NORMAL} A ${R_NORMAL} ${R_NORMAL} 0 1 1 59.9 ${60 - R_NORMAL} Z`
+      : `M 60 60 L ${startNormal.x} ${startNormal.y} A ${R_NORMAL} ${R_NORMAL} 0 ${largeArcFlag} 1 ${endNormal.x} ${endNormal.y} Z`;
 
-    const d = sliceAngle > 359.9 
-      ? `M 60 ${60 - PIE_RADIUS} A ${PIE_RADIUS} ${PIE_RADIUS} 0 1 1 59.9 ${60 - PIE_RADIUS}`
-      : `M ${start.x} ${start.y} A ${PIE_RADIUS} ${PIE_RADIUS} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
+    const dActive = sliceAngle > 359.9 
+      ? `M 60 ${60 - R_ACTIVE} A ${R_ACTIVE} ${R_ACTIVE} 0 1 1 59.9 ${60 - R_ACTIVE} Z`
+      : `M 60 60 L ${startActive.x} ${startActive.y} A ${R_ACTIVE} ${R_ACTIVE} 0 ${largeArcFlag} 1 ${endActive.x} ${endActive.y} Z`;
 
-    return { ...cat, d, percentage: (percentage * 100).toFixed(0) };
+    return { ...cat, dNormal, dActive, percentage: (percentage * 100).toFixed(0) };
   });
 
   useEffect(() => { 
@@ -241,18 +286,20 @@ export default function SummaryScreen() {
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border, paddingVertical: 24, minHeight: 180 }]}>
           <Text style={[styles.chartTitle, { color: colors.text, marginBottom: 20 }]}>Spend Breakdown</Text>
           <View style={styles.donutRow}>
-          <Svg width="120" height="120" viewBox="0 0 120 120">
-            {pieSlices.map((slice, index) => (
-              <Path 
-                key={index} 
-                d={slice.d} 
-                stroke={slice.color} 
-                strokeWidth={activeCategoryIndex === index ? PIE_STROKE_WIDTH + 6 : PIE_STROKE_WIDTH} 
-                fill="none" 
-                onPress={() => setActiveCategoryIndex(activeCategoryIndex === index ? null : index)} 
-              />
-            ))}
-          </Svg>
+             {/* Wrap the entire SVG and let math do the work */}
+             <TouchableOpacity activeOpacity={1} onPress={handlePieTouch}>
+               <Svg width="120" height="120" viewBox="0 0 120 120">
+                  {pieSlices.map((slice, index) => (
+                    <Path 
+                       key={index} 
+                       d={activeCategoryIndex === index ? slice.dActive : slice.dNormal} 
+                       fill={slice.color} 
+                       // REMOVED onPress from here!
+                    />
+                  ))}
+               </Svg>
+             </TouchableOpacity>
+
              <View style={styles.donutSideText}>
                 {activeCategoryIndex !== null ? (
                    <>
