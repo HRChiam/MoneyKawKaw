@@ -15,10 +15,12 @@ export default function CategoryScreen() {
 
   // Theme mapping for each pocket
   const pocketThemes: { [key: string]: { color: string; icon: string } } = {
-    Saving: { color: '#771FFF', icon: 'safe' },
-    Food: { color: '#FB7185', icon: 'food-fork-drink' },
+    Saving: { color: '#15fabd', icon: 'safe' },
+    'F&B': { color: '#FB7185', icon: 'food-fork-drink' },
     Transport: { color: '#60A5FA', icon: 'car-side' },
-    Utilities: { color: '#FBBF24', icon: 'lightning-bolt' },
+    Loan: { color: '#FBBF24', icon: 'bank-outline' },
+    Groceries: { color: '#34D399', icon: 'cart-outline' },
+    Entertainment: { color: '#F472B6', icon: 'controller-classic-outline' },
   };
 
   const theme = pocketThemes[name as string] || { color: labelColor, icon: 'folder-outline' };
@@ -43,10 +45,12 @@ export default function CategoryScreen() {
 
   const getCategoryBalance = () => {
     const balances: { [key: string]: number } = {
-      Saving: 50,
-      Food: 800,
-      Transport: 200,
-      Utilities: 120,
+      Saving: 1050,
+      'F&B': 700,
+      Transport: 350,
+      Loan: 1500,
+      Groceries: 500,
+      Entertainment: 400,
     };
     return balances[name as string] || 0;
   };

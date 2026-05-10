@@ -8,9 +8,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { TransactionSuccess } from './TransactionSuccess';
 
-type TransferSource = 'Saving' | 'Food' | 'Transport' | 'Utilities';
+import { useFinancial } from '@/context/FinancialContext';
+
+type TransferSource = 'Saving' | 'F&B' | 'Transport' | 'Loan' | 'Groceries' | 'Entertainment';
 
 export default function TransactionScreen() {
+  const { pockets } = useFinancial();
   const router = useRouter();
   const params = useLocalSearchParams();
   const colorScheme = useColorScheme();
@@ -37,13 +40,6 @@ export default function TransactionScreen() {
 
   const banks = ['GXBank', 'Maybank', 'CIMB Bank', 'Public Bank', 'RHB Bank'];
   const [showBankPicker, setShowBankPicker] = useState(false);
-
-  const pockets = [
-    { name: 'Saving', icon: 'safe', balance: 50.00, color: '#15fabd' }, // Neon Turquoise
-    { name: 'Food', icon: 'food-fork-drink', balance: 800.00, color: '#FB7185' }, // Rose/Pink
-    { name: 'Transport', icon: 'car-side', balance: 200.00, color: '#60A5FA' }, // Sky Blue
-    { name: 'Utilities', icon: 'lightning-bolt', balance: 120.00, color: '#FBBF24' }, // Amber
-  ];
 
   const quickAmounts = ['10', '50', '100', '200'];
 
