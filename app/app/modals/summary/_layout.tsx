@@ -10,30 +10,21 @@ const { width } = Dimensions.get('window');
 
 export default function SummaryScreen() {
   const handlePieTouch = (event: any) => {
-    // Get exact finger coordinates relative to the 120x120 box
     const { locationX, locationY } = event.nativeEvent;
     
-    // Calculate distance from the center (60, 60)
     const dx = locationX - 60;
     const dy = locationY - 60;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // If the tap is outside the pie radius, ignore it
     if (distance > 56) return;
-
-    // Calculate the angle of the tap using Math.atan2
     let angle = Math.atan2(dy, dx) * (180 / Math.PI);
     
-    // Adjust standard math angles to match our top-starting pie chart
     angle = angle + 90;
     if (angle < 0) angle += 360;
-
-    // Find which slice this angle belongs to
     let accumulated = 0;
     for (let i = 0; i < pieSlices.length; i++) {
       const sliceAngle = (pieSlices[i].amount / totalCategorySpend) * 360;
       if (angle >= accumulated && angle < accumulated + sliceAngle) {
-        // Toggle the slice
         setActiveCategoryIndex(activeCategoryIndex === i ? null : i);
         break;
       }
@@ -115,7 +106,6 @@ export default function SummaryScreen() {
 
   const PIE_RADIUS = 25; 
   const PIE_STROKE_WIDTH = 50; 
-// --- SPEND BREAKDOWN: PERFECT TOUCH FILLED WEDGES ---
   const totalCategorySpend = currentData.categories.reduce((sum, cat) => sum + cat.amount, 0);
 
   const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
@@ -134,8 +124,6 @@ export default function SummaryScreen() {
     const startAngle = accumulatedAngle;
     const endAngle = accumulatedAngle + sliceAngle;
     accumulatedAngle += sliceAngle;
-
-    // Normal state radius is 50, Active (popped out) state radius is 56
     const R_NORMAL = 50;
     const R_ACTIVE = 56;
     
@@ -146,8 +134,6 @@ export default function SummaryScreen() {
     const endActive = polarToCartesian(60, 60, R_ACTIVE, endAngle);
 
     const largeArcFlag = sliceAngle > 180 ? '1' : '0';
-    
-    // Draw a solid closed wedge: Move to center (60,60), line to edge, arc, line back to center (Z)
     const dNormal = sliceAngle > 359.9 
       ? `M 60 ${60 - R_NORMAL} A ${R_NORMAL} ${R_NORMAL} 0 1 1 59.9 ${60 - R_NORMAL} Z`
       : `M 60 60 L ${startNormal.x} ${startNormal.y} A ${R_NORMAL} ${R_NORMAL} 0 ${largeArcFlag} 1 ${endNormal.x} ${endNormal.y} Z`;
@@ -294,7 +280,6 @@ export default function SummaryScreen() {
                        key={index} 
                        d={activeCategoryIndex === index ? slice.dActive : slice.dNormal} 
                        fill={slice.color} 
-                       // REMOVED onPress from here!
                     />
                   ))}
                </Svg>
