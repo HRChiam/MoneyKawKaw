@@ -12,10 +12,12 @@ export default function FlexiCreditScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  
   const [creditAmount, setCreditAmount] = useState('1000');
-  const [interestRateInput, setInterestRateInput] = useState('18');
+  const [interestRateInput, setInterestRateInput] = useState('6.45');
   const [monthlyPayment, setMonthlyPayment] = useState(50);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   const parsedAmount = parseInt(creditAmount) || 0;
   const parsedRate = (parseFloat(interestRateInput) || 0) / 100; 
@@ -46,6 +48,15 @@ export default function FlexiCreditScreen() {
 
   const { months, interest, maxInterest } = generateSimulatorData();
 
+  // --- STACKED BAR MATH ---
+  const firstMonthInterest = (parsedAmount * parsedRate) / 12;
+  const actualInterestPortion = Math.min(monthlyPayment, firstMonthInterest); 
+  const actualPrincipalPortion = monthlyPayment - actualInterestPortion;
+
+  const interestRatio = (actualInterestPortion / monthlyPayment) * 100;
+  const principalRatio = (actualPrincipalPortion / monthlyPayment) * 100;
+
+  // --- CHART DIMENSIONS & MATH ---
   const CHART_TRACK_HEIGHT = 160; 
   const BAR_DISTANCE = 160; 
   const BAR_WIDTH = 32;
@@ -104,42 +115,65 @@ export default function FlexiCreditScreen() {
             </View>
             <View style={styles.inputHalf}>
                 <Text style={[styles.inputLabel, { color: colors.text }]}>Interest Rate</Text>
-                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border, opacity: 0.7 }]}>
                     <TextInput
                         style={[styles.amountInput, { color: colors.text, textAlign: 'right' }]}
                         value={interestRateInput}
-                        onChangeText={setInterestRateInput}
-                        keyboardType="numeric"
-                        placeholder="18"
+                        editable={false}
                     />
                     <Text style={[styles.currencyPrefix, { color: colors.secondary, marginLeft: 4, marginRight: 0 }]}>%</Text>
                 </View>
+                <Text style={{ fontSize: 10, color: colors.secondary, marginTop: 6, fontStyle: 'italic' }}>
+                    *changed based on credit score
+                </Text>
             </View>
         </View>
       </View>
 
-      {/* ACT 7: THE COMBO CHART SIMULATOR */}
       <View style={[styles.chartContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20}}>
             <Text style={[styles.chartTitle, { color: colors.text }]}>AI Simulator</Text>
             <IconSymbol size={20} name="sparkles" color={colors.primary} />
         </View>
 
-        {/* --- DYNAMIC SVG COMBO GRAPH --- */}
         <View style={styles.graphWrapper}>
             <View style={{ width: BAR_DISTANCE + BAR_WIDTH, flexDirection: 'row', justifyContent: 'space-between' }}>
                 
-                {/* 1. Left Column (Payment) */}
-                <View style={styles.barGroup}>
+                {/* 1. Left Column (STACKED: Payment) */}
+                <View style={[styles.barGroup, { zIndex: 10, elevation: 10 }]}>
                     <Text style={[styles.barLabelTop, {color: colors.text}]}>RM {Math.floor(monthlyPayment)}</Text>
-                    <View style={[styles.barTrack, {backgroundColor: colorScheme === 'dark' ? '#333' : '#f3f4f6', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH}]}>
-                        <View style={[styles.barFill, { height: paymentHeight, backgroundColor: colors.primary }]} />
-                    </View>
+                    
+                    <TouchableOpacity 
+                        activeOpacity={0.9} 
+                        onPress={() => setShowBreakdown(!showBreakdown)}
+                        style={[styles.barTrack, {backgroundColor: colorScheme === 'dark' ? '#333' : '#f3f4f6', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH}]}
+                    >
+                        <View style={[styles.barFill, { height: paymentHeight, overflow: 'hidden' }]}>
+                            <View style={{ height: `${interestRatio}%`, backgroundColor: '#ec4899', width: '100%' }} />
+                            <View style={{ height: `${principalRatio}%`, backgroundColor: '#8b5cf6', width: '100%' }} />
+                        </View>
+                    </TouchableOpacity>
+
                     <Text style={[styles.barLabelBottom, {color: colors.secondary}]}>Pay/Month</Text>
+                    <Text style={{fontSize: 10, color: colors.primary, marginTop: 2}}>(Tap Bar)</Text>
+
+                    {showBreakdown && (
+                        <View style={[styles.tooltipOverlay, { backgroundColor: colors.text }]}>
+                            <View style={styles.tooltipRow}>
+                                <View style={[styles.tooltipDot, { backgroundColor: '#8b5cf6' }]} />
+                                <Text style={[styles.tooltipText, { color: colors.background }]}>Loan: RM {actualPrincipalPortion.toFixed(0)}</Text>
+                            </View>
+                            <View style={styles.tooltipRow}>
+                                <View style={[styles.tooltipDot, { backgroundColor: '#ec4899' }]} />
+                                <Text style={[styles.tooltipText, { color: colors.background }]}>Interest: RM {actualInterestPortion.toFixed(0)}</Text>
+                            </View>
+                            <View style={styles.tooltipArrow} />
+                        </View>
+                    )}
                 </View>
 
-                {/* 2. The Smooth Extended SVG Line */}
-                <View style={{ position: 'absolute', top: 24, left: -OVERHANG, right: -OVERHANG, height: CHART_TRACK_HEIGHT, zIndex: 10 }} pointerEvents="none">
+                {/* 2. The Smooth Extended SVG Line (Solid) - PUSHED TO THE FRONT */}
+                <View style={{ position: 'absolute', top: 24, left: -OVERHANG, right: -OVERHANG, height: CHART_TRACK_HEIGHT, zIndex: 20, elevation: 20 }} pointerEvents="none">
                     <Svg height="100%" width="100%" viewBox={`0 0 ${totalSvgWidth} ${CHART_TRACK_HEIGHT}`}>
                         <Path 
                             d={curvedLinePath} 
@@ -151,13 +185,14 @@ export default function FlexiCreditScreen() {
                     </Svg>
                 </View>
 
-                {/* 3. Right Column (Interest) */}
-                <View style={styles.barGroup}>
+                {/* 3. Right Column (Interest Pile) */}
+                <View style={[styles.barGroup, { zIndex: 1, elevation: 1 }]}>
                     <Text style={[styles.barLabelTop, {color: colors.text}]}>RM {interest}</Text>
                     <View style={[styles.barTrack, {backgroundColor: colorScheme === 'dark' ? '#333' : '#f3f4f6', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH}]}>
                         <View style={[styles.barFill, { height: interestHeight, backgroundColor: months > 24 ? '#ef4444' : '#f97316' }]} />
                     </View>
-                    <Text style={[styles.barLabelBottom, {color: colors.secondary}]}>Interest</Text>
+                    <Text style={[styles.barLabelBottom, {color: colors.secondary}]}>Total Interest</Text>
+                    <View style={{ height: 14, marginTop: 2 }} /> 
                 </View>
 
             </View>
@@ -183,6 +218,7 @@ export default function FlexiCreditScreen() {
           onValueChange={(val) => {
             setMonthlyPayment(val);
             setHasInteracted(true); 
+            setShowBreakdown(false); 
           }}
           minimumTrackTintColor={colors.primary}
           maximumTrackTintColor={colors.border}
@@ -238,11 +274,55 @@ const styles = StyleSheet.create({
   applyButtonText: { fontSize: 14, fontWeight: '600' },
   
   graphWrapper: { alignItems: 'center', marginBottom: 16 },
-  barGroup: { alignItems: 'center', zIndex: 1 },
-  barTrack: { borderRadius: 8, justifyContent: 'flex-end', overflow: 'hidden', marginVertical: 8 },
+  barGroup: { alignItems: 'center' }, 
+  barTrack: { borderRadius: 8, justifyContent: 'flex-end', marginVertical: 8 },
   barFill: { width: '100%', borderRadius: 8 },
   barLabelTop: { fontSize: 14, fontWeight: '800' },
   barLabelBottom: { fontSize: 12, fontWeight: '600' },
+
+  tooltipOverlay: {
+    position: 'absolute',
+    top: 50,
+    left: 45,
+    padding: 10,
+    borderRadius: 8,
+    width: 140,
+    elevation: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  tooltipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  tooltipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  tooltipText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    left: -6,
+    top: 15,
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderTopWidth: 6,
+    borderBottomWidth: 6,
+    borderRightWidth: 6,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderRightColor: '#fff', 
+  },
 
   sliderValueContainer: {
     alignItems: 'center',
