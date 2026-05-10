@@ -1,48 +1,65 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 export default function InsufficientFundsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const handleSacrificeOption = (option: string) => {
-    alert(`Selected: ${option}`);
-    router.back();
+  const { toAccount, toBank, amount, reference, selectedSource } = params;
+
+  const handleSacrificeOption = () => {
+    // Navigate back to transaction screen with success state
+    router.replace({
+      pathname: './transaction',
+      params: { 
+        toAccount, 
+        toBank, 
+        amount, 
+        reference, 
+        selectedSource,
+        isConfirmed: 'true'
+      }
+    });
+  };
+
+  const handleCancel = () => {
+    // Navigate back to home page
+    router.navigate('../(tabs)/01-home');
   };
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
-      scrollEventThrottle={16}
+      contentContainerStyle={styles.scrollContent}
     >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol size={24} name="chevron.left" color={colors.text} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Transaction</Text>
         </TouchableOpacity>
-        <View style={styles.pointsContainer}>
-          <Text style={[styles.points, { color: colors.primary }]}>1,357</Text>
-        </View>
       </View>
 
-      <View style={styles.alertSection}>
-        <View
-          style={[
-            styles.alertBox,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.alertIconContainer}>
-            <IconSymbol size={40} name="exclamationmark.triangle.fill" color={colors.error} />
-          </View>
-          <Text style={[styles.alertTitle, { color: colors.error }]}>Insufficient Funds</Text>
-          <Text style={[styles.alertMessage, { color: colors.text }]}>
-            Food pocket balance insufficient for this transaction
-          </Text>
+      <View style={styles.alertContainer}>
+        <View style={styles.alertIconWrapper}>
+          <FontAwesome5 name="sad-tear" size={60} color="#ffffff" />
+        </View>
+        <Text style={[styles.alertTitle, { color: '#cb184e' }]}>Insufficient Funds</Text>
+      </View>
+
+      <View style={[styles.receiptCard, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }]}>
+        <View style={styles.receiptCol}>
+          <Text style={[styles.receiptLabel, { color: colors.secondary }]}>Amount to Transfer</Text>
+          <Text style={[styles.receiptValue, { color: colors.text, fontSize: 30 }]}>RM {amount}</Text>
+        </View>
+        <View style={[styles.receiptCol, { marginTop: 20 }]}>
+          <Text style={[styles.receiptLabel, { color: colors.secondary }]}>{selectedSource} Pocket Balance</Text>
+          <Text style={[styles.receiptValue, { color: '#cb184e', fontSize: 30 }]}>RM 20</Text>
         </View>
       </View>
 
@@ -52,35 +69,28 @@ export default function InsufficientFundsScreen() {
         </Text>
 
         <TouchableOpacity
-          style={[
-            styles.alternativeButton,
-            { backgroundColor: colors.primary, borderColor: colors.primaryEnd },
-          ]}
-          onPress={() => handleSacrificeOption('Sacrifice RM150 from Entertainment')}
+          style={styles.sacrificeButtonWrapper}
+          onPress={handleSacrificeOption}
         >
-          <Text style={styles.alternativeButtonText}>
-            Sacrifice RM150 from Entertainment
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.alternativeButton,
-            { backgroundColor: colors.primary, borderColor: colors.primaryEnd },
-          ]}
-          onPress={() => handleSacrificeOption('Dip into Savings')}
-        >
-          <Text style={styles.alternativeButtonText}>
-            Dip into Savings
-          </Text>
+          <LinearGradient
+            colors={['#771FFF', '#F8326D']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientButton}
+          >
+            <MaterialCommunityIcons name="star-four-points" size={24} color="white" style={{marginRight:10}} />
+            <Text style={styles.sacrificeButtonText}>
+              Move RM{Number(amount)-20} from Entertainment Pocket to {selectedSource} Pocket
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.cancelButton,
-            { backgroundColor: colors.card, borderColor: colors.border },
+            { backgroundColor: 'rgba(168, 148, 148, 0.12)', borderColor: 'rgba(255,255,255,0.1)' },
           ]}
-          onPress={() => router.back()}
+          onPress={handleCancel}
         >
           <Text style={[styles.cancelButtonText, { color: colors.text }]}>
             Cancel Transaction
@@ -88,7 +98,7 @@ export default function InsufficientFundsScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={{ height: 20 }} />
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
@@ -97,94 +107,108 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 40,
+  },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
   },
-  pointsContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: 'rgba(168, 85, 247, 0.1)',
-  },
-  points: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  alertSection: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 16,
-  },
-  alertBox: {
-    borderRadius: 16,
-    padding: 24,
+  alertContainer: {
     alignItems: 'center',
-    borderWidth: 1,
+    marginTop: 20,
+    marginBottom: 32,
   },
-  alertIconContainer: {
+  alertIconWrapper: {
     marginBottom: 16,
   },
   alertTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
+    letterSpacing: -0.5,
   },
-  alertMessage: {
+  receiptCard: {
+    marginHorizontal: 20,
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    marginBottom: 32,
+  },
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+   receiptCol: {
+    flexDirection: 'column',
+  },
+  receiptLabel: {
     fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
+    fontWeight: '700',
+    fontFamily: 'sans-serif-rounded',
+  },
+  receiptValue: {
+    fontSize: 16,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
   },
   alternativesSection: {
-    paddingHorizontal: 16,
-    marginTop: 24,
+    paddingHorizontal: 20,
   },
   alternativesTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 16,
+    fontWeight: '800',
+    marginBottom: 20,
+    fontFamily: 'sans-serif-rounded',
   },
-  alternativeButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+  sacrificeButtonWrapper: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  gradientButton: {
+    height: 80,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    flexDirection: 'row',
+    paddingHorizontal: 30,
+    paddingVertical: 20,
   },
-  alternativeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+  sacrificeButtonText: {
     color: '#fff',
-    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
+    textAlign: 'left',
   },
   cancelButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    height: 64,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
     borderWidth: 1,
+    marginTop: 8,
   },
   cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
   },
 });

@@ -1,26 +1,39 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { TransactionSuccess } from './TransactionSuccess';
 
 type TransferSource = 'Saving' | 'Food' | 'Transport' | 'Utilities';
 
 export default function TransactionScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const [toAccount, setToAccount] = useState('');
-  const [toBank, setToBank] = useState('GXBank');
-  const [amount, setAmount] = useState('');
-  const [reference, setReference] = useState('');
-  const [selectedSource, setSelectedSource] = useState<TransferSource | null>(null);
+  const [toAccount, setToAccount] = useState((params.toAccount as string) || '');
+  const [toBank, setToBank] = useState((params.toBank as string) || 'GXBank');
+  const [amount, setAmount] = useState((params.amount as string) || '');
+  const [reference, setReference] = useState((params.reference as string) || '');
+  const [selectedSource, setSelectedSource] = useState<TransferSource | null>((params.selectedSource as TransferSource) || null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(params.isConfirmed === 'true');
+
+  // Update state if params change (e.g. coming back from insufficient funds)
+  useEffect(() => {
+    if (params.isConfirmed === 'true') {
+      setIsConfirmed(true);
+      if (params.amount) setAmount(params.amount as string);
+      if (params.toAccount) setToAccount(params.toAccount as string);
+      if (params.toBank) setToBank(params.toBank as string);
+      if (params.selectedSource) setSelectedSource(params.selectedSource as TransferSource);
+    }
+  }, [params]);
 
   const banks = ['GXBank', 'Maybank', 'CIMB Bank', 'Public Bank', 'RHB Bank'];
   const [showBankPicker, setShowBankPicker] = useState(false);
@@ -54,7 +67,15 @@ export default function TransactionScreen() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      setIsConfirmed(true);
+      // mock failed transaction (insufficient funds)
+      if (amount === '67') {
+        router.push({
+          pathname: './insufficient-funds',
+          params: { toAccount, toBank, amount, reference, selectedSource }
+        });
+      } else {
+        setIsConfirmed(true);
+      }
     }, 2000);
   };
 
@@ -64,47 +85,15 @@ export default function TransactionScreen() {
 
   if (isConfirmed) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Animated.View 
-          entering={FadeInDown.duration(600)}
-          style={styles.successContainer}
-        >
-          <View style={[styles.successIconWrapper, { backgroundColor: '#15fabd20' }]}>
-            <Ionicons name="checkmark-circle" size={100} color="#15fabd" />
-          </View>
-          <Text style={[styles.successTitle, { color: colors.text }]}>Transfer Successful!</Text>
-          
-          <View style={[styles.receiptCard, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }]}>
-            <View style={styles.receiptRow}>
-              <Text style={[styles.receiptLabel, { color: colors.secondary }]}>Amount</Text>
-              <Text style={[styles.receiptValue, { color: '#FBBF24' }]}>RM {parseFloat(amount).toFixed(2)}</Text>
-            </View>
-            <View style={styles.receiptRow}>
-              <Text style={[styles.receiptLabel, { color: colors.secondary }]}>To Account</Text>
-              <Text style={[styles.receiptValue, { color: colors.text }]}>{toAccount}</Text>
-            </View>
-            <View style={styles.receiptRow}>
-              <Text style={[styles.receiptLabel, { color: colors.secondary }]}>Bank</Text>
-              <Text style={[styles.receiptValue, { color: colors.text }]}>{toBank}</Text>
-            </View>
-            <View style={styles.receiptRow}>
-              <Text style={[styles.receiptLabel, { color: colors.secondary }]}>From</Text>
-              <Text style={[styles.receiptValue, { color: primaryBrand }]}>{selectedSource} Pocket</Text>
-            </View>
-          </View>
-          
-          <TouchableOpacity onPress={handleDone} style={styles.doneButtonWrapper}>
-            <LinearGradient
-              colors={['#771FFF', '#F8326D']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.gradientButton}
-            >
-              <Text style={styles.doneButtonText}>Done</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+      <TransactionSuccess 
+        amount={amount}
+        toAccount={toAccount}
+        toBank={toBank}
+        selectedSource={selectedSource}
+        onDone={handleDone}
+        colors={colors}
+        primaryBrand={primaryBrand}
+      />
     );
   }
 
@@ -202,7 +191,7 @@ export default function TransactionScreen() {
                 <TextInput
                   style={[styles.glassInput, { color: colors.text }]}
                   placeholder="Enter account number"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor="rgba(255,255,255,0.5)"
                   value={toAccount}
                   onChangeText={setToAccount}
                   keyboardType="number-pad"
@@ -254,7 +243,7 @@ export default function TransactionScreen() {
                 <TextInput
                   style={[styles.glassInput, { color: colors.text }]}
                   placeholder="What's this for?"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor="rgba(255,255,255,0.5)"
                   value={reference}
                   onChangeText={setReference}
                 />
@@ -444,7 +433,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     fontFamily: 'sans-serif-rounded',
-    height: 24,
+    paddingVertical: 8,
+    minHeight: 44,
   },
   pocketGrid: {
     flexDirection: 'row',
@@ -513,59 +503,6 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   confirmButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '900',
-    fontFamily: 'sans-serif-rounded',
-  },
-  successContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  successIconWrapper: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-  },
-  successTitle: {
-    fontSize: 32,
-    fontWeight: '900',
-    marginBottom: 32,
-    textAlign: 'center',
-    fontFamily: 'sans-serif-rounded',
-    letterSpacing: -1,
-  },
-  receiptCard: {
-    width: '100%',
-    padding: 24,
-    borderRadius: 28,
-    borderWidth: 1.5,
-    marginBottom: 40,
-  },
-  receiptRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  receiptLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: 'sans-serif-rounded',
-  },
-  receiptValue: {
-    fontSize: 16,
-    fontWeight: '900',
-    fontFamily: 'sans-serif-rounded',
-  },
-  doneButtonWrapper: {
-    width: '100%',
-  },
-  doneButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '900',
