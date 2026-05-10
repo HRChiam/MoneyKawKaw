@@ -191,7 +191,7 @@ export default function TransactionScreen() {
                   style={[styles.quickAmountBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
                   onPress={() => setAmount(val)}
                 >
-                  <Text style={[styles.quickAmountText, { color: labelColor }]}>+{val}</Text>
+                  <Text style={[styles.quickAmountText, { color: labelColor }]}>RM{val}</Text>
                 </TouchableOpacity>
               ))}
             </View>

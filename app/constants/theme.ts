@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 
 // MoneyKawKaw Color Scheme
 const tintColorLight = '#0a7ea4';
-const primaryGradientStart = '#771fff'; // Purple
+const primaryGradientStart = '#A78BFA'; // Light lavendar
 const primaryGradientEnd = '#f8326d'; // Pink
 const tintColorDark = primaryGradientStart;
 
