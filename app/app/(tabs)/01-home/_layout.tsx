@@ -64,21 +64,18 @@ export default function HomeScreen() {
       showsVerticalScrollIndicator={false}
       scrollEventThrottle={16}
     >
-      {/* Header */}
+      {/* Header - Clean GX Style */}
       <View style={styles.header}>
         <View>
-          <Text style={[styles.greetingSub, { color: colors.secondary }]}>{getGreeting()},</Text>
-          <Text style={[styles.greeting, { color: colors.text }]}>Xuan Wei</Text>
+          <Text style={[styles.greetingSub, { color: colors.secondary, fontFamily: 'sans-serif-rounded' }]}>{getGreeting()},</Text>
+          <Text style={[styles.greeting, { color: colors.text, fontFamily: 'sans-serif-rounded' }]}>Xuan Wei</Text>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity 
             onPress={() => setIsBalanceVisible(!isBalanceVisible)}
             style={styles.visibilityBtn}
           >
-            <Feather name={isBalanceVisible ? "eye" : "eye-off"} size={22} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Feather name="user" size={24} color={colors.primary} />
+            <Feather name={isBalanceVisible ? "eye" : "eye-off"} size={22} color={colors.secondary} />
           </TouchableOpacity>
         </View>
       </View>

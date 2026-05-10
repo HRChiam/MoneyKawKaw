@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   },
   progressBarRow: {
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: 12, // Reduced from 60/40 as SafeArea handles notch
     marginBottom: 20,
   },
   progressTrack: {
@@ -306,8 +306,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   scrollContent: {
+    flexGrow: 1, // Allow content to fill space dynamically
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 8,
   },
   header: {
     marginBottom: 40,
