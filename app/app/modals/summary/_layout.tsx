@@ -45,8 +45,19 @@ export default function SummaryScreen() {
   const colors = Colors[colorScheme ?? 'light'];
 
   const [activeTab, setActiveTab] = useState<'summary' | 'tax'>('summary');
-  const [timeframe, setTimeframe] = useState<'month' | 'year'>('month');
+  const [timeframe, setTimeframe] = useState<'month' | 'prev_month' | 'year' | 'prev_year'>('month');
+  const [activePicker, setActivePicker] = useState<'month' | 'year' | null>(null);
   
+  const monthLabels: Record<string, string> = {
+    month: "May 2026 (Current)",
+    prev_month: "April 2026 (Prev)"
+  };
+
+  const yearLabels: Record<string, string> = {
+    year: "2026 (Current)",
+    prev_year: "2025 (Prev)"
+  };
+
   const [activePoint, setActivePoint] = useState<number | null>(null); 
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
 
@@ -65,6 +76,20 @@ export default function SummaryScreen() {
         { name: 'Saving', amount: 800, color: '#A78BFA' },
         { name: 'F&B', amount: 600, color: '#FB7185' },
         { name: 'Entertainment', amount: 200, color: '#60A5FA' },
+      ]
+    },
+    prev_month: {
+      periodLabel: "April 2026",
+      trend: [ 
+        { label: 'W1', value: 400, budget: 500 }, 
+        { label: 'W2', value: 480, budget: 500 }, 
+        { label: 'W3', value: 600, budget: 500 }, 
+        { label: 'W4', value: 420, budget: 500 }  
+      ],
+      categories: [
+        { name: 'Saving', amount: 900, color: '#A78BFA' },
+        { name: 'F&B', amount: 750, color: '#FB7185' },
+        { name: 'Entertainment', amount: 250, color: '#60A5FA' },
       ]
     },
     year: {
@@ -88,6 +113,28 @@ export default function SummaryScreen() {
         { name: 'F&B', amount: 2400, color: '#FB7185' },
         { name: 'Entertainment', amount: 800, color: '#60A5FA' },
       ]
+    },
+    prev_year: {
+      periodLabel: "2025",
+      trend: [ 
+        { label: 'Jan', value: 3000, budget: 3200 }, 
+        { label: 'Feb', value: 2900, budget: 3200 }, 
+        { label: 'Mar', value: 3100, budget: 3200 }, 
+        { label: 'Apr', value: 3300, budget: 3200 }, 
+        { label: 'May', value: 3000, budget: 3200 }, 
+        { label: 'Jun', value: 3200, budget: 3200 }, 
+        { label: 'Jul', value: 3400, budget: 3200 }, 
+        { label: 'Aug', value: 3100, budget: 3200 }, 
+        { label: 'Sep', value: 2900, budget: 3200 }, 
+        { label: 'Oct', value: 3000, budget: 3200 }, 
+        { label: 'Nov', value: 3500, budget: 3200 }, 
+        { label: 'Dec', value: 3800, budget: 3200 } 
+      ],
+      categories: [
+        { name: 'Saving', amount: 35000, color: '#A78BFA' },
+        { name: 'F&B', amount: 28000, color: '#FB7185' },
+        { name: 'Entertainment', amount: 10000, color: '#60A5FA' },
+      ]
     }
   };
 
@@ -99,7 +146,7 @@ export default function SummaryScreen() {
   
   const CHART_HEIGHT = 140;
   const VIEWPORT_WIDTH = width - 64; 
-  const CHART_WIDTH = timeframe === 'year' ? VIEWPORT_WIDTH * 2 : VIEWPORT_WIDTH; 
+  const CHART_WIDTH = (timeframe === 'year' || timeframe === 'prev_year') ? VIEWPORT_WIDTH * 2 : VIEWPORT_WIDTH; 
 
   const generateSpendLine = () => {
     const points = currentData.trend
@@ -162,7 +209,7 @@ export default function SummaryScreen() {
   useEffect(() => { 
     setActivePoint(null); 
     setActiveCategoryIndex(null);
-    if (timeframe === 'year' && scrollRef.current) {
+    if ((timeframe === 'year' || timeframe === 'prev_year') && scrollRef.current) {
       const itemWidth = CHART_WIDTH / 11;
       const currentMonthX = (4 * itemWidth) - (VIEWPORT_WIDTH / 2);
       setTimeout(() => {
@@ -226,18 +273,62 @@ export default function SummaryScreen() {
   const renderSummaryTab = () => (
     <View>
       <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[styles.filterButton, { backgroundColor: timeframe === 'month' ? colors.primary : colors.card, borderColor: colors.border }]}
-          onPress={() => setTimeframe('month')}
-        >
-          <Text style={[styles.filterButtonText, { color: timeframe === 'month' ? '#fff' : colors.text }]}>Month</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, { backgroundColor: timeframe === 'year' ? colors.primary : colors.card, borderColor: colors.border }]}
-          onPress={() => setTimeframe('year')}
-        >
-          <Text style={[styles.filterButtonText, { color: timeframe === 'year' ? '#fff' : colors.text }]}>Year</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          {/* Month Selector */}
+          <TouchableOpacity 
+            style={[
+              styles.splitDropdown, 
+              { backgroundColor: colors.card, borderColor: timeframe.includes('month') ? colors.primary : colors.border }
+            ]}
+            onPress={() => setActivePicker(activePicker === 'month' ? null : 'month')}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.dropdownLabel, { color: timeframe.includes('month') ? colors.primary : colors.secondary }]}>MONTH VIEW</Text>
+              <Text style={[styles.dropdownValue, { color: colors.text }]} numberOfLines={1}>
+                {timeframe.includes('month') ? monthLabels[timeframe] : "Select Month..."}
+              </Text>
+            </View>
+            <Feather name={activePicker === 'month' ? "chevron-up" : "chevron-down"} size={18} color={colors.secondary} />
+          </TouchableOpacity>
+
+          {/* Year Selector */}
+          <TouchableOpacity 
+            style={[
+              styles.splitDropdown, 
+              { backgroundColor: colors.card, borderColor: timeframe.includes('year') ? colors.primary : colors.border }
+            ]}
+            onPress={() => setActivePicker(activePicker === 'year' ? null : 'year')}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.dropdownLabel, { color: timeframe.includes('year') ? colors.primary : colors.secondary }]}>YEAR VIEW</Text>
+              <Text style={[styles.dropdownValue, { color: colors.text }]} numberOfLines={1}>
+                {timeframe.includes('year') ? yearLabels[timeframe] : "Select Year..."}
+              </Text>
+            </View>
+            <Feather name={activePicker === 'year' ? "chevron-up" : "chevron-down"} size={18} color={colors.secondary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Dropdown Lists */}
+        {activePicker && (
+          <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {Object.entries(activePicker === 'month' ? monthLabels : yearLabels).map(([key, label]) => (
+              <TouchableOpacity 
+                key={key} 
+                style={[styles.pickerItem, timeframe === key && { backgroundColor: colors.primary + '10' }]}
+                onPress={() => {
+                  setTimeframe(key as any);
+                  setActivePicker(null);
+                }}
+              >
+                <Text style={[styles.pickerItemText, { color: timeframe === key ? colors.primary : colors.text }]}>
+                  {label}
+                </Text>
+                {timeframe === key && <Feather name="check" size={16} color={colors.primary} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={styles.chartsContainer}>
@@ -385,9 +476,54 @@ const styles = StyleSheet.create({
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
   tabText: { fontSize: 14, fontWeight: '600' },
   tabContent: { paddingHorizontal: 16, paddingTop: 16 },
-  filterContainer: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  filterButton: { flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 1 },
-  filterButtonText: { fontSize: 13, fontWeight: '700' },
+  filterContainer: { position: 'relative', marginBottom: 24, zIndex: 1000 },
+  splitDropdown: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  dropdownLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  dropdownValue: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  pickerDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  pickerItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   chartsContainer: { gap: 16, marginBottom: 24 },
   chartCard: { borderRadius: 16, padding: 16, borderWidth: 1 },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
