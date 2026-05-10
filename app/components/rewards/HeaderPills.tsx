@@ -1,23 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const colors = {
-  primaryEnd: '#C084FC',
-  card: '#130822',
-  border: '#3B1A60',
-  text: '#FFFFFF',
-};
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function HeaderPills({ points, freezeCount }: { points: number; freezeCount: number }) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+
   return (
     <View style={styles.header}>
       <View style={[styles.currencyPill, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Ionicons size={16} name="star" color={colors.primaryEnd} />
+        <Ionicons size={16} name="star" color="#FBBF24" />
         <Text style={[styles.currencyText, { color: colors.text }]}>{points.toLocaleString()}</Text>
       </View>
       <View style={[styles.currencyPill, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Ionicons size={16} name="snow" color={colors.primaryEnd} />
+        <Ionicons size={16} name="snow" color="#38BDF8" />
         <Text style={[styles.currencyText, { color: colors.text }]}>{freezeCount}</Text>
       </View>
     </View>
@@ -27,9 +25,8 @@ export default function HeaderPills({ points, freezeCount }: { points: number; f
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     gap: 8,
-    marginBottom: 24,
     zIndex: 10,
   },
   currencyPill: {
