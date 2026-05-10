@@ -38,7 +38,7 @@ export default function RootLayout() {
           name="onboarding" 
           options={{ 
             headerShown: false,
-            presentation: 'fullScreenModal',
+            animation: 'fade',
           }} 
         />
         

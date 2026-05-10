@@ -1,9 +1,12 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import Animated, { useSharedValue, withTiming, Easing, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useSharedValue, withTiming, Easing, useAnimatedStyle, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { GradientText } from '@/components/gradient-text';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 type OnboardingStep = 'logo' | 'income-expenses' | 'persona' | 'loading';
 
@@ -16,47 +19,50 @@ export default function OnboardingScreen() {
   const [income, setIncome] = useState('');
   const [selectedExpenses, setSelectedExpenses] = useState<string[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
-  // New state to hold the monetary value for each selected expense
   const [expenseAmounts, setExpenseAmounts] = useState<Record<string, string>>({});
   
   const logoOpacity = useSharedValue(0);
 
   const expenses = ['Room Rental', 'PTPTN', 'Car Loan', 'Insurance', 'Groceries', 'Utilities', 'Other'];
-  const personas = ['Conservative', 'Balanced', 'Aggressive'];
+  const personas = [
+    { name: 'Conservative', desc: 'Prioritize safety and steady growth', icon: 'shield-check' },
+    { name: 'Balanced', desc: 'Mix of growth and capital protection', icon: 'scale-balance' },
+    { name: 'Aggressive', desc: 'Focus on high returns and fast growth', icon: 'rocket-launch' }
+  ];
 
   const logoAnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: logoOpacity.value,
+      transform: [{ scale: 0.8 + (logoOpacity.value * 0.2) }]
     };
   });
 
   useEffect(() => {
     if (currentStep === 'logo') {
       logoOpacity.value = withTiming(1, {
-        duration: 3000,
-        easing: Easing.inOut(Easing.ease),
+        duration: 2000,
+        easing: Easing.out(Easing.exp),
       });
       
       const timer = setTimeout(() => {
         setCurrentStep('income-expenses');
-      }, 4000); // slightly faster transition
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [currentStep, logoOpacity]);
+  }, [currentStep]);
 
   useEffect(() => {
     if (currentStep === 'loading') {
       const timer = setTimeout(() => {
         router.replace('../(tabs)/01-home');
-      }, 3000);
+      }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [currentStep, router]);
+  }, [currentStep]);
 
   const toggleExpense = (expense: string) => {
     setSelectedExpenses(prev => {
       if (prev.includes(expense)) {
-        // Clean up the amount if the user deselects the expense
         const newAmounts = { ...expenseAmounts };
         delete newAmounts[expense];
         setExpenseAmounts(newAmounts);
@@ -75,17 +81,11 @@ export default function OnboardingScreen() {
       alert('Please fill in your income and select at least one expense.');
       return;
     }
-
-    // Validate that all selected expenses have an entered amount
-    const hasEmptyAmounts = selectedExpenses.some(
-      expense => !expenseAmounts[expense] || expenseAmounts[expense].trim() === ''
-    );
-
+    const hasEmptyAmounts = selectedExpenses.some(expense => !expenseAmounts[expense]);
     if (hasEmptyAmounts) {
       alert('Please enter an amount for all your selected expenses.');
       return;
     }
-
     setCurrentStep('persona');
   };
 
@@ -97,164 +97,172 @@ export default function OnboardingScreen() {
     setCurrentStep('loading');
   };
 
+  if (currentStep === 'logo') {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
+          <GradientText style={styles.logoTitle}>MoneyKawKaw</GradientText>
+          <Text style={[styles.logoTagline, { color: colors.secondary }]}>Your Wealth, Your Rules.</Text>
+        </Animated.View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {currentStep === 'logo' && (
-        <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-          <Text style={[styles.logoTitle, { color: colors.primary }]}>MoneyKawKaw</Text>
-        </Animated.View>
-      )}
+      {/* Progress Indicator */}
+      <View style={styles.progressBarRow}>
+        <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+          <View style={[styles.progressFill, { 
+            backgroundColor: '#771FFF', 
+            width: currentStep === 'income-expenses' ? '50%' : '100%' 
+          }]} />
+        </View>
+      </View>
 
       {currentStep === 'income-expenses' && (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.primary }]}>MoneyKawKaw</Text>
-            <Text style={[styles.subtitle, { color: colors.secondary }]}>Let&apos;s set up your financial baseline</Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.text }]}>Monthly Income</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.currencyPrefix, { color: colors.text }]}>RM</Text>
-              <TextInput
-                style={[styles.input, { color: colors.text }]}
-                placeholder="0.00"
-                placeholderTextColor={colors.secondary}
-                value={income}
-                onChangeText={setIncome}
-                keyboardType="decimal-pad"
-              />
+          <Animated.View entering={FadeInUp.duration(600)}>
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: colors.text }]}>Financial Profile</Text>
+              <Text style={[styles.subtitle, { color: colors.secondary }]}>Let&apos;s set up your monthly baseline</Text>
             </View>
-          </View>
 
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.text }]}>What are your fixed expenses?</Text>
-            <View style={styles.chipContainer}>
-              {expenses.map(expense => (
-                <TouchableOpacity
-                  key={expense}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: selectedExpenses.includes(expense) ? colors.primary : colors.card,
-                      borderColor: selectedExpenses.includes(expense) ? colors.primaryEnd : colors.border,
-                    },
-                  ]}
-                  onPress={() => toggleExpense(expense)}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      { color: selectedExpenses.includes(expense) ? '#fff' : colors.text },
-                    ]}
-                  >
-                    {expense}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.glassSection}>
+              <Text style={[styles.inputLabel, { color: colors.secondary }]}>MONTHLY INCOME</Text>
+              <View style={styles.mainInputRow}>
+                <Text style={[styles.currencyPrefix, { color: colors.text }]}>RM</Text>
+                <TextInput
+                  style={[styles.mainInput, { color: colors.text }]}
+                  placeholder="0.00"
+                  placeholderTextColor="rgba(255,255,255,0.15)"
+                  value={income}
+                  onChangeText={setIncome}
+                  keyboardType="decimal-pad"
+                  autoFocus
+                />
+              </View>
             </View>
-          </View>
 
-          {/* Dynamic Amount Inputs */}
-          {selectedExpenses.length > 0 && (
-            <Animated.View style={styles.dynamicInputsContainer}>
-              <Text style={[styles.label, { color: colors.text }]}>Enter Amounts</Text>
-              {selectedExpenses.map(expense => (
-                <View key={`input-${expense}`} style={styles.expenseAmountRow}>
-                  <Text style={[styles.expenseAmountLabel, { color: colors.text }]}>{expense}</Text>
-                  <View style={[styles.expenseInputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Text style={[styles.currencyPrefixSmall, { color: colors.secondary }]}>RM</Text>
-                    <TextInput
-                      style={[styles.expenseInput, { color: colors.text }]}
-                      placeholder="0.00"
-                      placeholderTextColor={colors.secondary}
-                      value={expenseAmounts[expense] || ''}
-                      onChangeText={(text) => updateExpenseAmount(expense, text)}
-                      keyboardType="decimal-pad"
-                    />
+            <View style={styles.section}>
+              <Text style={[styles.inputLabel, { color: colors.secondary }]}>FIXED EXPENSES</Text>
+              <View style={styles.chipContainer}>
+                {expenses.map(expense => {
+                  const isSelected = selectedExpenses.includes(expense);
+                  return (
+                    <TouchableOpacity
+                      key={expense}
+                      style={[
+                        styles.chip,
+                        { backgroundColor: isSelected ? '#771FFF' : 'rgba(255,255,255,0.05)' }
+                      ]}
+                      onPress={() => toggleExpense(expense)}
+                    >
+                      <Text style={[styles.chipText, { color: isSelected ? '#fff' : colors.secondary }]}>
+                        {expense}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {selectedExpenses.length > 0 && (
+              <Animated.View entering={FadeInDown} style={styles.dynamicSection}>
+                <Text style={[styles.inputLabel, { color: colors.secondary }]}>ENTER AMOUNTS</Text>
+                {selectedExpenses.map(expense => (
+                  <View key={`input-${expense}`} style={styles.expenseRow}>
+                    <Text style={[styles.expenseName, { color: colors.text }]}>{expense}</Text>
+                    <View style={styles.smallInputWrapper}>
+                      <Text style={[styles.currencyPrefixSmall, { color: colors.secondary }]}>RM</Text>
+                      <TextInput
+                        style={[styles.smallInput, { color: colors.text }]}
+                        placeholder="0"
+                        placeholderTextColor="rgba(255,255,255,0.2)"
+                        value={expenseAmounts[expense] || ''}
+                        onChangeText={(text) => updateExpenseAmount(expense, text)}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
                   </View>
-                </View>
-              ))}
-            </Animated.View>
-          )}
-
-          <View style={{ height: 40 }} />
-          
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.nextButton, { backgroundColor: colors.primary }]}
-              onPress={handleIncomeExpensesNext}
-            >
-              <Text style={styles.nextButtonText}>Continue</Text>
-            </TouchableOpacity>
-          </View>
+                ))}
+              </Animated.View>
+            )}
+          </Animated.View>
+          <View style={{ height: 120 }} />
         </ScrollView>
       )}
 
       {currentStep === 'persona' && (
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          scrollEventThrottle={16}
-        >
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.primary }]}>MoneyKawKaw</Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: colors.text }]}>Investment Persona</Text>
-            <Text style={[styles.description, { color: colors.secondary }]}>
-              Choose your approach to growing your wealth
-            </Text>
-            <View style={styles.personaContainer}>
-              {personas.map(persona => (
-                <TouchableOpacity
-                  key={persona}
-                  style={[
-                    styles.personaButton,
-                    {
-                      backgroundColor: selectedPersona === persona ? colors.primary : colors.card,
-                      borderColor: selectedPersona === persona ? colors.primaryEnd : colors.border,
-                    },
-                  ]}
-                  onPress={() => setSelectedPersona(persona)}
-                >
-                  <Text
-                    style={[
-                      styles.personaText,
-                      { color: selectedPersona === persona ? '#fff' : colors.text },
-                    ]}
-                  >
-                    {persona}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Animated.View entering={FadeInUp.duration(600)}>
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: colors.text }]}>Investment Style</Text>
+              <Text style={[styles.subtitle, { color: colors.secondary }]}>Choose how you want to grow</Text>
             </View>
-          </View>
 
-          <View style={{ height: 40 }} />
+            <View style={styles.personaList}>
+              {personas.map(p => {
+                const isSelected = selectedPersona === p.name;
+                return (
+                  <TouchableOpacity
+                    key={p.name}
+                    activeOpacity={0.8}
+                    style={[
+                      styles.personaCard,
+                      { 
+                        backgroundColor: isSelected ? 'rgba(119, 31, 255, 0.15)' : 'rgba(255,255,255,0.03)',
+                        borderColor: isSelected ? '#771FFF' : 'transparent',
+                        borderWidth: isSelected ? 2 : 0
+                      }
+                    ]}
+                    onPress={() => setSelectedPersona(p.name)}
+                  >
+                    <View style={[styles.personaIconBg, { backgroundColor: isSelected ? '#771FFF' : 'rgba(255,255,255,0.05)' }]}>
+                      <MaterialCommunityIcons name={p.icon as any} size={24} color={isSelected ? '#fff' : colors.secondary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.personaName, { color: isSelected ? '#fff' : colors.text }]}>{p.name}</Text>
+                      <Text style={[styles.personaDesc, { color: colors.secondary }]}>{p.desc}</Text>
+                    </View>
+                    {isSelected && <Feather name="check-circle" size={20} color="#771FFF" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </Animated.View>
+          <View style={{ height: 120 }} />
         </ScrollView>
       )}
 
-      {currentStep === 'persona' && (
-        <View style={styles.footer}>
+      {currentStep !== 'loading' && (
+        <View style={[styles.fixedFooter, { backgroundColor: colors.background }]}>
           <TouchableOpacity
-            style={[styles.nextButton, { backgroundColor: colors.primary }]}
-            onPress={handlePersonaNext}
+            onPress={currentStep === 'income-expenses' ? handleIncomeExpensesNext : handlePersonaNext}
+            style={styles.primaryBtnWrapper}
           >
-            <Text style={styles.nextButtonText}>Finish Setup</Text>
+            <LinearGradient
+              colors={['#771FFF', '#F8326D']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.primaryBtn}
+            >
+              <Text style={styles.primaryBtnText}>
+                {currentStep === 'income-expenses' ? 'Continue' : 'Finish Setup'}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       )}
 
       {currentStep === 'loading' && (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text, marginTop: 24 }]}>
-            Crunching the numbers...{"\n"}Setting up your custom plan.
+          <ActivityIndicator size="large" color="#771FFF" />
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            Generating your wealth plan...
           </Text>
         </View>
       )}
@@ -273,161 +281,204 @@ const styles = StyleSheet.create({
   },
   logoTitle: {
     fontSize: 48,
-    fontWeight: '800',
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
     letterSpacing: -1,
   },
+  logoTagline: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+    fontFamily: 'sans-serif-rounded',
+  },
+  progressBarRow: {
+    paddingHorizontal: 24,
+    paddingTop: 12, // Reduced from 60/40 as SafeArea handles notch
+    marginBottom: 20,
+  },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 120,
+    flexGrow: 1, // Allow content to fill space dynamically
+    paddingHorizontal: 24,
+    paddingTop: 8,
   },
   header: {
     marginBottom: 40,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 34,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'sans-serif-rounded',
     marginTop: 8,
-    fontWeight: '500',
   },
-  description: {
-    fontSize: 15,
-    marginTop: 4,
+  glassSection: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 32,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    marginBottom: 16,
+    fontFamily: 'sans-serif-rounded',
+  },
+  mainInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  currencyPrefix: {
+    fontSize: 32,
+    fontWeight: '700',
+    fontFamily: 'sans-serif-rounded',
+    marginRight: 12,
+  },
+  mainInput: {
+    fontSize: 48,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
+    flex: 1,
   },
   section: {
     marginBottom: 32,
   },
-  label: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 16,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 60,
-  },
-  currencyPrefix: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: '600',
-    height: '100%',
-    textAlign: 'right',
-  },
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
   chip: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 24,
-    borderWidth: 1,
+    borderRadius: 100,
   },
   chipText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'sans-serif-rounded',
   },
-  dynamicInputsContainer: {
+  dynamicSection: {
     marginTop: 8,
-    backgroundColor: 'rgba(0,0,0,0.02)', // Subtle background to separate it
-    padding: 16,
-    borderRadius: 16,
   },
-  expenseAmountRow: {
+  expenseRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    padding: 16,
+    borderRadius: 16,
     marginBottom: 12,
   },
-  expenseAmountLabel: {
+  expenseName: {
     fontSize: 16,
-    fontWeight: '500',
-    flex: 1,
+    fontWeight: '700',
+    fontFamily: 'sans-serif-rounded',
   },
-  expenseInputWrapper: {
+  smallInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.2)',
     paddingHorizontal: 12,
-    height: 48,
-    width: 140, // Fixed width for clean alignment
+    paddingVertical: 8,
+    borderRadius: 10,
   },
   currencyPrefixSmall: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
+    fontSize: 14,
+    fontWeight: '700',
+    marginRight: 4,
   },
-  expenseInput: {
-    flex: 1,
+  smallInput: {
     fontSize: 16,
-    fontWeight: '600',
-    height: '100%',
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
+    width: 80,
     textAlign: 'right',
   },
-  personaContainer: {
-    gap: 12,
-    marginTop: 16,
+  personaList: {
+    gap: 16,
   },
-  personaButton: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    alignItems: 'flex-start',
-    borderWidth: 1,
+  personaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 24,
+    gap: 16,
   },
-  personaText: {
+  personaIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  personaName: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
+    marginBottom: 4,
   },
-  footer: {
-    paddingHorizontal: 20,
-    paddingBottom: 32,
+  personaDesc: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'sans-serif-rounded',
+    lineHeight: 20,
+  },
+  fixedFooter: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'transparent',
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 16,
+    backgroundColor: '#0C0121', // Solid background matching theme
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
-  nextButton: {
-    paddingVertical: 18,
-    borderRadius: 16,
+  primaryBtnWrapper: {
+    width: '100%',
+  },
+  primaryBtn: {
+    height: 64,
+    borderRadius: 20,
     alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    justifyContent: 'center',
   },
-  nextButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
+  primaryBtnText: {
     color: '#fff',
+    fontSize: 18,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 40,
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
     textAlign: 'center',
-    fontWeight: '600',
+    marginTop: 32,
     lineHeight: 28,
   },
 });

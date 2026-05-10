@@ -1,6 +1,7 @@
 # 说人话
 - remember to cd to app directory orhhh
 - npm install
+- npx expo install
 - npx expo start
 - then you can either open the app with **Android Studio emulator** or **phone**
    - Android Studio emulator: press "a" in the terminal

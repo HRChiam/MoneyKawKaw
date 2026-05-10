@@ -11,10 +11,10 @@ export default function AnalysisScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const labelColor = '#A78BFA'; // Signature Lavender
+  const labelColor = '#771FFF'; // GX Violet
 
   const pocketThemes: { [key: string]: { color: string; icon: string } } = {
-    Saving: { color: '#A78BFA', icon: 'safe' },
+    Saving: { color: '#771FFF', icon: 'safe' },
     Food: { color: '#FB7185', icon: 'food-fork-drink' },
     Transport: { color: '#60A5FA', icon: 'car-side' },
     Utilities: { color: '#FBBF24', icon: 'lightning-bolt' },

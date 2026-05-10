@@ -1,9 +1,10 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, AntDesign, MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -21,25 +22,18 @@ export default function HomeScreen() {
   const mainAccountBalance = 0.00; // Hardcoded to 0 per instructions
   const pocketsTotal = pockets.reduce((s, p) => s + p.balance, 0);
   
-  const spent = 194; // Current mock spent
+  const spent = 180; // Current mock spent
   const limit = 200;
   const spendingProgress = spent / limit;
 
-  // Traffic light logic with soft, mature colors
+  // Traffic light logic with GX-inspired sophisticated shades
   const getTrafficColor = () => {
-    if (spendingProgress < 0.5) return '#169e51'; // Soft Emerald
-    if (spendingProgress < 0.8) return '#e96e1df0'; // Soft Amber
-    return '#be3434'; // Soft Crimson
-  };
-
-  const getTrafficImage = () => {
-    if (spendingProgress < 0.5) return require('../../../assets/images/green.png');
-    if (spendingProgress < 0.8) return require('../../../assets/images/orange.png');
-    return require('../../../assets/images/red2.png');
+    if (spendingProgress < 0.5) return '#15fabd'; // GX Neon Turquoise (Safe)
+    if (spendingProgress < 0.8) return '#FBBF24'; // Vibrant Amber (Warning)
+    return '#F8326D'; // GX Radical Red (Danger)
   };
 
   const trafficColor = getTrafficColor();
-  const trafficImage = getTrafficImage();
 
   // Helper to mask all numbers including dots
   const formatBalance = (amount: string | number) => {
@@ -70,49 +64,65 @@ export default function HomeScreen() {
       showsVerticalScrollIndicator={false}
       scrollEventThrottle={16}
     >
-      {/* Header */}
+      {/* Header - Clean GX Style */}
       <View style={styles.header}>
         <View>
-          <Text style={[styles.greetingSub, { color: colors.secondary }]}>{getGreeting()},</Text>
-          <Text style={[styles.greeting, { color: colors.text }]}>Xuan Wei</Text>
+          <Text style={[styles.greetingSub, { color: colors.secondary, fontFamily: 'sans-serif-rounded' }]}>{getGreeting()},</Text>
+          <Text style={[styles.greeting, { color: colors.text, fontFamily: 'sans-serif-rounded' }]}>Xuan Wei</Text>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity 
             onPress={() => setIsBalanceVisible(!isBalanceVisible)}
             style={styles.visibilityBtn}
           >
-            <Feather name={isBalanceVisible ? "eye" : "eye-off"} size={22} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.profileBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Feather name="user" size={24} color={colors.primary} />
+            <Feather name={isBalanceVisible ? "eye" : "eye-off"} size={22} color={colors.secondary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Daily Spending Widget */}
-      <ImageBackground 
-        source={trafficImage}
-        style={[styles.spendingWidget, { borderColor: colors.border }]}
-        imageStyle={{ opacity: 0.8, borderRadius: 20 }}
-      >
-        <View style={styles.spendingHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={[styles.trafficLight, { backgroundColor: trafficColor }]} />
-            <Text style={[styles.spendingLabel, { color: colors.text }]}>Daily Limit</Text>
+      {/* Daily Spending Widget - High Impact Dark Redesign */}
+      <View style={[styles.spendingWidgetContainer, { shadowColor: trafficColor }]}>
+        <LinearGradient
+          colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.5)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.spendingWidget, { borderColor: trafficColor + '60' }]}
+        >
+          <View style={styles.spendingHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={[styles.statusPulse, { backgroundColor: trafficColor }]} />
+              <Text style={[styles.spendingLabel, { color: trafficColor, fontWeight: '800' }]}>DAILY LIMIT</Text>
+            </View>
+            <View style={[styles.percentageBadge, { backgroundColor: trafficColor + '20' }]}>
+              <Text style={[styles.percentageText, { color: trafficColor }]}>{Math.round(spendingProgress * 100)}%</Text>
+            </View>
           </View>
-          <Text 
-            style={[styles.spendingAmount, { color: colors.primary }]}
-            numberOfLines={1} 
-            adjustsFontSizeToFit
-          >
-            <Text style={{ fontSize: 16, fontWeight: '600' }}>RM </Text>
-            {formatBalance(spent)} <Text style={{ fontSize: 16, color: colors.text, fontWeight: '500'}}>/ RM {formatBalance(limit)}</Text>
+
+          <View style={styles.amountDisplay}>
+            <Text style={[styles.mainSpentAmount, { color: colors.text }]}>
+              <Text style={styles.currencySymbol}>RM</Text> {formatBalance(spent)}
+            </Text>
+            <Text style={[styles.limitTotal, { color: colors.secondary }]}>
+              of RM {formatBalance(limit)}
+            </Text>
+          </View>
+
+          <View style={[styles.spendingBarContainer, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+            <LinearGradient
+              colors={[trafficColor + '80', trafficColor]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.spendingProgress, { width: `${Math.min(spendingProgress * 100, 100)}%` }]}
+            />
+          </View>
+          
+          <Text style={[styles.statusMessage, { color: trafficColor }]}>
+            {spendingProgress < 0.5 ? 'Looking good! You\'re well within your limit.' : 
+             spendingProgress < 0.8 ? 'Careful! You\'re approaching your limit.' : 
+             'Attention! You\'ve nearly exhausted your limit.'}
           </Text>
-        </View>
-        <View style={[styles.spendingBar, { backgroundColor: colors.border }]}>
-          <View style={[styles.spendingProgress, { width: `${Math.min(spendingProgress * 100, 100)}%`, backgroundColor: trafficColor }]} />
-        </View>
-      </ImageBackground>
+        </LinearGradient>
+      </View>
 
       {/* Quick Action Icons */}
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
@@ -235,40 +245,75 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  spendingWidget: {
-    borderRadius: 20,
-    padding: 20,
+  spendingWidgetContainer: {
     marginBottom: 24,
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  spendingWidget: {
+    borderRadius: 28,
+    padding: 24,
+    borderWidth: 1.5,
+    overflow: 'hidden',
   },
   spendingHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  spendingLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  trafficLight: {
+  statusPulse: {
     width: 10,
     height: 10,
     borderRadius: 5,
   },
-  spendingAmount: {
-    fontSize: 22,
-    fontWeight: '800',
-    flexShrink: 1, // Ensures text can shrink within bounds
+  spendingLabel: {
+    fontSize: 14,
+    letterSpacing: 1.2,
   },
-  spendingBar: {
-    height: 10,
-    borderRadius: 5,
+  percentageBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  percentageText: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  amountDisplay: {
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  mainSpentAmount: {
+    fontSize: 42,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  currencySymbol: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  limitTotal: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: -4,
+  },
+  spendingBarContainer: {
+    height: 12,
+    borderRadius: 6,
     overflow: 'hidden',
+    marginBottom: 16,
   },
   spendingProgress: {
     height: '100%',
-    borderRadius: 5,
+    borderRadius: 6,
+  },
+  statusMessage: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   sectionTitle: {
     fontSize: 18,

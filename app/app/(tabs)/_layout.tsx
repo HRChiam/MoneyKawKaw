@@ -8,6 +8,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -53,7 +54,7 @@ export default function TabLayout() {
         name="04-profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <AntDesign name="profile" size={28} color={color}/>,
+          tabBarIcon: ({ color }) => <MaterialIcons name="person" size={28} color={color}/>,
         }}
       />
     </Tabs>

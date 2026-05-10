@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function NotificationsScreen() {
 
   const [aiActionState, setAiActionState] = useState<'pending' | 'confirmed'>('pending');
 
-  const labelColor = '#A78BFA'; // Signature Lavender
+  const primaryBrand = '#771FFF'; // GX Violet
 
   const notifications = [
     {
@@ -23,7 +24,7 @@ export default function NotificationsScreen() {
       message: "Last month you spent more on food and less on entertainment. I've auto-adjusted your new Monthly Limits to match your actual lifestyle. Look good?",
       timestamp: 'Just now',
       icon: 'brain',
-      color: '#A78BFA',
+      color: '#771FFF',
       isAI: true
     },
     {
@@ -59,7 +60,6 @@ export default function NotificationsScreen() {
 
   const handleAiConfirm = () => {
     setAiActionState('confirmed');
-    // In a real app, this would trigger a backend update
   };
 
   const handleManualAdjust = () => {
@@ -74,11 +74,11 @@ export default function NotificationsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
-        <TouchableOpacity>
-          <Text style={[styles.clearText, { color: labelColor }]}>Mark all as read</Text>
+      {/* Header - Fixed */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>Inbox</Text>
+        <TouchableOpacity style={styles.markReadBtn}>
+          <Text style={[styles.markReadText, { color: primaryBrand }]}>Clear All</Text>
         </TouchableOpacity>
       </View>
 
@@ -86,80 +86,94 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {notifications.map((n, index) => (
-          <Animated.View 
-            key={n.id} 
-            entering={FadeInDown.delay(index * 100).duration(500)}
-            style={[
-              styles.notificationCard, 
-              { backgroundColor: colors.card, borderColor: colors.border },
-              n.isAI && { borderColor: labelColor + '50', borderWidth: 1.5 }
-            ]}
-          >
-            <View style={styles.cardHeader}>
-              <View style={[styles.iconBox, { backgroundColor: n.color + '15' }]}>
-                {n.isAI ? (
-                  <MaterialCommunityIcons name="robot" size={22} color={n.color} />
-                ) : (
-                  <MaterialCommunityIcons name={n.icon as any} size={22} color={n.color} />
-                )}
-              </View>
-              <View style={styles.headerText}>
-                <View style={styles.titleRow}>
-                  <Text style={[styles.notifTitle, { color: colors.text }]}>{n.title}</Text>
-                  {n.isAI && (
-                    <View style={[styles.aiBadge, { backgroundColor: labelColor }]}>
-                      <Text style={styles.aiBadgeText}>AI INSIGHT</Text>
-                    </View>
+        <Animated.View entering={FadeInUp.duration(600)}>
+          {notifications.map((n, index) => (
+            <Animated.View 
+              key={n.id} 
+              entering={FadeInDown.delay(index * 100).duration(600)}
+              style={[
+                styles.notifCard, 
+                { 
+                  backgroundColor: 'rgba(255,255,255,0.03)',
+                  borderColor: n.isAI ? primaryBrand + '40' : 'rgba(255,255,255,0.08)' 
+                }
+              ]}
+            >
+              <View style={styles.cardHeader}>
+                <View style={[styles.iconWrapper, { backgroundColor: n.color + '20' }]}>
+                  {n.isAI ? (
+                    <MaterialCommunityIcons name="robot-outline" size={24} color={n.color} />
+                  ) : (
+                    <MaterialCommunityIcons name={n.icon as any} size={24} color={n.color} />
                   )}
                 </View>
-                <Text style={[styles.timeText, { color: colors.secondary }]}>{n.timestamp}</Text>
-              </View>
-            </View>
-
-            <View style={styles.messageContent}>
-              {n.isAI && aiActionState === 'confirmed' ? (
-                <Animated.View entering={FadeInDown} style={[styles.confirmedBox, { backgroundColor: colors.success + '10', borderColor: colors.success }]}>
-                  <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-                  <Text style={[styles.message, { color: colors.success, marginLeft: 8, fontWeight: '700' }]}>
-                    Perfect! I've updated your limits to match your lifestyle.
-                  </Text>
-                </Animated.View>
-              ) : (
-                <Text style={[styles.message, { color: colors.text }]}>{n.message}</Text>
-              )}
-            </View>
-
-            {n.isAI ? (
-              aiActionState === 'pending' && (
-                <View style={styles.aiActions}>
-                  <TouchableOpacity 
-                    style={[styles.aiBtn, { backgroundColor: labelColor }]}
-                    onPress={handleAiConfirm}
-                  >
-                    <Text style={styles.aiBtnText}>Look good!</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.aiBtnSecondary, { borderColor: colors.border }]}
-                    onPress={handleManualAdjust}
-                  >
-                    <Text style={[styles.aiBtnSecondaryText, { color: colors.text }]}>Adjust manually</Text>
-                  </TouchableOpacity>
+                <View style={styles.headerMain}>
+                  <View style={styles.titleRow}>
+                    <Text style={[styles.notifTitle, { color: colors.text }]}>{n.title}</Text>
+                    {n.isAI && (
+                      <LinearGradient
+                        colors={[primaryBrand, '#F8326D']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.aiBadge}
+                      >
+                        <Text style={styles.aiBadgeText}>AI INSIGHT</Text>
+                      </LinearGradient>
+                    )}
+                  </View>
+                  <Text style={[styles.timeText, { color: colors.secondary }]}>{n.timestamp}</Text>
                 </View>
-              )
-            ) : (
-              <TouchableOpacity 
-                style={styles.viewMore}
-                onPress={() => handleViewDetails(n.route)}
-              >
-                <Text style={[styles.viewMoreText, { color: n.color }]}>View details</Text>
-                <Feather name="chevron-right" size={14} color={n.color} />
-              </TouchableOpacity>
-            )}
-          </Animated.View>
-        ))}
-        
-        <View style={{ height: 40 }} />
+              </View>
+
+              <View style={styles.messageWrapper}>
+                {n.isAI && aiActionState === 'confirmed' ? (
+                  <Animated.View entering={FadeInUp} style={[styles.successState, { backgroundColor: '#15fabd20', borderColor: '#15fabd' }]}>
+                    <Ionicons name="checkmark-circle" size={18} color="#15fabd" />
+                    <Text style={[styles.message, { color: '#15fabd', marginLeft: 8, fontWeight: '700' }]}>
+                      Updated! Your limits are now optimized.
+                    </Text>
+                  </Animated.View>
+                ) : (
+                  <Text style={[styles.message, { color: colors.text }]}>{n.message}</Text>
+                )}
+              </View>
+
+              {n.isAI ? (
+                aiActionState === 'pending' && (
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity onPress={handleAiConfirm} style={styles.primaryActionWrapper}>
+                      <LinearGradient
+                        colors={[primaryBrand, '#F8326D']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.primaryAction}
+                      >
+                        <Text style={styles.actionText}>Look good!</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.secondaryAction, { borderColor: 'rgba(255,255,255,0.1)' }]}
+                      onPress={handleManualAdjust}
+                    >
+                      <Text style={[styles.secondaryActionText, { color: colors.text }]}>Custom</Text>
+                    </TouchableOpacity>
+                  </View>
+                )
+              ) : (
+                n.route && (
+                  <TouchableOpacity 
+                    style={styles.detailsBtn}
+                    onPress={() => handleViewDetails(n.route)}
+                  >
+                    <Text style={[styles.detailsText, { color: n.color }]}>View Details</Text>
+                    <Feather name="chevron-right" size={16} color={n.color} />
+                  </TouchableOpacity>
+                )
+              )}
+            </Animated.View>
+          ))}
+        </Animated.View>
+        <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );
@@ -169,121 +183,142 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerRow: {
-    paddingHorizontal: 20,
+  header: {
+    paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
+    letterSpacing: -0.5,
   },
-  clearText: {
+  markReadBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  markReadText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     gap: 16,
   },
-  notificationCard: {
+  notifCard: {
     borderRadius: 24,
-    borderWidth: 1,
+    borderWidth: 1.5,
     padding: 20,
+    marginBottom: 16,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
   },
-  iconBox: {
-    width: 48,
-    height: 48,
+  iconWrapper: {
+    width: 52,
+    height: 52,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
   },
-  headerText: {
+  headerMain: {
     flex: 1,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
     marginBottom: 2,
   },
   notifTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
   },
   aiBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   aiBadgeText: {
     color: '#fff',
     fontSize: 9,
     fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
+    letterSpacing: 0.5,
   },
   timeText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontFamily: 'sans-serif-rounded',
   },
-  messageContent: {
-    marginBottom: 16,
+  messageWrapper: {
+    marginBottom: 20,
   },
   message: {
     fontSize: 14,
     lineHeight: 22,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontFamily: 'sans-serif-rounded',
   },
-  confirmedBox: {
+  successState: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 14,
     borderRadius: 16,
     borderWidth: 1,
   },
-  aiActions: {
+  actionRow: {
     flexDirection: 'row',
     gap: 12,
   },
-  aiBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
+  primaryActionWrapper: {
+    flex: 2,
+  },
+  primaryAction: {
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  aiBtnText: {
+  actionText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
   },
-  aiBtnSecondary: {
+  secondaryAction: {
     flex: 1,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.02)',
   },
-  aiBtnSecondaryText: {
+  secondaryActionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'sans-serif-rounded',
   },
-  viewMore: {
+  detailsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
-  viewMoreText: {
+  detailsText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
   },
 });

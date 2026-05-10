@@ -11,7 +11,7 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const labelColor = '#A78BFA'; // Signature Lavender
+  const labelColor = '#771FFF'; // GX Violet
   const darkLavender = '#7C3AED';
 
   const menuSections = [
