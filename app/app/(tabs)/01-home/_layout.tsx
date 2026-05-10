@@ -6,19 +6,16 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, AntDesign, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { useFinancial } from '@/context/FinancialContext';
+
 export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { pockets } = useFinancial();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
-  // This would ideally come from a global state/context later
-  const pockets = [
-    { id: 1, name: 'Saving', balance: 50 },
-    { id: 2, name: 'Food', balance: 800 },
-    { id: 3, name: 'Transport', balance: 200 },
-  ];
-
+  // Financial summary based on context data
   const mainAccountBalance = 0.00; // Hardcoded to 0 per instructions
   const pocketsTotal = pockets.reduce((s, p) => s + p.balance, 0);
   
