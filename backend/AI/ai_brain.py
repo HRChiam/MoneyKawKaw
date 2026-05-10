@@ -92,18 +92,62 @@ def calculate_initial_allocation(income, fixed_expenses_dict, mode):
         return allocation
 
 
-# --- Feature 6: Receiving Money Routing (The Freelancer Buffer) ---
-def summarize_weekly_buffer(total_pooled, food_amt, savings_amt):
+# --- Feature 6 & 8: Smart Income Router & Rebalancer ---
+def process_income_event(income_amount, past_spending_summary, current_ratios, is_freelance=False):
+    """
+    Handles major income arrival (Payday or Big Freelance gig).
+    Implements the 'Weekly Drip' strategy and adjusts ratios based on past 30 days.
+    """
+    user_type = "Freelance" if is_freelance else "Salaried (Payday Detected)"
+    weekly_release = round(income_amount / 4, 2)
+    
     template = """
-    You are the MoneyKawKaw AI assistant. 
-    This week, the user received several small transfers (from friends or freelance gigs) totaling RM{total}.
-    To prevent alert fatigue, you silently kept this in a buffer. 
-    Now it's Sunday. You just automatically moved RM{food} to their Food pocket and RM{savings} to Savings.
-    Write a 2-sentence friendly summary telling the user you handled this for them.
+    You are the MoneyKawKaw Smart Router. 
+    Income Received: RM{income}
+    User Type: {user_type}
+    
+    Past 30 Days Spending Pattern: {spending_data}
+    Current Budget Plan (Ratios): {ratios}
+    
+    YOUR TASK:
+    1. Acknowledge the RM{income} income and analyze past spending to suggest/apply ratio adjustments.
+    2. Explain the 'Weekly Drip':
+       - You are dividing this income into 4 weekly parts (RM{weekly} per week).
+       - For Salaried: The first RM{weekly} has been moved to pockets now; the rest stays in the main account to be released every Sunday.
+       - For Freelance: You've updated their plan percentages, and they should move RM{weekly} manually every week to follow the plan.
+    
+    Write a 3-sentence encouraging summary. Use Malaysian slang (lah, steady, boss).
     """
     prompt = PromptTemplate.from_template(template)
     chain = prompt | llm
-    return chain.invoke({"total": total_pooled, "food": food_amt, "savings": savings_amt}).content
+    return chain.invoke({
+        "income": income_amount, 
+        "user_type": user_type,
+        "weekly": weekly_release,
+        "spending_data": json.dumps(past_spending_summary),
+        "ratios": json.dumps(current_ratios)
+    }).content
+
+# --- Feature 6b: The Silent Buffer Sweep (Small Random Incomes) ---
+def summarize_weekly_silent_sweep(total_pooled, pocket_distribution):
+    """
+    Called every Sunday to summarize small random transfers received during the week.
+    """
+    template = """
+    You are the MoneyKawKaw AI assistant. 
+    This week, the user received several small transfers (friend repayments, small gigs, etc.) totaling RM{total}.
+    You kept this silently in a buffer to prevent alert fatigue.
+    Now it's Sunday! You just automatically moved that RM{total} into their pockets:
+    {distribution}
+    
+    Write a fun, 2-sentence summary telling them the 'Sunday Sweep' is done. 
+    """
+    prompt = PromptTemplate.from_template(template)
+    chain = prompt | llm
+    return chain.invoke({
+        "total": total_pooled,
+        "distribution": json.dumps(pocket_distribution)
+    }).content
 
 # --- Feature 7: Momentum & Prediction ---
 def generate_momentum_warning(category, days_over, daily_limit, current_avg_spend):
@@ -144,33 +188,6 @@ def generate_momentum_warning(category, days_over, daily_limit, current_avg_spen
         "predicted_shortfall": predicted_shortfall
     }).content
 
-# --- Feature 8: Continuous Learning (The Monthly Rebalancer) ---
-def continuous_learning_rebalance(pocket_name, budgeted, actual_spent):
-    variance = actual_spent - budgeted
-    if variance > 0:
-        trend = f"overspent by RM{variance}"
-        suggestion = "increase"
-    else:
-        trend = f"underspent by RM{abs(variance)}"
-        suggestion = "decrease"
-
-    template = """
-    You are a smart financial AI. It is the end of the month.
-    The user's original budget for {category} was RM{budget}, but they actually spent RM{spent}.
-    They {trend}.
-    Write a casual, 2-sentence prompt asking if they want to {suggestion} their {category} budget for next month to match their actual lifestyle.
-    """
-    prompt = PromptTemplate.from_template(template)
-    chain = prompt | llm
-    return chain.invoke({
-        "category": pocket_name, 
-        "budget": budgeted, 
-        "spent": actual_spent, 
-        "trend": trend, 
-        "suggestion": suggestion
-    }).content
-
-
 # ==========================================
 # 🤖 TRUE AGENTIC AI (LLM Decision Making)
 # ==========================================
@@ -207,8 +224,7 @@ def agentic_debt_router(surplus_amount, liabilities):
     
     Write a persuasive 3-sentence nudge. 
     1. Tell them to route the RM{surplus} to the {debt_name}.
-    2. Explain briefly why compounding interest is a trap.
-    3. If the debt is an 'External Credit Card', casually mention they should transfer that balance to 'GX FlexiCredit' for lower rates.
+    2. If the debt is an 'External Credit Card', casually mention they should transfer that balance to 'GX FlexiCredit' for lower rates.
     """
     prompt = PromptTemplate.from_template(template)
     chain = prompt | llm
@@ -228,15 +244,18 @@ if __name__ == "__main__":
     mock_fixed = {"Rental": 2500, "PTPTN": 150, "Car_Loan":300} # High fixed expenses
     print(calculate_initial_allocation(5000, mock_fixed, "Balanced"))
     
-    print("\n--- 6. Silent Buffer Sweep ---")
-    print(summarize_weekly_buffer(150, 100, 50))
+    print("\n--- 6 & 8. Smart Income Event ---")
+    mock_past_spending = {"F&B": 1200, "Entertainment": 400, "Groceries": 600}
+    mock_ratios = {"Saving": 0.3, "F&B": 0.2, "Transport": 0.1, "Groceries": 0.2, "Entertainment": 0.2}
+    print(process_income_event(5000, mock_past_spending, mock_ratios, is_freelance=False))
+    
+    print("\n--- 6b. Sunday Silent Sweep ---")
+    mock_sweep_dist = {"Groceries": 50, "Saving": 100}
+    print(summarize_weekly_silent_sweep(150, mock_sweep_dist))
     
     print("\n--- 7. Momentum Warning (ML + AI) ---")
     # Simulation: Daily limit is RM30, but user is spending RM50/day
     print(generate_momentum_warning("Food", 4, 30, 50))
-    
-    print("\n--- 8. Monthly Rebalancer ---")
-    print(continuous_learning_rebalance("Food", 600, 850))
 
     print("\n--- 3. Hard Warning Interception ---")
     mock_balances = {"Entertainment": 100, "Shopping": 20, "Savings": 500, "Food": 0}
