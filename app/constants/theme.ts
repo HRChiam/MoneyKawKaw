@@ -1,9 +1,10 @@
 import { Platform } from 'react-native';
 
 // MoneyKawKaw Color Scheme
-const primaryGradientStart = '#771fff'; 
-const primaryGradientEnd = '#f8326d'; // Pink
-const tintColorDark = primaryGradientStart;
+const gxPurple = '#771fff'; 
+const gxPurpleLight = '#9d5eff'; // Lighter purple for subtle gradients
+const gxPink = '#f8326d'; // Secondary accent / Gradient end
+const tintColorDark = gxPurple;
 
 // Dark color scheme for both light and dark modes
 const darkColorScheme = {
@@ -12,10 +13,11 @@ const darkColorScheme = {
   tint: tintColorDark,
   icon: '#9BA1A6',
   tabIconDefault: '#9BA1A6',
-  tabIconSelected: primaryGradientEnd,
+  tabIconSelected: gxPurple,
   // MoneyKawKaw specific colors
-  primary: primaryGradientStart,
-  primaryEnd: primaryGradientEnd,
+  primary: gxPurple,
+  primaryEnd: gxPurpleLight, // Lighter purple for primary elements
+  accent: gxPink, // GX Pink for high-impact accents
   secondary: '#64748B',
   success: '#10B981',
   warning: '#F59E0B',
@@ -34,30 +36,27 @@ export const Colors = {
  * Use with GradientView component for buttons, backgrounds, text, etc.
  */
 export const Gradients = {
+  // Pure Purple Gradient
   primary: {
-    colors: [primaryGradientStart, primaryGradientEnd],
+    colors: [gxPurple, gxPurpleLight],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },
-  primaryReverse: {
-    colors: [primaryGradientEnd, primaryGradientStart],
+  // GX Signature Purple to Pink Gradient
+  signature: {
+    colors: [gxPurple, gxPink],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },
   horizontal: {
-    colors: [primaryGradientStart, primaryGradientEnd],
+    colors: [gxPurple, gxPink],
     start: { x: 0, y: 0.5 },
     end: { x: 1, y: 0.5 },
   },
   vertical: {
-    colors: [primaryGradientStart, primaryGradientEnd],
+    colors: [gxPurple, gxPink],
     start: { x: 0.5, y: 0 },
     end: { x: 0.5, y: 1 },
-  },
-  diagonalReverse: {
-    colors: [primaryGradientEnd, primaryGradientStart],
-    start: { x: 1, y: 0 },
-    end: { x: 0, y: 1 },
   },
 };
 

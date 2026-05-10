@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Animated, Alert } from 'react-native';
 
 export type StoreItem = {
@@ -9,16 +9,40 @@ export type StoreItem = {
   setter: (val: boolean) => void;
 };
 
-export function useGxSpaceRoom(points: number, setPoints: (v: number | ((n: number) => number)) => void) {
-  const [ownsChair, setOwnsChair] = useState(false);
-  const [ownsLocker, setOwnsLocker] = useState(false);
-  const [ownsPlant, setOwnsPlant] = useState(false);
-  const [ownsTable, setOwnsTable] = useState(false);
+export function useGxSpaceRoom(
+  points: number, 
+  setPoints: (v: number | ((n: number) => number)) => void,
+  rewards: any
+) {
+  const {
+    ownsChair, setOwnsChair,
+    ownsLocker, setOwnsLocker,
+    ownsPlant, setOwnsPlant,
+    ownsTable, setOwnsTable
+  } = rewards;
 
   const [activeTab, setActiveTab] = useState<'furniture' | 'decor'>('furniture');
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const storeAnim = useRef(new Animated.Value(0)).current;
+  const avatarAnim = useRef(new Animated.Value(0)).current;
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(avatarAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(avatarAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   const openStore = (tab: 'furniture' | 'decor') => {
     setActiveTab(tab);
@@ -35,7 +59,7 @@ export function useGxSpaceRoom(points: number, setPoints: (v: number | ((n: numb
 
   const roomScale = storeAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.85] });
   const roomTranslateY = storeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -150] });
-  const storeTranslateY = storeAnim.interpolate({ inputRange: [0, 1], outputRange: [240, 0] });
+  const storeTranslateY = storeAnim.interpolate({ inputRange: [0, 1], outputRange: [290, 0] });
 
   const handleIntentToBuy = (item: StoreItem) => setSelectedItem(item);
 
@@ -71,6 +95,7 @@ export function useGxSpaceRoom(points: number, setPoints: (v: number | ((n: numb
     roomScale,
     roomTranslateY,
     storeTranslateY,
+    avatarAnim,
     // purchase
     selectedItem,
     setSelectedItem,
