@@ -98,9 +98,9 @@ export default function InsufficientFundsScreen() {
                 <MaterialCommunityIcons name="lightning-bolt" size={24} color="white" />
               </View>
               <View style={styles.buttonTextContent}>
-                <Text style={styles.buttonMainText}>AI Suggestion</Text>
-                <Text style={styles.buttonSubText}>
-                  Move RM {shortfall.toFixed(2)} from Entertainment to complete this.
+                <Text style={styles.buttonSubText}>AI Suggestion</Text>
+                <Text style={styles.buttonMainText}>
+                  Move RM {shortfall.toFixed(2)} from Entertainment to {selectedSource}.
                 </Text>
               </View>
             </View>
