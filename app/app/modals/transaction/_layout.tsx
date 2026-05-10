@@ -65,7 +65,7 @@ export default function TransactionScreen() {
     setTimeout(() => {
       setIsLoading(false);
       // mock failed transaction (insufficient funds)
-      if (amount === '67') {
+      if (amount === '2000') {
         router.push({
           pathname: './insufficient-funds',
           params: { toAccount, toBank, amount, reference, selectedSource }
