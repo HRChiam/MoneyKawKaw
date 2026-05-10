@@ -91,11 +91,11 @@ export default function FlexiCreditScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} scrollEventThrottle={16}>
-      <View style={styles.header}>
+      <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>   FlexiCredit</Text>
+        <Text style={[styles.title, { color: colors.text }]}>FlexiCredit</Text>
       </View>
 
       <View style={styles.section}>
@@ -256,9 +256,22 @@ export default function FlexiCreditScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#333' },
-  backButton: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '800' },
+  headerRow: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
   section: { paddingHorizontal: 16, marginVertical: 16 },
   
   inputRow: { flexDirection: 'row', gap: 12 },

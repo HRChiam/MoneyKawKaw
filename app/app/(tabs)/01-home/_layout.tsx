@@ -151,7 +151,7 @@ export default function HomeScreen() {
           <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15' }]}>
             <AntDesign name="credit-card" size={24} color={colors.primary} />
           </View>
-          <Text style={[styles.actionLabel, { color: colors.text }]}>Credit</Text>
+          <Text style={[styles.actionLabel, { color: colors.text }]}>FlexiCredit</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleInsights}>
@@ -170,7 +170,7 @@ export default function HomeScreen() {
           activeOpacity={0.9}
         >
           <View style={styles.cardTopRow}>
-            <Text style={styles.cardLabelWhite}>Main</Text>
+            <Text style={styles.cardLabelWhite}>Main Account</Text>
             <Ionicons name="wallet-outline" size={20} color="rgba(255,255,255,0.8)" />
           </View>
           {/* Use numberOfLines={1} to force a single line, and adjustsFontSizeToFit to shrink if too long */}
