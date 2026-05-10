@@ -114,12 +114,18 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.amountDisplay}>
-            <Text style={[styles.mainSpentAmount, { color: colors.text, fontSize: 36 }]}>
-              <Text style={[styles.currencySymbol, { fontSize: 20 }]}>RM</Text> {formatBalance(spent)}
-            </Text>
-            <Text style={[styles.limitTotal, { color: colors.secondary, fontSize: 14 }]}>
-              of RM {formatBalance(limit)}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+              <Text style={[styles.currencySymbol, { color: colors.text, fontSize: 20, width: 40 }]}>RM</Text>
+              <Text style={[styles.mainSpentAmount, { color: colors.text, fontSize: 36, marginLeft: 0 }]}>
+                {formatBalance(spent)}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: -4 }}>
+              <Text style={[styles.currencySymbol, { color: colors.secondary, fontSize: 14, width: 40 }]}>RM</Text>
+              <Text style={[styles.limitTotal, { color: colors.secondary, fontSize: 14 }]}>
+                {formatBalance(limit)} <Text style={{ fontSize: 12, opacity: 0.8 }}>(Daily Limit)</Text>
+              </Text>
+            </View>
           </View>
 
           <View style={[styles.spendingBarContainer, { backgroundColor: 'rgba(255,255,255,0.05)', height: 8 }]}>

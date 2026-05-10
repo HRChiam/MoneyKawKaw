@@ -12,7 +12,7 @@ export default function InsufficientFundsScreen() {
   const colors = Colors[colorScheme ?? 'light'];
 
   const { toAccount, toBank, amount, reference, selectedSource } = params;
-  const shortfall = Math.max(0, Number(amount) - 20);
+  const shortfall = Math.max(0, Number(amount) - 800);
 
   const handleSacrificeOption = () => {
     // Navigate back to transaction screen with success state
@@ -62,7 +62,9 @@ export default function InsufficientFundsScreen() {
               <View style={[styles.dot, { backgroundColor: colors.secondary }]} />
               <Text style={[styles.bridgeLabel, { color: colors.secondary }]}>Total Required</Text>
             </View>
-            <Text style={[styles.bridgeValue, { color: colors.text }]}>RM {Number(amount).toFixed(2)}</Text>
+            <View style={styles.valueContainer}>
+              <Text style={[styles.bridgeValue, { color: colors.text }]}>RM {Number(amount).toFixed(2)}</Text>
+            </View>
           </View>
 
           <View style={styles.bridgeRow}>
@@ -70,15 +72,21 @@ export default function InsufficientFundsScreen() {
               <View style={[styles.dot, { backgroundColor: '#15fabd' }]} />
               <Text style={[styles.bridgeLabel, { color: colors.secondary }]}>Available Balance</Text>
             </View>
-            <Text style={[styles.bridgeValue, { color: '#15fabd' }]}>RM 20.00</Text>
+            <View style={styles.valueContainer}>
+              <Text style={[styles.bridgeValue, { color: '#15fabd' }]}>RM 800.00</Text>
+            </View>
           </View>
 
           <View style={[styles.separator, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
 
           <View style={styles.bridgeRow}>
-            <Text style={[styles.shortfallLabel, { color: colors.text }]}>Shortfall</Text>
-            <View style={styles.shortfallBadge}>
-              <Text style={styles.shortfallValue}>RM {shortfall.toFixed(2)}</Text>
+            <View style={styles.bridgeLabelGroup}>
+               <Text style={[styles.shortfallLabel, { color: colors.text }]}>Shortfall</Text>
+            </View>
+            <View style={styles.valueContainer}>
+               <View style={styles.shortfallBadge}>
+                 <Text style={styles.shortfallValue}>RM {shortfall.toFixed(2)}</Text>
+               </View>
             </View>
           </View>
         </Animated.View>
@@ -98,7 +106,7 @@ export default function InsufficientFundsScreen() {
               <View style={styles.buttonTextContent}>
                 <Text style={styles.buttonSubText}>AI Suggestion</Text>
                 <Text style={styles.buttonMainText}>
-                  Move RM {shortfall.toFixed(2)} from Entertainment to {selectedSource}.
+                  Move RM {shortfall.toFixed(2)} from Savings to {selectedSource}.
                 </Text>
               </View>
             </View>
@@ -185,6 +193,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     fontFamily: 'sans-serif-rounded',
+  },
+  valueContainer: {
+    minWidth: 120,
+    alignItems: 'flex-start',
   },
   bridgeValue: {
     fontSize: 22,
