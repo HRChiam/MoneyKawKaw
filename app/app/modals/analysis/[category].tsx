@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function AnalysisScreen() {
@@ -43,7 +43,7 @@ export default function AnalysisScreen() {
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.label, { color: labelColor }]}>MONTHLY INSIGHT</Text>
             <Text style={[styles.insightText, { color: colors.text }]}>
-              You've used <Text style={{ color: theme.color, fontWeight: '800' }}>85%</Text> of your {category} limit this month. 
+              You&apos;ve used <Text style={{ color: theme.color, fontWeight: '800' }}>85%</Text> of your {category} limit this month. 
               Based on your current pace, you might exceed it by RM 45.00.
             </Text>
           </View>

@@ -2,7 +2,6 @@ import React from 'react';
 import { Text, TextProps } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Gradients } from '@/constants/theme';
 
 interface GradientTextProps extends TextProps {
   children: string;

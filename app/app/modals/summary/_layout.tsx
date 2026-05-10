@@ -1,10 +1,10 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
-import Svg, { Path, Circle, G } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -151,8 +151,6 @@ export default function SummaryScreen() {
     return `M ${points.join(' L ')}`;
   };
 
-  const PIE_RADIUS = 25; 
-  const PIE_STROKE_WIDTH = 50; 
   const totalCategorySpend = currentData.categories.reduce((sum, cat) => sum + cat.amount, 0);
 
   const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
@@ -202,7 +200,7 @@ export default function SummaryScreen() {
         scrollRef.current?.scrollTo({ x: Math.max(0, currentMonthX), animated: true });
       }, 100);
     }
-  }, [timeframe]);
+  }, [timeframe, CHART_WIDTH, VIEWPORT_WIDTH]);
 
   const renderTooltip = () => {
     if (activePoint === null || currentData.trend[activePoint].value === null) return null;

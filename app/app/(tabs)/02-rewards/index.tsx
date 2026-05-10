@@ -5,7 +5,6 @@ import {
   ScrollView, 
   StyleSheet, 
   TouchableOpacity, 
-  Dimensions,
   Image 
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons'; 
@@ -18,8 +17,6 @@ import HeaderPills from '@/components/rewards/HeaderPills';
 import RewardsModal from '@/components/rewards/RewardsModal';
 import ChallengesModal, { Challenge } from '@/components/rewards/ChallengesModal';
 import { useRewards } from '@/components/rewards/context';
-
-const WINDOW_HEIGHT = Dimensions.get('window').height;
 
 export default function RewardsScreen() {
   const router = useRouter();
@@ -58,14 +55,20 @@ export default function RewardsScreen() {
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
-      {/* Header - Consistent with Home Page */}
+      {/* Header - Updated */}
       <View style={styles.header}>
-        <HeaderPills points={points} freezeCount={3} />
+        <View style={{ width: '100%' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <Ionicons name="gift" size={24} color={colors.text} style={{ marginRight: 12 }} />
+            <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, fontFamily: 'sans-serif-rounded' }}>Reward</Text>
+          </View>
+          <HeaderPills points={points} freezeCount={3} />
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
-        {/* MoneyKawKaw Space Button - High Impact Gradient */}
+        {/* MoneyKawKaw Space Button - Restored Design */}
         <TouchableOpacity 
           onPress={() => router.push('/(tabs)/02-rewards/space')}
           activeOpacity={0.9}
@@ -81,18 +84,20 @@ export default function RewardsScreen() {
               <View style={styles.iconCircle}>
                 <Ionicons name="planet-outline" size={32} color="#FFFFFF" />
               </View>
-              <View style={{ marginLeft: 16 }}>
+              <View style={{ marginLeft: 16, flex: 1 }}>
                 <Text style={styles.spaceButtonTitle}>MoneyKawKaw Space</Text>
                 <Text style={styles.spaceButtonSub}>Your digital sanctuary awaits</Text>
               </View>
+              <View style={styles.arrowCircle}>
+                <Feather name="chevron-right" size={24} color="#FFFFFF" />
+              </View>
             </View>
-            <Feather name="chevron-right" size={24} color="#FFFFFF" />
           </LinearGradient>
         </TouchableOpacity>
 
         <View style={styles.streakSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Badges</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingRight: 20 }}>
+          <View style={styles.streakGrid}>
             {streaks.map(streak => (
               <View key={streak.id} style={[styles.largeStreakCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.badgeDisplayArea}>
@@ -118,7 +123,7 @@ export default function RewardsScreen() {
                 </View>
               </View>
             ))}
-          </ScrollView>
+          </View>
         </View>
 
         <View style={styles.actionSection}>
@@ -177,11 +182,13 @@ const styles = StyleSheet.create({
     marginBottom: 24
   },
   content: { 
-    paddingHorizontal: 20 
+    paddingHorizontal: 20
   },
   spaceButtonContainer: {
-    marginBottom: 32,
+    marginBottom: 20,
     borderRadius: 24,
+    width: '100%',
+    alignSelf: 'center',
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -217,16 +224,30 @@ const styles = StyleSheet.create({
     marginTop: 2,
     color: 'rgba(255, 255, 255, 0.8)' 
   },
+  arrowCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
   streakSection: { 
     marginBottom: 32 
   },
   sectionTitle: { 
     fontSize: 18, 
     fontWeight: '700', 
-    marginBottom: 16 
+    marginBottom: 14 
+  },
+  streakGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   largeStreakCard: { 
-    width: 160, 
+    flex: 1,
     height: 200, 
     borderRadius: 24, 
     padding: 16, 

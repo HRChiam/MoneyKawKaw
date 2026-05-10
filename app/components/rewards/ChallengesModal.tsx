@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export type MissionStatus = 'new' | 'in_progress' | 'completed';
 

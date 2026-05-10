@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, Animated, 
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import type { StoreItem } from './GxSpaceRoom.logic';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

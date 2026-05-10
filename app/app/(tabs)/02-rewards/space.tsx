@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Dimensions } from 'react-native';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import GxSpaceRoom from '@/components/rewards/GxSpaceRoom';
 import HeaderPills from '@/components/rewards/HeaderPills';
@@ -8,8 +8,6 @@ import { useRewards } from '@/components/rewards/context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function SpaceScreen() {
   const router = useRouter();

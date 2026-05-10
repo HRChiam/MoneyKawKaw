@@ -1,15 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
 
 interface TransactionSuccessProps {
   amount: string;
   toAccount: string;
   toBank: string;
   selectedSource: string | null;
+  onDone: () => void;
   colors: {
     background: string;
     text: string;
@@ -23,15 +22,10 @@ export const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
   toAccount,
   toBank,
   selectedSource,
+  onDone,
   colors,
   primaryBrand,
 }) => {
-  const router = useRouter();
-
-  const handleDone = () => {
-    router.replace('../(tabs)/01-home');
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Animated.View 
@@ -62,7 +56,7 @@ export const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
           </View>
         </View>
         
-        <TouchableOpacity onPress={handleDone} style={styles.doneButtonWrapper}>
+        <TouchableOpacity onPress={onDone} style={styles.doneButtonWrapper}>
           <View style={[styles.solidButton, { backgroundColor: primaryBrand }]}>
             <Text style={styles.doneButtonText}>Done</Text>
           </View>

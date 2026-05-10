@@ -63,11 +63,11 @@ export default function HomeScreen() {
     >
       {/* Header - Clean GX Style */}
       <View style={styles.header}>
-        <View>
-          <Text style={[styles.greetingSub, { color: colors.secondary, fontFamily: 'sans-serif-rounded' }]}>{getGreeting()},</Text>
-          <Text style={[styles.greeting, { color: colors.text, fontFamily: 'sans-serif-rounded' }]}>Xuan Wei</Text>
-        </View>
-        <View style={styles.headerRight}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Feather name="home" size={24} color={colors.text} style={{ marginRight: 12 }} />
+            <Text style={[styles.title, { color: colors.text, fontFamily: 'sans-serif-rounded', fontSize: 20, fontWeight: '800' }]}>Home</Text>
+          </View>
           <TouchableOpacity 
             onPress={() => setIsBalanceVisible(!isBalanceVisible)}
             style={styles.visibilityBtn}
@@ -77,13 +77,18 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      <View style={{ marginBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Text style={[styles.greetingSub, { color: colors.secondary, fontFamily: 'sans-serif-rounded', marginBottom: 0, fontSize: 18, fontWeight: '500' }]}>{getGreeting()},</Text>
+        <Text style={[styles.greeting, { color: colors.text, fontFamily: 'sans-serif-rounded', fontSize: 18, fontWeight: '800' }]}>Xuan Wei</Text>
+      </View>
+
       {/* Daily Spending Widget - High Impact Dark Redesign */}
-      <View style={[styles.spendingWidgetContainer, { shadowColor: trafficColor }]}>
+      <View style={[styles.spendingWidgetContainer, { shadowColor: trafficColor, width: '100%' }]}>
         <LinearGradient
           colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.5)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.spendingWidget, { borderColor: trafficColor + '60' }]}
+          style={[styles.spendingWidget, { borderColor: trafficColor + '60', padding: 18 }]}
         >
           <View style={styles.spendingHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -96,15 +101,15 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.amountDisplay}>
-            <Text style={[styles.mainSpentAmount, { color: colors.text }]}>
-              <Text style={styles.currencySymbol}>RM</Text> {formatBalance(spent)}
+            <Text style={[styles.mainSpentAmount, { color: colors.text, fontSize: 36 }]}>
+              <Text style={[styles.currencySymbol, { fontSize: 20 }]}>RM</Text> {formatBalance(spent)}
             </Text>
-            <Text style={[styles.limitTotal, { color: colors.secondary }]}>
+            <Text style={[styles.limitTotal, { color: colors.secondary, fontSize: 14 }]}>
               of RM {formatBalance(limit)}
             </Text>
           </View>
 
-          <View style={[styles.spendingBarContainer, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+          <View style={[styles.spendingBarContainer, { backgroundColor: 'rgba(255,255,255,0.05)', height: 8 }]}>
             <LinearGradient
               colors={[trafficColor + '80', trafficColor]}
               start={{ x: 0, y: 0 }}
@@ -113,7 +118,7 @@ export default function HomeScreen() {
             />
           </View>
           
-          <Text style={[styles.statusMessage, { color: trafficColor }]}>
+          <Text style={[styles.statusMessage, { color: trafficColor, fontSize: 12 }]}>
             {spendingProgress < 0.5 ? 'Looking good! You\'re well within your limit.' : 
              spendingProgress < 0.8 ? 'Careful! You\'re approaching your limit.' : 
              'Attention! You\'ve nearly exhausted your limit.'}
@@ -124,25 +129,25 @@ export default function HomeScreen() {
       {/* Quick Action Icons */}
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
       <View style={styles.quickActions}>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleTransfer}>
-          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15' }]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border, height: 110, justifyContent: 'center' }]} onPress={handleTransfer}>
+          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15', width: 48, height: 48, marginBottom: 8 }]}>
             <Feather name="send" size={24} color={colors.primary} />
           </View>
-          <Text style={[styles.actionLabel, { color: colors.text }]}>Transfer</Text>
+          <Text style={[styles.actionLabel, { color: colors.text, fontSize: 13 }]}>Transfer</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleExploreCredit}>
-          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15' }]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border, height: 110, justifyContent: 'center' }]} onPress={handleExploreCredit}>
+          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15', width: 48, height: 48, marginBottom: 8 }]}>
             <AntDesign name="credit-card" size={24} color={colors.primary} />
           </View>
-          <Text style={[styles.actionLabel, { color: colors.text }]}>Credit</Text>
+          <Text style={[styles.actionLabel, { color: colors.text, fontSize: 13 }]}>Credit</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleInsights}>
-          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15' }]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border, height: 110, justifyContent: 'center' }]} onPress={handleInsights}>
+          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15', width: 48, height: 48, marginBottom: 8 }]}>
             <MaterialIcons name="insights" size={24} color={colors.primary} />
           </View>
-          <Text style={[styles.actionLabel, { color: colors.text }]}>Insights</Text>
+          <Text style={[styles.actionLabel, { color: colors.text, fontSize: 13 }]}>Insights</Text>
         </TouchableOpacity>
       </View>
 
@@ -214,7 +219,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   headerRight: {
     flexDirection: 'row',
@@ -223,6 +228,10 @@ const styles = StyleSheet.create({
   },
   visibilityBtn: {
     padding: 8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '800',
   },
   greetingSub: {
     fontSize: 16,
