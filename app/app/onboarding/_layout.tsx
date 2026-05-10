@@ -148,7 +148,7 @@ export default function OnboardingScreen() {
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.inputLabel, { color: colors.secondary }]}>FIXED EXPENSES</Text>
+              <Text style={[styles.inputLabel, { color: colors.secondary }]}>MONTHLY FIXED EXPENSES</Text>
               <View style={styles.chipContainer}>
                 {expenses.map(expense => {
                   const isSelected = selectedExpenses.includes(expense);
