@@ -151,7 +151,7 @@ export default function RewardsScreen() {
         </View>
 
         <View style={styles.actionSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Rewards & Challenges</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 4 }]}>Rewards & Challenges</Text>
           
           <TouchableOpacity 
             onPress={() => setShowRewardsModal(true)} 
