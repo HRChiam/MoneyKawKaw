@@ -51,6 +51,14 @@ export default function RootLayout() {
             headerShown: false,
           }} 
         />
+        
+        {/* Category Group */}
+        <Stack.Screen 
+          name="category" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

@@ -1,256 +1,183 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const menuItems = [
+  const labelColor = '#A78BFA'; // Signature Lavender
+  const darkLavender = '#7C3AED';
+
+  const menuSections = [
     {
-      id: 1,
-      title: 'Account Settings',
-      icon: 'gear' as any,
+      title: 'ACCOUNT',
+      items: [
+        { id: 1, title: 'Personal Information', icon: 'user', type: 'feather', color: labelColor },
+        { id: 2, title: 'Payment Methods', icon: 'credit-card', type: 'feather', color: labelColor },
+        { id: 3, title: 'Transaction History', icon: 'file-text', type: 'feather', color: labelColor, route: '../modals/transaction-history' },
+      ]
     },
     {
-      id: 2,
-      title: 'Payment Methods',
-      icon: 'creditcard.fill' as any,
+      title: 'PREFERENCES',
+      items: [
+        { id: 4, title: 'Notifications', icon: 'bell', type: 'feather', color: labelColor },
+        { id: 5, title: 'Security & Privacy', icon: 'shield', type: 'feather', color: labelColor },
+        { id: 6, title: 'App Theme', icon: 'moon', type: 'feather', color: labelColor },
+      ]
     },
     {
-      id: 3,
-      title: 'Savings Goals',
-      icon: 'target' as any,
-    },
-    {
-      id: 4,
-      title: 'Security',
-      icon: 'lock.fill' as any,
-    },
-    {
-      id: 5,
-      title: 'Help & Support',
-      icon: 'questionmark.circle.fill' as any,
-    },
-    {
-      id: 6,
-      title: 'About',
-      icon: 'info.circle.fill' as any,
-    },
+      title: 'SUPPORT',
+      items: [
+        { id: 7, title: 'Help Center', icon: 'help-circle', type: 'feather', color: labelColor },
+        { id: 8, title: 'Terms of Service', icon: 'info', type: 'feather', color: labelColor },
+      ]
+    }
   ];
 
+  const handlePress = (route?: string) => {
+    if (route) {
+      router.push(route as any);
+    }
+  };
+
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      scrollEventThrottle={16}
-    >
-      {/* Header */}
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Custom Header */}
+      <View style={styles.headerRow}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
-      </View>
-
-      {/* User Info Card */}
-      <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>XW</Text>
-        </View>
-
-        <View style={styles.userInfo}>
-          <Text style={[styles.userName, { color: colors.text }]}>Xuan Wei</Text>
-          <Text style={[styles.userEmail, { color: colors.secondary }]}>xw@example.com</Text>
-          <View style={styles.memberBadge}>
-            <Text style={styles.memberBadgeText}>Member Since 2026</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Stats Section */}
-      <View style={styles.statsContainer}>
-        <View
-          style={[
-            styles.statItem,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <IconSymbol size={24} name="chart.line.uptrend.xyaxis" color={colors.primary} />
-          <Text style={[styles.statLabel, { color: colors.secondary }]}>Total Saved</Text>
-          <Text style={[styles.statValue, { color: colors.text }]}>RM 5,250</Text>
-        </View>
-
-        <View
-          style={[
-            styles.statItem,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <IconSymbol size={24} name="star.fill" color={colors.primary} />
-          <Text style={[styles.statLabel, { color: colors.secondary }]}>Points Earned</Text>
-          <Text style={[styles.statValue, { color: colors.text }]}>1,357</Text>
-        </View>
-      </View>
-
-      {/* Menu Items */}
-      <View style={styles.menuSection}>
-        {menuItems.map((item, index) => (
-          <TouchableOpacity
-            key={item.id}
-            style={[
-              styles.menuItem,
-              { borderBottomColor: colors.border },
-              index === menuItems.length - 1 && { borderBottomWidth: 0 },
-            ]}
-          >
-            <View style={styles.menuLeft}>
-              <View style={[styles.menuIcon, { backgroundColor: colors.border }]}>
-                <IconSymbol size={20} name={item.icon} color={colors.primary} />
-              </View>
-              <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
-            </View>
-            <IconSymbol size={20} name="chevron.right" color={colors.secondary} />
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Logout Button */}
-      <View style={styles.logoutSection}>
-        <TouchableOpacity
-          style={[
-            styles.logoutButton,
-            { backgroundColor: colors.error, borderColor: colors.error },
-          ]}
-        >
-          <Text style={styles.logoutButtonText}>Logout</Text>
+        <TouchableOpacity style={[styles.settingsBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Feather name="settings" size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
 
-      <View style={{ height: 20 }} />
-    </ScrollView>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Animated.View entering={FadeInDown.duration(600)}>
+          {/* User Hero Section with Gradient */}
+          <LinearGradient
+            colors={[labelColor, darkLavender]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroCard}
+          >
+            <View style={styles.heroContent}>
+              <View style={styles.avatarWrapper}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>XW</Text>
+                </View>
+                <TouchableOpacity style={styles.editAvatarBtn}>
+                  <Feather name="camera" size={14} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.heroText}>
+                <Text style={styles.userName}>Xuan Wei</Text>
+                <Text style={styles.userEmail}>xw@example.com</Text>
+                <View style={styles.tierBadge}>
+                  <MaterialCommunityIcons name="crown" size={12} color="#fff" />
+                  <Text style={styles.tierText}>Premium Member</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+
+          {/* Quick Stats */}
+          <View style={styles.statsRow}>
+            <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.statValue, { color: labelColor }]}>1,357</Text>
+              <Text style={[styles.statLabel, { color: colors.secondary }]}>GX Points</Text>
+            </View>
+            <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.statValue, { color: labelColor }]}>5.2k</Text>
+              <Text style={[styles.statLabel, { color: colors.secondary }]}>Total Saved</Text>
+            </View>
+          </View>
+
+          {/* Menu Sections */}
+          {menuSections.map((section, sIdx) => (
+            <View key={section.title} style={styles.section}>
+              <Text style={[styles.sectionLabel, { color: colors.secondary }]}>{section.title}</Text>
+              <View style={[styles.menuList, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {section.items.map((item, iIdx) => (
+                  <TouchableOpacity 
+                    key={item.id}
+                    style={[
+                      styles.menuItem,
+                      iIdx !== section.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                    ]}
+                    onPress={() => handlePress(item.route)}
+                  >
+                    <View style={styles.menuLeft}>
+                      <View style={[styles.iconBox, { backgroundColor: item.color + '15' }]}>
+                        <Feather name={item.icon as any} size={18} color={item.color} />
+                      </View>
+                      <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
+                    </View>
+                    <Feather name="chevron-right" size={16} color={colors.secondary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))}
+
+          {/* Logout */}
+          <TouchableOpacity style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>Sign Out</Text>
+          </TouchableOpacity>
+
+          <Text style={[styles.versionText, { color: colors.secondary }]}>Version 1.2.0 (42)</Text>
+        </Animated.View>
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  userCard: {
-    marginHorizontal: 16,
-    marginVertical: 16,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    borderWidth: 1,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  memberBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    backgroundColor: 'rgba(168, 85, 247, 0.2)',
-  },
-  memberBadgeText: {
-    fontSize: 12,
-    color: '#771fff',
-    fontWeight: '500',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  statItem: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  statLabel: {
-    fontSize: 12,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  menuSection: {
-    marginHorizontal: 16,
-  },
-  menuItem: {
+  container: { flex: 1 },
+  headerRow: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
   },
-  menuLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  logoutSection: {
-    marginHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  logoutButton: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  logoutButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-  },
+  headerTitle: { fontSize: 24, fontWeight: '800' },
+  settingsBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  scrollContent: { paddingHorizontal: 20 },
+  heroCard: { borderRadius: 28, padding: 24, marginBottom: 24 },
+  heroContent: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  avatarWrapper: { position: 'relative' },
+  avatar: { width: 72, height: 72, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
+  avatarText: { color: '#fff', fontSize: 24, fontWeight: '800' },
+  editAvatarBtn: { position: 'absolute', bottom: -4, right: -4, width: 28, height: 28, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.3)', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
+  heroText: { flex: 1 },
+  userName: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 2 },
+  userEmail: { fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: '500', marginBottom: 10 },
+  tierBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  tierText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+  statBox: { flex: 1, borderRadius: 20, padding: 16, borderWidth: 1, alignItems: 'center' },
+  statValue: { fontSize: 20, fontWeight: '800', marginBottom: 2 },
+  statLabel: { fontSize: 12, fontWeight: '600' },
+  section: { marginBottom: 24 },
+  sectionLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12, marginLeft: 4 },
+  menuList: { borderRadius: 24, borderWidth: 1, overflow: 'hidden' },
+  menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
+  menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  iconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  menuTitle: { fontSize: 15, fontWeight: '600' },
+  logoutBtn: { marginTop: 8, height: 56, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  logoutText: { color: '#FB7185', fontSize: 16, fontWeight: '700' },
+  versionText: { textAlign: 'center', fontSize: 12, fontWeight: '500', marginTop: 16, marginBottom: 8 },
 });

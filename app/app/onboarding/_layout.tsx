@@ -21,7 +21,7 @@ export default function OnboardingScreen() {
   
   const logoOpacity = useSharedValue(0);
 
-  const expenses = ['Room Rental', 'PTPTN', 'Car Loan', 'Insurance', 'Groceries', 'Utilities'];
+  const expenses = ['Room Rental', 'PTPTN', 'Car Loan', 'Insurance', 'Groceries', 'Utilities', 'Other'];
   const personas = ['Conservative', 'Balanced', 'Aggressive'];
 
   const logoAnimatedStyle = useAnimatedStyle(() => {
@@ -324,6 +324,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     height: '100%',
+    textAlign: 'right',
   },
   chipContainer: {
     flexDirection: 'row',
@@ -376,6 +377,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     height: '100%',
+    textAlign: 'right',
   },
   personaContainer: {
     gap: 12,

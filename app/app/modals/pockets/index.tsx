@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function PocketsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [pockets, setPockets] = useState([
-    { id: 1, name: 'Saving', balance: 50 },
-    { id: 2, name: 'Food', balance: 800 },
-    { id: 3, name: 'Transport', balance: 200 },
+    { id: 1, name: 'Saving', balance: 50.00, icon: 'safe', color: '#A78BFA' },
+    { id: 2, name: 'Food', balance: 800.00, icon: 'food-fork-drink', color: '#FB7185' },
+    { id: 3, name: 'Transport', balance: 200.00, icon: 'car-side', color: '#60A5FA' },
   ]);
+
+  const labelColor = '#A78BFA'; // Signature Lavender
+
+  const formatBalance = (amount: string | number) => {
+    return isBalanceVisible ? amount.toString() : '••••••';
+  };
 
   // Add Pocket State
   const [showAdd, setShowAdd] = useState(false);
@@ -33,12 +42,22 @@ export default function PocketsScreen() {
   const [moveTarget, setMoveTarget] = useState<number | 'main' | null>(null);
   const [moveAmount, setMoveAmount] = useState('');
 
+  // Delete Confirmation State
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [pocketToDelete, setPocketToDelete] = useState<{id: number, name: string, balance: number} | null>(null);
+
   const totalBalance = pockets.reduce((acc, curr) => acc + curr.balance, 0);
 
   const addPocket = () => {
     if (!newName) return;
     const id = Math.max(0, ...pockets.map(p => p.id)) + 1;
-    setPockets(prev => [...prev, { id, name: newName, balance: Number(newAmount) || 0 }]);
+    setPockets(prev => [...prev, { 
+      id, 
+      name: newName, 
+      balance: Number(newAmount) || 0,
+      icon: 'folder-outline',
+      color: labelColor
+    }]);
     setShowAdd(false);
     setNewName('');
     setNewAmount('');
@@ -65,105 +84,145 @@ export default function PocketsScreen() {
   };
 
   const applyMove = () => {
-    // UI Only implementation
     setMoveModal(false);
+  };
+
+  const startDelete = (id: number, name: string, balance: number) => {
+    setPocketToDelete({ id, name, balance });
+    setDeleteModal(true);
+  };
+
+  const applyDelete = () => {
+    if (pocketToDelete) {
+      setPockets(prev => prev.filter(p => p.id !== pocketToDelete.id));
+      setDeleteModal(false);
+      setPocketToDelete(null);
+    }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}> 
-      {/* Custom Header */}
+      {/* Header Row */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Your Pockets</Text>
-        <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary + '15' }]} onPress={() => setShowAdd(true)}>
-          <Feather name="plus" size={20} color={colors.primary} />
-          <Text style={[styles.addButtonText, { color: colors.primary }]}>New</Text>
-        </TouchableOpacity>
+        
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={[styles.newBtn, { backgroundColor: colors.card, borderColor: colors.border }]} 
+            onPress={() => setShowAdd(true)}
+          >
+            <Feather name="plus" size={18} color={labelColor} />
+            <Text style={[styles.newBtnText, { color: labelColor }]}>New</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => setIsEditMode(!isEditMode)}
+            style={[styles.editBtn, { backgroundColor: colors.card, borderColor: isEditMode ? colors.error : colors.border }]}
+          >
+            <Feather name={isEditMode ? "x" : "trash-2"} size={18} color={isEditMode ? colors.error : colors.secondary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.totalContainer}>
-        <Text style={[styles.totalLabel, { color: colors.secondary }]}>Total Balance</Text>
+        <Text style={[styles.totalLabel, { color: labelColor }]}>TOTAL BALANCE</Text>
         <Text style={[styles.totalAmount, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
-          <Text style={styles.currencyPrefix}>RM </Text>
-          {totalBalance.toFixed(2)}
+          <Text style={{ fontSize: 24, fontWeight: '600' }}>RM </Text>
+          {formatBalance(totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
         </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        {pockets.map(p => (
-          <View key={p.id} style={[styles.pocketRow, { backgroundColor: colors.card, borderColor: colors.border }]}> 
-            
-            {/* Clickable Area to route to Category Screen */}
-            <TouchableOpacity 
-              style={styles.pocketInfoTouchable} 
-              activeOpacity={0.7}
-              onPress={() => router.push(`../category/${p.name}`)}
-            >
-              <View style={[styles.iconWrapper, { backgroundColor: colors.primary + '10' }]}>
-                <Ionicons name="folder-outline" size={24} color={colors.primary} />
-              </View>
-              <View style={styles.pocketTextGroup}>
-                <Text style={[styles.pocketName, { color: colors.text }]}>{p.name}</Text>
-                <Text style={[styles.pocketBalance, { color: colors.text }]} numberOfLines={1}>
-                  <Text style={{ fontSize: 14 }}>RM </Text>{p.balance.toFixed(2)}
-                </Text>
-              </View>
-            </TouchableOpacity>
+        {pockets.map((p, index) => (
+          <Animated.View key={p.id} entering={FadeInDown.delay(index * 50)}>
+            <View style={[styles.pocketRow, { backgroundColor: colors.card, borderColor: isEditMode ? colors.error + '30' : colors.border }]}> 
+              
+              <TouchableOpacity 
+                style={styles.pocketInfoTouchable} 
+                activeOpacity={0.7}
+                onPress={() => router.push(`../category/${p.name}`)}
+                disabled={isEditMode}
+              >
+                <View style={[styles.iconWrapper, { backgroundColor: p.color + '15' }]}>
+                  <MaterialCommunityIcons name={p.icon as any} size={24} color={p.color} />
+                </View>
+                <View style={styles.pocketTextGroup}>
+                  <Text style={[styles.pocketName, { color: colors.text }]}>{p.name}</Text>
+                  <Text style={[styles.pocketBalance, { color: colors.text }]} numberOfLines={1}>
+                    <Text style={{ fontSize: 14, fontWeight: '500' }}>RM </Text>
+                    {formatBalance(p.balance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
-            {/* Independent Action Buttons */}
-            <View style={styles.rowActions}>
-              <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => startRename(p.id, p.name)}>
-                <Feather name="edit-2" size={16} color={colors.secondary} />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => startMove(p.id)}>
-                <Feather name="repeat" size={16} color={colors.primary} />
-              </TouchableOpacity>
+              <View style={styles.rowActions}>
+                {isEditMode ? (
+                  <TouchableOpacity 
+                    style={[styles.iconBtn, { backgroundColor: colors.error + '10', borderColor: colors.error + '30' }]} 
+                    onPress={() => startDelete(p.id, p.name, p.balance)}
+                  >
+                    <Feather name="trash-2" size={16} color={colors.error} />
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <TouchableOpacity style={[styles.iconBtn, { borderColor: colors.border }]} onPress={() => startRename(p.id, p.name)}>
+                      <Feather name="edit-3" size={16} color={colors.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.iconBtn, { borderColor: colors.border }]} onPress={() => startMove(p.id)}>
+                      <Feather name="repeat" size={16} color={labelColor} />
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
             </View>
-          </View>
+          </Animated.View>
         ))}
       </ScrollView>
 
-      {/* --- ADD POCKET MODAL --- */}
+      {/* --- DELETE MODAL --- */}
+      <Modal visible={deleteModal} animationType="fade" transparent={true}>
+        <View style={styles.modalCenterOverlay}>
+          <View style={[styles.modalCenterCard, { backgroundColor: colors.card, borderColor: colors.border }]}> 
+            <Feather name="alert-triangle" size={32} color={colors.error} style={{ alignSelf: 'center', marginBottom: 16 }} />
+            <Text style={[styles.modalTitle, { color: colors.text, textAlign: 'center' }]}>Delete Pocket?</Text>
+            <Text style={[styles.modalSubTitle, { color: colors.secondary, textAlign: 'center', marginVertical: 16 }]}>
+              "{pocketToDelete?.name}" will be removed. Funds will return to Main Account.
+            </Text>
+            <View style={styles.modalRowActions}>
+              <TouchableOpacity style={[styles.modalBtnHalf, { borderColor: colors.border }]} onPress={() => setDeleteModal(false)}>
+                <Text style={{ color: colors.text, fontWeight: '700' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtnHalf, { backgroundColor: colors.error }]} onPress={applyDelete}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- ADD MODAL --- */}
       <Modal visible={showAdd} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboardAvoiding}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ width: '100%' }}>
             <View style={[styles.modalSheet, { backgroundColor: colors.card }]}> 
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Create New Pocket</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>New Pocket</Text>
                 <TouchableOpacity onPress={() => setShowAdd(false)}>
                   <Feather name="x" size={24} color={colors.secondary} />
                 </TouchableOpacity>
               </View>
 
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Pocket Name</Text>
-              <TextInput placeholder="e.g. Vacation Fund" placeholderTextColor={colors.secondary} style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} value={newName} onChangeText={setNewName} />
+              <Text style={[styles.inputLabel, { color: labelColor }]}>POCKET NAME</Text>
+              <TextInput placeholder="e.g. Savings" placeholderTextColor={colors.secondary} style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} value={newName} onChangeText={setNewName} />
               
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Initial Amount (RM)</Text>
+              <Text style={[styles.inputLabel, { color: labelColor, marginTop: 16 }]}>INITIAL AMOUNT (RM)</Text>
               <TextInput placeholder="0.00" placeholderTextColor={colors.secondary} style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} value={newAmount} onChangeText={setNewAmount} keyboardType="decimal-pad" />
               
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Fund From</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-                <TouchableOpacity 
-                  style={[styles.chip, sourcePocketId === 'main' ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.background, borderColor: colors.border }]}
-                  onPress={() => setSourcePocketId('main')}
-                >
-                  <Text style={{ color: sourcePocketId === 'main' ? '#fff' : colors.text, fontWeight: '600' }}>Main Account (RM 0.00)</Text>
-                </TouchableOpacity>
-                {pockets.map(p => (
-                  <TouchableOpacity 
-                    key={p.id}
-                    style={[styles.chip, sourcePocketId === p.id ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.background, borderColor: colors.border }]}
-                    onPress={() => setSourcePocketId(p.id)}
-                  >
-                    <Text style={{ color: sourcePocketId === p.id ? '#fff' : colors.text, fontWeight: '600' }}>{p.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <TouchableOpacity style={[styles.modalPrimaryAction, { backgroundColor: colors.primary }]} onPress={addPocket}>
-                <Text style={styles.modalActionTextWhite}>Create Pocket</Text>
+              <TouchableOpacity style={[styles.modalPrimaryAction, { backgroundColor: labelColor }]} onPress={addPocket}>
+                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Create Pocket</Text>
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
@@ -177,63 +236,14 @@ export default function PocketsScreen() {
             <Text style={[styles.modalTitle, { color: colors.text, marginBottom: 16 }]}>Rename Pocket</Text>
             <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, marginBottom: 24 }]} value={renameValue} onChangeText={setRenameValue} autoFocus />
             <View style={styles.modalRowActions}>
-              <TouchableOpacity style={[styles.modalBtnHalf, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => setRenameModal(false)}>
-                <Text style={[styles.modalActionText, { color: colors.text }]}>Cancel</Text>
+              <TouchableOpacity style={[styles.modalBtnHalf, { borderColor: colors.border }]} onPress={() => setRenameModal(false)}>
+                <Text style={{ color: colors.text, fontWeight: '700' }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalBtnHalf, { backgroundColor: colors.primary }]} onPress={applyRename}>
-                <Text style={styles.modalActionTextWhite}>Save</Text>
+              <TouchableOpacity style={[styles.modalBtnHalf, { backgroundColor: labelColor }]} onPress={applyRename}>
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Modal>
-
-      {/* --- MOVE MONEY MODAL --- */}
-      <Modal visible={moveModal} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboardAvoiding}>
-            <View style={[styles.modalSheet, { backgroundColor: colors.card }]}> 
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Move Money</Text>
-                <TouchableOpacity onPress={() => setMoveModal(false)}>
-                  <Feather name="x" size={24} color={colors.secondary} />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={[styles.inputLabel, { color: colors.text }]}>From</Text>
-              <View style={[styles.staticChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <Text style={[styles.staticChipText, { color: colors.text }]}>
-                  {moveSource === 'main' ? 'Main Account' : pockets.find(p=>p.id===moveSource)?.name}
-                </Text>
-              </View>
-
-              <Text style={[styles.inputLabel, { color: colors.text, marginTop: 16 }]}>To</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-                 <TouchableOpacity 
-                  style={[styles.chip, moveTarget === 'main' ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.background, borderColor: colors.border }]}
-                  onPress={() => setMoveTarget('main')}
-                >
-                  <Text style={{ color: moveTarget === 'main' ? '#fff' : colors.text, fontWeight: '600' }}>Main Account</Text>
-                </TouchableOpacity>
-                {pockets.filter(p => p.id !== moveSource).map(p => (
-                  <TouchableOpacity 
-                    key={p.id}
-                    style={[styles.chip, moveTarget === p.id ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.background, borderColor: colors.border }]}
-                    onPress={() => setMoveTarget(p.id)}
-                  >
-                    <Text style={{ color: moveTarget === p.id ? '#fff' : colors.text, fontWeight: '600' }}>{p.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <Text style={[styles.inputLabel, { color: colors.text, marginTop: 16 }]}>Amount (RM)</Text>
-              <TextInput placeholder="0.00" placeholderTextColor={colors.secondary} style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} value={moveAmount} onChangeText={setMoveAmount} keyboardType="decimal-pad" />
-              
-              <TouchableOpacity style={[styles.modalPrimaryAction, { backgroundColor: colors.primary, marginTop: 8 }]} onPress={applyMove}>
-                <Text style={styles.modalActionTextWhite}>Confirm Transfer</Text>
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>
@@ -247,25 +257,33 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     flexDirection: 'row', 
-    justifyContent: 'space-between', 
     alignItems: 'center' 
   },
   backButton: { width: 40, height: 40, justifyContent: 'center' },
-  title: { fontSize: 20, fontWeight: '800' },
-  addButton: { 
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  title: { fontSize: 20, fontWeight: '800', flex: 1 },
+  headerActions: { flexDirection: 'row', gap: 8 },
+  newBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4, 
+    paddingHorizontal: 12, 
     paddingVertical: 8, 
-    paddingHorizontal: 16, 
-    borderRadius: 20 
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  addButtonText: { fontWeight: '700', fontSize: 15 },
-  totalContainer: { paddingHorizontal: 20, marginBottom: 12, alignItems: 'center', width: '100%' },
-  totalLabel: { fontSize: 14, fontWeight: '500', marginBottom: 4, textAlign: 'center' },
-  currencyPrefix: { fontSize: 18, fontWeight: '600' },
-  totalAmount: { fontSize: 36, fontWeight: '800', letterSpacing: -1, textAlign: 'center' },
-  list: { paddingHorizontal: 20, paddingBottom: 120, gap: 16, width: '100%', flexGrow: 1 },
+  newBtnText: { fontSize: 14, fontWeight: '700' },
+  editBtn: { 
+    width: 38, 
+    height: 38, 
+    borderRadius: 12, 
+    borderWidth: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  totalContainer: { paddingHorizontal: 20, marginBottom: 24, alignItems: 'center' },
+  totalLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 8 },
+  totalAmount: { fontSize: 36, fontWeight: '800', letterSpacing: -0.5 },
+  list: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
   pocketRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
@@ -275,59 +293,42 @@ const styles = StyleSheet.create({
     borderWidth: 1 
   },
   pocketInfoTouchable: {
-    flex: 1, // Takes up remaining space pushing buttons to the right
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
   },
-  pocketTextGroup: { flex: 1, paddingRight: 8 },
+  pocketTextGroup: { flex: 1 },
   iconWrapper: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pocketName: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  pocketName: { fontSize: 15, fontWeight: '600', marginBottom: 2 },
   pocketBalance: { fontSize: 18, fontWeight: '800' },
   rowActions: { flexDirection: 'row', gap: 8 },
   iconBtn: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 20, 
+    width: 38, 
+    height: 38, 
+    borderRadius: 12, 
     borderWidth: 1,
-    alignItems: 'center',
+    alignItems: 'center', 
     justifyContent: 'center'
   },
   
   /* Modals */
-  modalOverlay: { 
-    flex: 1, 
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  keyboardAvoiding: {
-    width: '100%',
-  },
-  modalSheet: { 
-    padding: 24, 
-    borderTopLeftRadius: 32, 
-    borderTopRightRadius: 32,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-  },
-  modalCenterOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 20 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  modalCenterOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)', padding: 20 },
   modalCenterCard: { width: '100%', padding: 24, borderRadius: 24, borderWidth: 1 },
+  modalSheet: { padding: 24, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingBottom: Platform.OS === 'ios' ? 40 : 24 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   modalTitle: { fontSize: 20, fontWeight: '800' },
-  inputLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 12 },
-  input: { borderWidth: 1, borderRadius: 16, padding: 16, fontSize: 16, fontWeight: '500', marginBottom: 8 },
-  chipScroll: { gap: 8, paddingBottom: 8 },
-  chip: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, marginRight: 8 },
-  staticChip: { paddingVertical: 16, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1 },
-  staticChipText: { fontSize: 16, fontWeight: '600' },
+  modalSubTitle: { fontSize: 15, lineHeight: 22 },
+  inputLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12 },
+  input: { borderWidth: 1, borderRadius: 16, padding: 16, fontSize: 16, fontWeight: '600' },
   modalPrimaryAction: { paddingVertical: 18, borderRadius: 16, alignItems: 'center', marginTop: 24 },
-  modalActionTextWhite: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  modalActionText: { fontWeight: '700', fontSize: 16 },
   modalRowActions: { flexDirection: 'row', gap: 12 },
   modalBtnHalf: { flex: 1, paddingVertical: 16, borderRadius: 16, alignItems: 'center', borderWidth: 1 },
 });
