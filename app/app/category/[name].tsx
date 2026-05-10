@@ -1,8 +1,8 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function CategoryScreen() {
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   balanceLabel: {
-    fontSize: 11,
+    fontSize: 16,
     fontWeight: '800',
     letterSpacing: 1.5,
   },
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   transactionSection: {},
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 16,
     fontWeight: '800',
     letterSpacing: 1.2,
     marginBottom: 16,

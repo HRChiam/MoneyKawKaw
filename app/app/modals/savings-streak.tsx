@@ -28,7 +28,7 @@ export default function SavingsStreakScreen() {
           </View>
           <Text style={[styles.placeholderTitle, { color: colors.text }]}>Consistent Saver!</Text>
           <Text style={[styles.placeholderSub, { color: colors.secondary }]}>
-            You've maintained your savings streak for 5 days. Keep it up to unlock more GX Points and exclusive rewards!
+            You&apos;ve maintained your savings streak for 5 days. Keep it up to unlock more GX Points and exclusive rewards!
           </Text>
           
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>

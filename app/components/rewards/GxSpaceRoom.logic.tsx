@@ -43,7 +43,7 @@ export function useGxSpaceRoom(
         }),
       ])
     ).start();
-  }, []);
+  }, [avatarAnim]);
 
   const openStore = (tab: 'furniture' | 'decor') => {
     setActiveTab(tab);

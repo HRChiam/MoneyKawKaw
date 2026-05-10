@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,7 +14,7 @@ export default function PocketsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { pockets, setPockets } = useFinancial();
-  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [isBalanceVisible] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const primaryBrand = '#771FFF'; // GX Violet
@@ -98,7 +98,7 @@ export default function PocketsScreen() {
       {/* Header Row */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="chevron-left" size={32} color={colors.text} />
+          <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Pockets</Text>
         
@@ -262,7 +262,7 @@ export default function PocketsScreen() {
             </View>
             <Text style={[styles.modalTitle, { color: colors.text, textAlign: 'center' }]}>Delete Pocket?</Text>
             <Text style={[styles.modalSubTitle, { color: colors.secondary, textAlign: 'center' }]}>
-              "{pocketToDelete?.name}" funds will be returned to your main account.
+              &quot;{pocketToDelete?.name}&quot; funds will be returned to your main account.
             </Text>
             <View style={styles.modalRowActions}>
               <TouchableOpacity style={[styles.modalBtnHalf, { borderColor: colors.border }]} onPress={() => setDeleteModal(false)}>
@@ -364,17 +364,16 @@ const styles = StyleSheet.create({
   headerRow: { 
     paddingHorizontal: 20, 
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 1,
     flexDirection: 'row', 
     alignItems: 'center' 
   },
   backButton: { marginRight: 12 },
   title: { 
-    fontSize: 28, 
-    fontWeight: '900', 
+    fontSize: 20, 
+    fontWeight: '800', 
     flex: 1,
     fontFamily: 'sans-serif-rounded',
-    letterSpacing: -0.5,
   },
   headerActions: { flexDirection: 'row', gap: 12 },
   headerBtn: {
@@ -388,7 +387,7 @@ const styles = StyleSheet.create({
   heroSection: {
     alignItems: 'center',
     paddingVertical: 32,
-    marginBottom: 24,
+    marginBottom: 1,
   },
   heroLabel: {
     fontSize: 12,
@@ -398,19 +397,19 @@ const styles = StyleSheet.create({
     fontFamily: 'sans-serif-rounded',
   },
   heroAmount: {
-    fontSize: 48,
+    fontSize: 32,
     fontWeight: '900',
     fontFamily: 'sans-serif-rounded',
     letterSpacing: -1,
   },
   heroCurrency: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
     color: 'rgba(255,255,255,0.4)',
   },
   pocketsList: { gap: 16 },
   pocketCard: { 
-    padding: 20, 
+    padding: 16, 
     borderRadius: 24, 
     borderWidth: 1.5,
   },
@@ -419,16 +418,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconWrapper: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
   },
   pocketInfo: { flex: 1 },
   pocketName: { 
-    fontSize: 14, 
+    fontSize: 13, 
     fontWeight: '700', 
     marginBottom: 4,
     textTransform: 'uppercase',
@@ -436,7 +435,7 @@ const styles = StyleSheet.create({
     fontFamily: 'sans-serif-rounded',
   },
   pocketBalance: { 
-    fontSize: 24, 
+    fontSize: 20, 
     fontWeight: '900',
     fontFamily: 'sans-serif-rounded',
   },

@@ -102,9 +102,9 @@ export default function TransactionScreen() {
       {/* Header */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="chevron-left" size={32} color={colors.text} />
+          <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Send Money</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Transfer</Text>
       </View>
 
       <ScrollView 
@@ -215,11 +215,12 @@ export default function TransactionScreen() {
                         color={pockets.find(p => p.name === selectedSource)?.color} 
                       />
                     </View>
-                    <View>
+                    <View style={{ flex: 1 }}>
                       <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Selected Pocket</Text>
-                      <Text style={[styles.itemTitle, { color: colors.text }]}>
-                        {selectedSource} (RM {pockets.find(p => p.name === selectedSource)?.balance.toFixed(0)})
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text style={[styles.itemTitle, { color: colors.text }]}>{selectedSource}</Text>
+                        <Text style={[styles.itemTitle, { color: colors.secondary, fontSize: 14, fontWeight: '600' }]}>RM {pockets.find(p => p.name === selectedSource)?.balance.toFixed(2)}</Text>
+                      </View>
                     </View>
                   </>
                 ) : (
@@ -254,9 +255,13 @@ export default function TransactionScreen() {
                       </View>
                       <Text style={[styles.bankItemText, { color: colors.text }]}>{pocket.name}</Text>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={{ color: colors.secondary, fontSize: 13, fontWeight: '600' }}>RM {pocket.balance.toFixed(0)}</Text>
-                      {selectedSource === pocket.name && <Feather name="check" size={16} color={primaryBrand} />}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <Text style={{ color: colors.secondary, fontSize: 14, fontWeight: '700' }}>RM {pocket.balance.toFixed(2)}</Text>
+                      <MaterialCommunityIcons 
+                        name={selectedSource === pocket.name ? "radiobox-marked" : "radiobox-blank"} 
+                        size={20} 
+                        color={selectedSource === pocket.name ? primaryBrand : colors.secondary + '40'} 
+                      />
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -327,10 +332,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '900',
+    fontSize: 20,
+    fontWeight: '800',
     fontFamily: 'sans-serif-rounded',
-    letterSpacing: -0.5,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -355,15 +359,13 @@ const styles = StyleSheet.create({
   heroCurrency: {
     fontSize: 32,
     fontWeight: '700',
-    marginRight: 8,
-    marginTop: 8,
+    marginRight: 4,
     fontFamily: 'sans-serif-rounded',
   },
   heroAmountInput: {
-    fontSize: 64,
+    fontSize: 32,
     fontWeight: '900',
-    minWidth: 150,
-    textAlign: 'center',
+    textAlign: 'left',
     fontFamily: 'sans-serif-rounded',
   },
   quickAmountRow: {
