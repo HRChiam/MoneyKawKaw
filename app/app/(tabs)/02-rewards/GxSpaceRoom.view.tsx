@@ -67,22 +67,34 @@ export default function GxSpaceRoomView(props: Props) {
             {activeTab === 'furniture' ? (
               <>
                 <TouchableOpacity style={[styles.buyCard, ownsLocker && styles.boughtCard]} onPress={() => !ownsLocker && handleIntentToBuy({ id: 'locker', name: 'Locker', cost: 400, image: require('@/assets/images/locker.png'), setter: props.setOwnsLocker as any })}>
+                  <View style={styles.cardImageContainer}>
+                    <Image source={require('@/assets/images/locker.png')} style={styles.cardImage} resizeMode="contain" />
+                  </View>
                   <Text style={styles.itemLabel}>Locker</Text>
                   <Text style={styles.priceLabel}>{ownsLocker ? 'Placed' : '400 pts'}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={[styles.buyCard, ownsTable && styles.boughtCard]} onPress={() => !ownsTable && handleIntentToBuy({ id: 'table', name: 'Table', cost: 300, image: require('@/assets/images/table.png'), setter: props.setOwnsTable as any })}>
+                  <View style={styles.cardImageContainer}>
+                    <Image source={require('@/assets/images/table.png')} style={styles.cardImage} resizeMode="contain" />
+                  </View>
                   <Text style={styles.itemLabel}>Table</Text>
                   <Text style={styles.priceLabel}>{ownsTable ? 'Placed' : '300 pts'}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={[styles.buyCard, ownsChair && styles.boughtCard]} onPress={() => !ownsChair && handleIntentToBuy({ id: 'chair', name: 'Chair', cost: 250, image: require('@/assets/images/chair.png'), setter: props.setOwnsChair as any })}>
+                  <View style={styles.cardImageContainer}>
+                    <Image source={require('@/assets/images/chair.png')} style={styles.cardImage} resizeMode="contain" />
+                  </View>
                   <Text style={styles.itemLabel}>Chair</Text>
                   <Text style={styles.priceLabel}>{ownsChair ? 'Placed' : '250 pts'}</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <TouchableOpacity style={[styles.buyCard, ownsPlant && styles.boughtCard]} onPress={() => !ownsPlant && handleIntentToBuy({ id: 'plant', name: 'Plant', cost: 150, image: require('@/assets/images/plant.png'), setter: props.setOwnsPlant as any })}>
+                <View style={styles.cardImageContainer}>
+                  <Image source={require('@/assets/images/plant.png')} style={styles.cardImage} resizeMode="contain" />
+                </View>
                 <Text style={styles.itemLabel}>Plant</Text>
                 <Text style={styles.priceLabel}>{ownsPlant ? 'Placed' : '150 pts'}</Text>
               </TouchableOpacity>
@@ -122,14 +134,16 @@ const styles = StyleSheet.create({
   tablePos: { bottom: '35%', right: '21%' },
   chairPos: { bottom: '35%', left: '55%' },
   plantPos: { bottom: '36%', left: '17%' },
-  storeSheet: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 332, backgroundColor: 'rgba(19, 8, 34, 0.95)', borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderBottomWidth: 0, borderColor: colors.border },
+  storeSheet: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 350, backgroundColor: 'rgba(19, 8, 34, 0.95)', borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderBottomWidth: 0, borderColor: colors.border },
   tabBar: { height: 60, flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
   tabIconBtn: { alignItems: 'center', justifyContent: 'center', flex: 1 },
   tabIconText: { fontSize: 10, fontWeight: '600', marginTop: 2 },
-  storeContent: { padding: 16, height: 240 },
+  storeContent: { padding: 16, height: 290 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   buyCard: { width: (SCREEN_WIDTH - 84) / 2, backgroundColor: '#1C0D33', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
   boughtCard: { opacity: 0.5, backgroundColor: '#130822' },
+  cardImageContainer: { width: 50, height: 50, marginBottom: 8, justifyContent: 'center', alignItems: 'center' },
+  cardImage: { width: '100%', height: '100%' },
   itemLabel: { color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 4 },
   priceLabel: { color: colors.secondary, fontSize: 11, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.75)', justifyContent: 'center', alignItems: 'center' },

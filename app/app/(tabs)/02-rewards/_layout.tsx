@@ -7,12 +7,12 @@ import {
   TouchableOpacity, 
   Animated, 
   PanResponder, 
-  Dimensions 
+  Dimensions,
+  Image // <-- Ensure Image is imported
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; 
 
-// Make sure your imports match your new separated folder structure!
-import GxSpaceRoom from './GxSpaceRoom'; // Assuming this imports the combined Logic+View
+import GxSpaceRoom from './GxSpaceRoom'; 
 import HeaderPills from './HeaderPills';
 import RewardsModal from './RewardsModal';
 import ChallengesModal from './ChallengesModal';
@@ -38,20 +38,14 @@ export default function RewardsScreen() {
   const [showRewardsModal, setShowRewardsModal] = useState(false);
   const [showChallengesModal, setShowChallengesModal] = useState(false);
   
-  // The master animation value tracking the user's thumb
   const panY = useRef(new Animated.Value(MIDDLE_POSITION)).current;
 
-  // --- NEW: GLOBAL ROOM INTERPOLATIONS ---
-  // When panY is at BOTTOM (panel hidden) -> Room is normal size (1)
-  // When panY is at MIDDLE (panel half) -> Room shrinks to 0.85
-  // When panY is at TOP (panel full) -> Room shrinks to 0.7
   const globalRoomScale = panY.interpolate({
     inputRange: [TOP_POSITION, MIDDLE_POSITION, BOTTOM_POSITION],
     outputRange: [0.3, 0.7, 1],
     extrapolate: 'clamp',
   });
 
-  // When panY goes up, the room is pushed higher up the screen (-150px)
   const globalRoomTranslateY = panY.interpolate({
     inputRange: [TOP_POSITION, MIDDLE_POSITION, BOTTOM_POSITION],
     outputRange: [-700, -400, 0],
@@ -91,8 +85,22 @@ export default function RewardsScreen() {
   ).current;
 
   const streaks = [
-    { id: 1, title: 'Savior Streak', description: '7 days under daily limit', iconName: 'shield-checkmark', status: 'active', badgeColor: colors.success },
-    { id: 2, title: 'Reviewer Streak', description: '0 days checking AI insights', iconName: 'eye', status: 'inactive', badgeColor: colors.secondary },
+    { 
+      id: 1, 
+      title: 'Savior Streak', 
+      description: '7 days under daily limit',
+      image: require('../../../assets/images/savior_streak_badge.png'), 
+      status: 'active',
+      badgeColor: colors.success
+    },
+    { 
+      id: 2, 
+      title: 'Reviewer Streak', 
+      description: '0 days checking AI insights',
+      image: require('../../../assets/images/reviewer_streak_badge.png'), 
+      status: 'inactive',
+      badgeColor: colors.secondary
+    },
   ];
 
   const challenges = [
@@ -107,10 +115,8 @@ export default function RewardsScreen() {
       
       {/* LAYER 1: THE GX SPACE (BACKGROUND) */}
       <View style={styles.gxSpaceContainer}>
-        {/* Assumes you created a HeaderPills component as referenced in your code */}
         <HeaderPills points={points} freezeCount={3} />
         
-        {/* --- NEW: WRAPPED GX SPACE IN ANIMATED VIEW --- */}
         <Animated.View 
           style={[
             styles.gxSpacePlaceholder,
@@ -144,7 +150,17 @@ export default function RewardsScreen() {
                 <View key={streak.id} style={[styles.largeStreakCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.badgeDisplayArea}>
                     <View style={[styles.badgeGlow, { backgroundColor: streak.status === 'active' ? streak.badgeColor + '30' : 'transparent' }]}>
-                      <Ionicons name={streak.iconName as any} size={48} color={streak.status === 'active' ? streak.badgeColor : colors.secondary} />
+                      
+                      {/* --- UPDATED: Replaced Ionicons with Image Component --- */}
+                      <Image 
+                        source={streak.image} 
+                        style={[
+                          styles.badgeImage, 
+                          { opacity: streak.status === 'active' ? 1 : 0.4 } // Dim inactive badges
+                        ]} 
+                        resizeMode="contain" 
+                      />
+
                     </View>
                     {streak.status === 'inactive' && (
                       <View style={[styles.inProgressTag, { backgroundColor: colors.border }]}>
@@ -194,7 +210,7 @@ export default function RewardsScreen() {
 const styles = StyleSheet.create({
   mainContainer: { flex: 1 },
   gxSpaceContainer: { ...StyleSheet.absoluteFillObject, paddingTop: 60 },
-  // Notice we removed flex:1 from the placeholder so it scales accurately from the center!
+  header: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 24, zIndex: 10, paddingHorizontal: 16 },
   gxSpacePlaceholder: { width: '100%', height: '100%', paddingBottom: 150 },
   slidingPanel: { position: 'absolute', left: 0, right: 0, top: 0, height: WINDOW_HEIGHT, borderTopLeftRadius: 32, borderTopRightRadius: 32, borderTopWidth: 1 },
   dragHandleArea: { width: '100%', height: 40, alignItems: 'center', justifyContent: 'center' },
@@ -204,7 +220,17 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
   largeStreakCard: { width: 160, height: 200, borderRadius: 20, padding: 16, borderWidth: 1, justifyContent: 'space-between' },
   badgeDisplayArea: { flex: 1, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  badgeGlow: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
+  badgeGlow: { 
+    width: 100, 
+    height: 100, 
+    borderRadius: 50, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  badgeImage: { 
+    width: 107, 
+    height: 107 
+  },
   inProgressTag: { position: 'absolute', bottom: -5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, transform: [{ rotate: '-5deg' }] },
   inProgressText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
   streakTextArea: { marginTop: 12, alignItems: 'center' },
