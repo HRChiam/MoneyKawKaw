@@ -13,8 +13,14 @@ interface GradientTextProps extends TextProps {
   };
 }
 
+const GX_BANK_GRADIENT = {
+  colors: ['#771FFF', '#F8326D'],
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 0 }, // Horizontal gradient
+};
+
 export const GradientText = (props: GradientTextProps) => {
-  const { gradient = Gradients.horizontal, style, ...otherProps } = props;
+  const { gradient = GX_BANK_GRADIENT, style, ...otherProps } = props;
 
   return (
     <MaskedView

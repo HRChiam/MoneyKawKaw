@@ -13,7 +13,7 @@ export default function NotificationsScreen() {
 
   const [aiActionState, setAiActionState] = useState<'pending' | 'confirmed'>('pending');
 
-  const labelColor = '#A78BFA'; // Signature Lavender
+  const labelColor = '#771FFF'; // GX Violet
 
   const notifications = [
     {
@@ -23,7 +23,7 @@ export default function NotificationsScreen() {
       message: "Last month you spent more on food and less on entertainment. I've auto-adjusted your new Monthly Limits to match your actual lifestyle. Look good?",
       timestamp: 'Just now',
       icon: 'brain',
-      color: '#A78BFA',
+      color: '#771FFF',
       isAI: true
     },
     {

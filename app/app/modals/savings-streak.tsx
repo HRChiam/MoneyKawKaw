@@ -10,7 +10,7 @@ export default function SavingsStreakScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const labelColor = '#A78BFA';
+  const labelColor = '#771FFF';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

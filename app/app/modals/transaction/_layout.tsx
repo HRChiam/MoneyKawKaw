@@ -25,7 +25,7 @@ export default function TransactionScreen() {
   const [showBankPicker, setShowBankPicker] = useState(false);
 
   const pockets = [
-    { name: 'Saving', icon: 'safe', balance: 50.00, color: '#A78BFA' }, // Purple
+    { name: 'Saving', icon: 'safe', balance: 50.00, color: '#771FFF' }, // GX Violet
     { name: 'Food', icon: 'food-fork-drink', balance: 800.00, color: '#FB7185' }, // Rose/Pink
     { name: 'Transport', icon: 'car-side', balance: 200.00, color: '#60A5FA' }, // Sky Blue
     { name: 'Utilities', icon: 'lightning-bolt', balance: 120.00, color: '#FBBF24' }, // Amber
@@ -33,12 +33,12 @@ export default function TransactionScreen() {
 
   const quickAmounts = ['10', '50', '100', '200'];
 
-  // All labels unified to Purple
-  const labelColor = '#A78BFA'; 
+  // All labels unified to GX Violet
+  const labelColor = '#771FFF'; 
 
   // Permanent icon colors
   const iconPalette = {
-    recipient: '#A78BFA', // Purple
+    recipient: '#771FFF', // GX Violet
     amount: '#FBBF24',    // Amber
     source: '#34D399',    // Emerald
     reference: '#60A5FA', // Sky Blue

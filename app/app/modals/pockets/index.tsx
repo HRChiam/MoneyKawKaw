@@ -14,12 +14,12 @@ export default function PocketsScreen() {
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [pockets, setPockets] = useState([
-    { id: 1, name: 'Saving', balance: 50.00, icon: 'safe', color: '#A78BFA' },
+    { id: 1, name: 'Saving', balance: 50.00, icon: 'safe', color: '#771FFF' },
     { id: 2, name: 'Food', balance: 800.00, icon: 'food-fork-drink', color: '#FB7185' },
     { id: 3, name: 'Transport', balance: 200.00, icon: 'car-side', color: '#60A5FA' },
   ]);
 
-  const labelColor = '#A78BFA'; // Signature Lavender
+  const labelColor = '#771FFF'; // GX Violet
 
   const formatBalance = (amount: string | number) => {
     return isBalanceVisible ? amount.toString() : '••••••';

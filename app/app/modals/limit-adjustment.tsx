@@ -25,7 +25,7 @@ export default function LimitAdjustmentScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const labelColor = '#A78BFA';
+  const labelColor = '#771FFF';
 
   const updateExpenseAmount = (expense: string, amount: string) => {
     setExpenseAmounts(prev => ({ ...prev, [expense]: amount }));
