@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import Animated, { useSharedValue, withTiming, Easing, useAnimatedStyle } from 'react-native-reanimated';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { GradientText } from '@/components/gradient-text';
 
 type OnboardingStep = 'logo' | 'income-expenses' | 'persona' | 'loading';
 
@@ -101,7 +102,7 @@ export default function OnboardingScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {currentStep === 'logo' && (
         <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-          <Text style={[styles.logoTitle, { color: colors.primary }]}>MoneyKawKaw</Text>
+          <GradientText style={styles.logoTitle}>MoneyKawKaw</GradientText>
         </Animated.View>
       )}
 
@@ -112,7 +113,7 @@ export default function OnboardingScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.primary }]}>MoneyKawKaw</Text>
+            <GradientText style={styles.title}>MoneyKawKaw</GradientText>
             <Text style={[styles.subtitle, { color: colors.secondary }]}>Let&apos;s set up your financial baseline</Text>
           </View>
 
@@ -201,7 +202,7 @@ export default function OnboardingScreen() {
           scrollEventThrottle={16}
         >
           <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.primary }]}>MoneyKawKaw</Text>
+            <GradientText style={styles.title}>MoneyKawKaw</GradientText>
           </View>
 
           <View style={styles.section}>
