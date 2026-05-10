@@ -38,15 +38,15 @@ export const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
         entering={FadeInDown.duration(600)}
         style={styles.successContainer}
       >
-        <View style={[styles.successIconWrapper, { backgroundColor: '#15fabd20' }]}>
-          <Ionicons name="checkmark-circle" size={100} color="#15fabd" />
+        <View style={[styles.successIconWrapper, { backgroundColor: '#791fff4e' }]}>
+          <Ionicons name="checkmark-circle" size={100} color={primaryBrand} />
         </View>
         <Text style={[styles.successTitle, { color: colors.text }]}>Transfer Successful!</Text>
         
         <View style={[styles.receiptCard, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }]}>
           <View style={styles.receiptRow}>
             <Text style={[styles.receiptLabel, { color: colors.secondary }]}>Amount</Text>
-            <Text style={[styles.receiptValue, { color: '#FBBF24' }]}>RM {parseFloat(amount).toFixed(2)}</Text>
+            <Text style={[styles.receiptValue, { color: colors.text }]}>RM {parseFloat(amount).toFixed(2)}</Text>
           </View>
           <View style={styles.receiptRow}>
             <Text style={[styles.receiptLabel, { color: colors.secondary }]}>To Account</Text>
@@ -58,19 +58,14 @@ export const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
           </View>
           <View style={styles.receiptRow}>
             <Text style={[styles.receiptLabel, { color: colors.secondary }]}>From</Text>
-            <Text style={[styles.receiptValue, { color: primaryBrand }]}>{selectedSource} Pocket</Text>
+            <Text style={[styles.receiptValue, { color: colors.text }]}>{selectedSource} Pocket</Text>
           </View>
         </View>
         
         <TouchableOpacity onPress={handleDone} style={styles.doneButtonWrapper}>
-          <LinearGradient
-            colors={['#771FFF', '#F8326D']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.gradientButton}
-          >
+          <View style={[styles.solidButton, { backgroundColor: primaryBrand }]}>
             <Text style={styles.doneButtonText}>Done</Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -128,7 +123,7 @@ const styles = StyleSheet.create({
   doneButtonWrapper: {
     width: '100%',
   },
-  gradientButton: {
+  solidButton: {
     height: 64,
     borderRadius: 20,
     alignItems: 'center',

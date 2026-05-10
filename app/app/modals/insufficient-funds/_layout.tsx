@@ -5,6 +5,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 export default function InsufficientFundsScreen() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function InsufficientFundsScreen() {
   const colors = Colors[colorScheme ?? 'light'];
 
   const { toAccount, toBank, amount, reference, selectedSource } = params;
+  const shortfall = Math.max(0, Number(amount) - 20);
 
   const handleSacrificeOption = () => {
     // Navigate back to transaction screen with success state
@@ -35,71 +37,94 @@ export default function InsufficientFundsScreen() {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.scrollContent}
-    >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <MaterialCommunityIcons name="chevron-left" size={28} color={colors.text} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Transaction</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.alertContainer}>
-        <View style={styles.alertIconWrapper}>
-          <FontAwesome5 name="sad-tear" size={60} color="#ffffff" />
-        </View>
-        <Text style={[styles.alertTitle, { color: '#cb184e' }]}>Insufficient Funds</Text>
-      </View>
-
-      <View style={[styles.receiptCard, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }]}>
-        <View style={styles.receiptCol}>
-          <Text style={[styles.receiptLabel, { color: colors.secondary }]}>Amount to Transfer</Text>
-          <Text style={[styles.receiptValue, { color: colors.text, fontSize: 30 }]}>RM {amount}</Text>
-        </View>
-        <View style={[styles.receiptCol, { marginTop: 20 }]}>
-          <Text style={[styles.receiptLabel, { color: colors.secondary }]}>{selectedSource} Pocket Balance</Text>
-          <Text style={[styles.receiptValue, { color: '#cb184e', fontSize: 30 }]}>RM 20</Text>
-        </View>
-      </View>
-
-      <View style={styles.alternativesSection}>
-        <Text style={[styles.alternativesTitle, { color: colors.text }]}>
-          Would you like to:
-        </Text>
-
-        <TouchableOpacity
-          style={styles.sacrificeButtonWrapper}
-          onPress={handleSacrificeOption}
-        >
-          <LinearGradient
-            colors={['#771FFF', '#F8326D']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.gradientButton}
-          >
-            <MaterialCommunityIcons name="star-four-points" size={24} color="white" style={{marginRight:10}} />
-            <Text style={styles.sacrificeButtonText}>
-              Move RM{Number(amount)-20} from Entertainment Pocket to {selectedSource} Pocket
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.cancelButton,
-            { backgroundColor: 'rgba(168, 148, 148, 0.12)', borderColor: 'rgba(255,255,255,0.1)' },
-          ]}
-          onPress={handleCancel}
-        >
-          <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-            Cancel Transaction
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* Status Illustration Area */}
+        <Animated.View entering={FadeInDown.delay(100)} style={styles.statusArea}>
+          <View style={styles.iconRing}>
+            <LinearGradient
+              colors={['#cb184e20', '#cb184e40']}
+              style={styles.iconBackground}
+            >
+            <FontAwesome5 name="sad-tear" size={60} color="#ffffff" />
+            </LinearGradient>
+          </View>
+          <Text style={[styles.alertTitle, { color: colors.text }]}>Oops! Not enough funds</Text>
+          <Text style={[styles.alertSubtitle, { color: colors.secondary }]}>
+            Your {selectedSource} Pocket is a bit short for this transfer.
           </Text>
-        </TouchableOpacity>
-      </View>
+        </Animated.View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        {/* The "Bridge the Gap" Card */}
+        <Animated.View entering={FadeInUp.delay(300)} style={[styles.bridgeCard, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }]}>
+          <View style={styles.bridgeRow}>
+            <View style={styles.bridgeLabelGroup}>
+              <View style={[styles.dot, { backgroundColor: colors.secondary }]} />
+              <Text style={[styles.bridgeLabel, { color: colors.secondary }]}>Total Required</Text>
+            </View>
+            <Text style={[styles.bridgeValue, { color: colors.text }]}>RM {Number(amount).toFixed(2)}</Text>
+          </View>
+
+          <View style={styles.bridgeRow}>
+            <View style={styles.bridgeLabelGroup}>
+              <View style={[styles.dot, { backgroundColor: '#15fabd' }]} />
+              <Text style={[styles.bridgeLabel, { color: colors.secondary }]}>Available Balance</Text>
+            </View>
+            <Text style={[styles.bridgeValue, { color: '#15fabd' }]}>RM 20.00</Text>
+          </View>
+
+          <View style={[styles.separator, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
+
+          <View style={styles.bridgeRow}>
+            <Text style={[styles.shortfallLabel, { color: colors.text }]}>Shortfall</Text>
+            <View style={styles.shortfallBadge}>
+              <Text style={styles.shortfallValue}>RM {shortfall.toFixed(2)}</Text>
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Action Section */}
+        <View style={styles.alternativesSection}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Here's a solution:</Text>
+          
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleSacrificeOption}
+          >
+            <View style={[styles.solidButton, { backgroundColor: colors.primary }]}>
+              <View style={styles.buttonIcon}>
+                <MaterialCommunityIcons name="lightning-bolt" size={24} color="white" />
+              </View>
+              <View style={styles.buttonTextContent}>
+                <Text style={styles.buttonMainText}>AI Suggestion</Text>
+                <Text style={styles.buttonSubText}>
+                  Move RM {shortfall.toFixed(2)} from Entertainment to complete this.
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.cancelButton, { borderColor: 'rgba(255,255,255,0.1)' }]}
+            onPress={handleCancel}
+          >
+            <Text style={[styles.cancelButtonText, { color: 'white' }]}>
+              Cancel Transaction
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+    </View>
   );
 }
 
@@ -108,107 +133,168 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingHorizontal: 24,
     paddingBottom: 40,
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingVertical: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
     fontFamily: 'sans-serif-rounded',
   },
-  alertContainer: {
+  statusArea: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
     marginBottom: 32,
   },
-  alertIconWrapper: {
-    marginBottom: 16,
+  iconRing: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: '#cb184e30',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  iconBackground: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   alertTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     fontFamily: 'sans-serif-rounded',
-    letterSpacing: -0.5,
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  receiptCard: {
-    marginHorizontal: 20,
+  alertSubtitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    lineHeight: 22,
+  },
+  bridgeCard: {
     padding: 24,
-    borderRadius: 24,
+    borderRadius: 28,
     borderWidth: 1.5,
     marginBottom: 32,
   },
-  receiptRow: {
+  bridgeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
-   receiptCol: {
-    flexDirection: 'column',
+  bridgeLabelGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  receiptLabel: {
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  bridgeLabel: {
     fontSize: 14,
     fontWeight: '700',
     fontFamily: 'sans-serif-rounded',
   },
-  receiptValue: {
+  bridgeValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
+  },
+  separator: {
+    height: 1,
+    marginVertical: 16,
+  },
+  shortfallLabel: {
     fontSize: 16,
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
+  },
+  shortfallBadge: {
+    backgroundColor: '#cb184e20',
+    paddingHorizontal: 12,
+    // paddingVertical: 6,
+    borderRadius: 12,
+  },
+  shortfallValue: {
+    color: '#F8326D',
+    fontSize: 22,
     fontWeight: '900',
     fontFamily: 'sans-serif-rounded',
   },
   alternativesSection: {
-    paddingHorizontal: 20,
+    marginTop: 10,
   },
-  alternativesTitle: {
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    marginBottom: 20,
+    marginBottom: 16,
     fontFamily: 'sans-serif-rounded',
   },
-  sacrificeButtonWrapper: {
-    width: '100%',
-    marginBottom: 12,
+  actionButton: {
+    marginBottom: 16,
   },
-  gradientButton: {
-    height: 80,
-    borderRadius: 20,
+  solidButton: {
+    padding: 20,
+    borderRadius: 24,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
-    flexDirection: 'row',
-    paddingHorizontal: 30,
-    paddingVertical: 20,
   },
-  sacrificeButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '900',
-    fontFamily: 'sans-serif-rounded',
-    textAlign: 'left',
-  },
-  cancelButton: {
-    height: 64,
-    borderRadius: 20,
+  buttonIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    marginTop: 8,
+    marginRight: 16,
+  },
+  buttonTextContent: {
+    flex: 1,
+  },
+  buttonMainText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
+    marginBottom: 4,
+  },
+  buttonSubText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  cancelButton: {
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor:'rgba(255, 255, 255, 0.15)',
+    borderRadius: 24
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
     fontFamily: 'sans-serif-rounded',
   },
 });
