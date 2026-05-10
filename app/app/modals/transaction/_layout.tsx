@@ -215,7 +215,7 @@ export default function TransactionScreen() {
                         color={pockets.find(p => p.name === selectedSource)?.color} 
                       />
                     </View>
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, paddingRight: 16 }}>
                       <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Selected Pocket</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Text style={[styles.itemTitle, { color: colors.text }]}>{selectedSource}</Text>
@@ -228,7 +228,7 @@ export default function TransactionScreen() {
                     <View style={[styles.itemIconCircle, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
                       <MaterialCommunityIcons name="wallet-outline" size={20} color={colors.secondary} />
                     </View>
-                    <View>
+                    <View style={{ flex: 1 }}>
                       <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Source</Text>
                       <Text style={[styles.itemTitle, { color: colors.text, opacity: 0.5 }]}>Choose a pocket</Text>
                     </View>
@@ -410,6 +410,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   itemInfo: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },

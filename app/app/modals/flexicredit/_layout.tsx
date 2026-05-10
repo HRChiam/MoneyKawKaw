@@ -6,7 +6,8 @@ import Svg, { Path } from 'react-native-svg';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function FlexiCreditScreen() {
   const router = useRouter();
@@ -14,10 +15,11 @@ export default function FlexiCreditScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   
   const [creditAmount, setCreditAmount] = useState('1000');
-  const [interestRateInput, setInterestRateInput] = useState('6.45');
+  const [interestRateInput] = useState('6.45');
   const [monthlyPayment, setMonthlyPayment] = useState(50);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [isApplied, setIsApplied] = useState(false);
 
   const parsedAmount = parseInt(creditAmount) || 0;
   const parsedRate = (parseFloat(interestRateInput) || 0) / 100; 
@@ -85,9 +87,38 @@ export default function FlexiCreditScreen() {
   `;
 
   const handleApplyNow = () => {
-    alert(`Success! Applied for RM${creditAmount} at ${interestRateInput}% p.a.`);
-    router.back();
+    setIsApplied(true);
+    // Auto-close or navigate after showing success
+    setTimeout(() => {
+      router.back();
+    }, 2500);
   };
+
+  if (isApplied) {
+    return (
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
+        <Animated.View entering={FadeInDown.duration(600)} style={styles.successWrapper}>
+          <View style={[styles.successIcon, { backgroundColor: '#15fabd20' }]}>
+            <Ionicons name="checkmark-circle" size={100} color="#15fabd" />
+          </View>
+          <Text style={[styles.successTitle, { color: colors.text }]}>Application Submitted!</Text>
+          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+             <View style={styles.summaryRow}>
+               <Text style={[styles.summaryLabel, { color: colors.secondary }]}>Amount</Text>
+               <Text style={[styles.summaryValue, { color: colors.text }]}>RM {parseFloat(creditAmount).toFixed(2)}</Text>
+             </View>
+             <View style={styles.summaryRow}>
+               <Text style={[styles.summaryLabel, { color: colors.secondary }]}>Interest Rate</Text>
+               <Text style={[styles.summaryValue, { color: colors.text }]}>{interestRateInput}% p.a.</Text>
+             </View>
+          </View>
+          <Text style={[styles.successSubtitle, { color: colors.secondary }]}>
+            We&apos;re processing your application. You&apos;ll receive a notification shortly.
+          </Text>
+        </Animated.View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} scrollEventThrottle={16}>
@@ -132,7 +163,7 @@ export default function FlexiCreditScreen() {
 
       <View style={[styles.chartContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20}}>
-            <Text style={[styles.chartTitle, { color: colors.text }]}>AI Simulator</Text>
+            <Text style={[styles.chartTitle, { color: colors.text }]}>Credit Simulator</Text>
             <IconSymbol size={20} name="sparkles" color={colors.primary} />
         </View>
 
@@ -348,5 +379,57 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '900',
     marginTop: 4,
-  }
+  },
+  /* Success View Styles */
+  centerContent: { 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 24 
+  },
+  successWrapper: { 
+    width: '100%', 
+    alignItems: 'center' 
+  },
+  successIcon: { 
+    width: 140, 
+    height: 140, 
+    borderRadius: 70, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginBottom: 32 
+  },
+  successTitle: { 
+    fontSize: 28, 
+    fontWeight: '900', 
+    marginBottom: 24, 
+    textAlign: 'center',
+    fontFamily: 'sans-serif-rounded',
+  },
+  summaryCard: {
+    width: '100%',
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    marginBottom: 32,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  successSubtitle: { 
+    fontSize: 15, 
+    textAlign: 'center', 
+    lineHeight: 22, 
+    fontWeight: '500',
+    paddingHorizontal: 20,
+  },
 });

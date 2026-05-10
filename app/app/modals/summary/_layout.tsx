@@ -1,36 +1,15 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function SummaryScreen() {
-  const handlePieTouch = (event: any) => {
-    const { locationX, locationY } = event.nativeEvent;
-    
-    const dx = locationX - 60;
-    const dy = locationY - 60;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance > 56) return;
-    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-    
-    angle = angle + 90;
-    if (angle < 0) angle += 360;
-    let accumulated = 0;
-    for (let i = 0; i < pieSlices.length; i++) {
-      const sliceAngle = (pieSlices[i].amount / totalCategorySpend) * 360;
-      if (angle >= accumulated && angle < accumulated + sliceAngle) {
-        setActiveCategoryIndex(activeCategoryIndex === i ? null : i);
-        break;
-      }
-      accumulated += sliceAngle;
-    }
-  };
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -38,7 +17,22 @@ export default function SummaryScreen() {
   const [activeTab, setActiveTab] = useState<'summary' | 'tax'>('summary');
   const [timeframe, setTimeframe] = useState<'month' | 'prev_month' | 'year' | 'prev_year'>('month');
   const [activePicker, setActivePicker] = useState<'month' | 'year' | null>(null);
-  
+  const [isGenerating, setIsGenerating] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [activePoint, setActivePoint] = useState<number | null>(null); 
+  const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
+
+  const scrollRef = useRef<ScrollView>(null);
+
+  const handleGenerateReport = () => {
+    setIsGenerating('loading');
+    // Simulate generation delay
+    setTimeout(() => {
+      setIsGenerating('success');
+      // Reset back to idle after a while
+      setTimeout(() => setIsGenerating('idle'), 2500);
+    }, 2000);
+  };
+
   const monthLabels: Record<string, string> = {
     month: "May 2026 (Current)",
     prev_month: "April 2026 (Prev)"
@@ -48,11 +42,6 @@ export default function SummaryScreen() {
     year: "2026 (Current)",
     prev_year: "2025 (Prev)"
   };
-
-  const [activePoint, setActivePoint] = useState<number | null>(null); 
-  const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
-
-  const scrollRef = useRef<ScrollView>(null);
 
   const data = {
     month: {
@@ -136,7 +125,6 @@ export default function SummaryScreen() {
   };
 
   const currentData = data[timeframe];
-
   const validTrends = currentData.trend.filter(d => d.value !== null) as {label: string, value: number, budget: number}[];
   const maxSpend = Math.max(...validTrends.map(d => d.value));
   const minSpend = Math.min(...validTrends.map(d => d.value)) * 0.5; 
@@ -167,34 +155,36 @@ export default function SummaryScreen() {
     };
   };
 
-  let accumulatedAngle = 0;
-  const pieSlices = currentData.categories.map((cat) => {
-    const percentage = cat.amount / totalCategorySpend;
-    const sliceAngle = percentage * 360;
-    
-    const startAngle = accumulatedAngle;
-    const endAngle = accumulatedAngle + sliceAngle;
-    accumulatedAngle += sliceAngle;
-    const R_NORMAL = 50;
-    const R_ACTIVE = 56;
-    
-    const startNormal = polarToCartesian(60, 60, R_NORMAL, startAngle);
-    const endNormal = polarToCartesian(60, 60, R_NORMAL, endAngle);
-    
-    const startActive = polarToCartesian(60, 60, R_ACTIVE, startAngle);
-    const endActive = polarToCartesian(60, 60, R_ACTIVE, endAngle);
+  const pieSlices = useMemo(() => {
+    let accumulatedAngle = 0;
+    return currentData.categories.map((cat) => {
+      const percentage = cat.amount / totalCategorySpend;
+      const sliceAngle = percentage * 360;
+      
+      const startAngle = accumulatedAngle;
+      const endAngle = accumulatedAngle + sliceAngle;
+      accumulatedAngle += sliceAngle;
+      const R_NORMAL = 50;
+      const R_ACTIVE = 56;
+      
+      const startNormal = polarToCartesian(60, 60, R_NORMAL, startAngle);
+      const endNormal = polarToCartesian(60, 60, R_NORMAL, endAngle);
+      
+      const startActive = polarToCartesian(60, 60, R_ACTIVE, startAngle);
+      const endActive = polarToCartesian(60, 60, R_ACTIVE, endAngle);
 
-    const largeArcFlag = sliceAngle > 180 ? '1' : '0';
-    const dNormal = sliceAngle > 359.9 
-      ? `M 60 ${60 - R_NORMAL} A ${R_NORMAL} ${R_NORMAL} 0 1 1 59.9 ${60 - R_NORMAL} Z`
-      : `M 60 60 L ${startNormal.x} ${startNormal.y} A ${R_NORMAL} ${R_NORMAL} 0 ${largeArcFlag} 1 ${endNormal.x} ${endNormal.y} Z`;
+      const largeArcFlag = sliceAngle > 180 ? '1' : '0';
+      const dNormal = sliceAngle > 359.9 
+        ? `M 60 ${60 - R_NORMAL} A ${R_NORMAL} ${R_NORMAL} 0 1 1 59.9 ${60 - R_NORMAL} Z`
+        : `M 60 60 L ${startNormal.x} ${startNormal.y} A ${R_NORMAL} ${R_NORMAL} 0 ${largeArcFlag} 1 ${endNormal.x} ${endNormal.y} Z`;
 
-    const dActive = sliceAngle > 359.9 
-      ? `M 60 ${60 - R_ACTIVE} A ${R_ACTIVE} ${R_ACTIVE} 0 1 1 59.9 ${60 - R_ACTIVE} Z`
-      : `M 60 60 L ${startActive.x} ${startActive.y} A ${R_ACTIVE} ${R_ACTIVE} 0 ${largeArcFlag} 1 ${endActive.x} ${endActive.y} Z`;
+      const dActive = sliceAngle > 359.9 
+        ? `M 60 ${60 - R_ACTIVE} A ${R_ACTIVE} ${R_ACTIVE} 0 1 1 59.9 ${60 - R_ACTIVE} Z`
+        : `M 60 60 L ${startActive.x} ${startActive.y} A ${R_ACTIVE} ${R_ACTIVE} 0 ${largeArcFlag} 1 ${endActive.x} ${endActive.y} Z`;
 
-    return { ...cat, dNormal, dActive, percentage: (percentage * 100).toFixed(0) };
-  });
+      return { ...cat, dNormal, dActive, percentage: (percentage * 100).toFixed(0) };
+    });
+  }, [currentData.categories, totalCategorySpend]);
 
   useEffect(() => { 
     setActivePoint(null); 
@@ -207,6 +197,28 @@ export default function SummaryScreen() {
       }, 100);
     }
   }, [timeframe, CHART_WIDTH, VIEWPORT_WIDTH]);
+
+  const handlePieTouch = (event: any) => {
+    const { locationX, locationY } = event.nativeEvent;
+    const dx = locationX - 60;
+    const dy = locationY - 60;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance > 56) return;
+    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    angle = angle + 90;
+    if (angle < 0) angle += 360;
+    
+    let accumulated = 0;
+    for (let i = 0; i < pieSlices.length; i++) {
+      const sliceAngle = (pieSlices[i].amount / totalCategorySpend) * 360;
+      if (angle >= accumulated && angle < accumulated + sliceAngle) {
+        setActiveCategoryIndex(activeCategoryIndex === i ? null : i);
+        break;
+      }
+      accumulated += sliceAngle;
+    }
+  };
 
   const renderTooltip = () => {
     if (activePoint === null || currentData.trend[activePoint].value === null) return null;
@@ -224,35 +236,20 @@ export default function SummaryScreen() {
     if (left + TOOLTIP_WIDTH > CHART_WIDTH) {
       left = activeX - TOOLTIP_WIDTH - 12; 
     }
-
-    if (top < 0) {
-      top = 0; 
-    } else if (top + TOOLTIP_HEIGHT > CHART_HEIGHT) {
-      top = CHART_HEIGHT - TOOLTIP_HEIGHT; 
-    }
+    if (top < 0) top = 0; 
+    else if (top + TOOLTIP_HEIGHT > CHART_HEIGHT) top = CHART_HEIGHT - TOOLTIP_HEIGHT; 
 
     return (
-      <View style={[styles.tooltip, { 
-         backgroundColor: colors.text,
-         top,
-         left,
-         width: TOOLTIP_WIDTH 
-      }]}>
+      <View style={[styles.tooltip, { backgroundColor: colors.text, top, left, width: TOOLTIP_WIDTH }]}>
         <Text style={{color: colors.background, fontSize: 10, fontWeight: '700', opacity: 0.8, textTransform: 'uppercase'}} numberOfLines={1}>
           {currentData.periodLabel} • {trend.label}
         </Text>
-        
         <View style={{marginTop: 4}}>
           <Text style={{color: colors.background, fontSize: 14, fontWeight: '900'}}>RM {trend.value}</Text>
         </View>
-
         <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 4}}>
           <Text style={{fontSize: 12}}>{trend.value! > trend.budget ? "😢" : "😊"}</Text>
-          <Text style={{
-            color: trend.value! > trend.budget ? '#FCA5A5' : '#86EFAC', 
-            fontSize: 11, 
-            fontWeight: '800'
-          }}>
+          <Text style={{color: trend.value! > trend.budget ? '#FCA5A5' : '#86EFAC', fontSize: 11, fontWeight: '800'}}>
             {trend.value! > trend.budget ? "Over Budget" : "On Track"}
           </Text>
         </View>
@@ -264,12 +261,8 @@ export default function SummaryScreen() {
     <View>
       <View style={styles.filterContainer}>
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          {/* Month Selector */}
           <TouchableOpacity 
-            style={[
-              styles.splitDropdown, 
-              { backgroundColor: colors.card, borderColor: timeframe.includes('month') ? colors.primary : colors.border }
-            ]}
+            style={[styles.splitDropdown, { backgroundColor: colors.card, borderColor: timeframe.includes('month') ? colors.primary : colors.border }]}
             onPress={() => setActivePicker(activePicker === 'month' ? null : 'month')}
           >
             <View style={{ flex: 1 }}>
@@ -281,12 +274,8 @@ export default function SummaryScreen() {
             <Feather name={activePicker === 'month' ? "chevron-up" : "chevron-down"} size={18} color={colors.secondary} />
           </TouchableOpacity>
 
-          {/* Year Selector */}
           <TouchableOpacity 
-            style={[
-              styles.splitDropdown, 
-              { backgroundColor: colors.card, borderColor: timeframe.includes('year') ? colors.primary : colors.border }
-            ]}
+            style={[styles.splitDropdown, { backgroundColor: colors.card, borderColor: timeframe.includes('year') ? colors.primary : colors.border }]}
             onPress={() => setActivePicker(activePicker === 'year' ? null : 'year')}
           >
             <View style={{ flex: 1 }}>
@@ -299,7 +288,6 @@ export default function SummaryScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Dropdown Lists */}
         {activePicker && (
           <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {Object.entries(activePicker === 'month' ? monthLabels : yearLabels).map(([key, label]) => (
@@ -311,9 +299,7 @@ export default function SummaryScreen() {
                   setActivePicker(null);
                 }}
               >
-                <Text style={[styles.pickerItemText, { color: timeframe === key ? colors.primary : colors.text }]}>
-                  {label}
-                </Text>
+                <Text style={[styles.pickerItemText, { color: timeframe === key ? colors.primary : colors.text }]}>{label}</Text>
                 {timeframe === key && <Feather name="check" size={16} color={colors.primary} />}
               </TouchableOpacity>
             ))}
@@ -322,13 +308,11 @@ export default function SummaryScreen() {
       </View>
 
       <View style={styles.chartsContainer}>
-        {/* --- 1. SPENDING TREND --- */}
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.chartHeader}>
              <Text style={[styles.chartTitle, { color: colors.text }]}>Spending Trend</Text>
              <Text style={{fontSize: 12, color: colors.secondary}}>Tap for details</Text>
           </View>
-          
           <ScrollView horizontal showsHorizontalScrollIndicator={false} ref={scrollRef} contentContainerStyle={{ width: CHART_WIDTH, paddingBottom: 10 }}>
             <View style={{ width: CHART_WIDTH }}>
               <View style={[styles.chartArea, { height: CHART_HEIGHT }]}>
@@ -343,16 +327,12 @@ export default function SummaryScreen() {
                       );
                   })}
                 </Svg>
-                
                 <View style={styles.touchOverlay}>
                    {currentData.trend.map((val, index) => (
                      <TouchableOpacity key={index} style={styles.touchColumn} onPress={() => val.value !== null && setActivePoint(index)} activeOpacity={1} />
                    ))}
                 </View>
-
-                {/* Render Dynamic Smart-Positioned Tooltip */}
                 {renderTooltip()}
-                
               </View>
               <View style={{flexDirection: 'row', justifyContent: 'space-between', marginTop: 12}}>
                   {currentData.trend.map((val, i) => (
@@ -363,23 +343,16 @@ export default function SummaryScreen() {
           </ScrollView>
         </View>
 
-        {/* --- 2. SPEND BREAKDOWN: SMALLER SOLID PIE --- */}
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border, paddingVertical: 24, minHeight: 180 }]}>
           <Text style={[styles.chartTitle, { color: colors.text, marginBottom: 20 }]}>Spend Breakdown</Text>
           <View style={styles.donutRow}>
-             {/* Wrap the entire SVG and let math do the work */}
              <TouchableOpacity activeOpacity={1} onPress={handlePieTouch}>
                <Svg width="120" height="120" viewBox="0 0 120 120">
                   {pieSlices.map((slice, index) => (
-                    <Path 
-                       key={index} 
-                       d={activeCategoryIndex === index ? slice.dActive : slice.dNormal} 
-                       fill={slice.color} 
-                    />
+                    <Path key={index} d={activeCategoryIndex === index ? slice.dActive : slice.dNormal} fill={slice.color} />
                   ))}
                </Svg>
              </TouchableOpacity>
-
              <View style={styles.donutSideText}>
                 {activeCategoryIndex !== null ? (
                    <>
@@ -399,7 +372,6 @@ export default function SummaryScreen() {
         </View>
       </View>
 
-      {/* Categories List */}
       <View style={styles.listSection}>
         <Text style={[styles.listTitle, { color: colors.text, marginBottom: 12 }]}>Category Breakdown</Text>
         {currentData.categories.map((category, index) => (
@@ -421,7 +393,11 @@ export default function SummaryScreen() {
         <Text style={[styles.totalLabel, { color: colors.secondary }]}>Potential Tax Relief (LHDN)</Text>
         <Text style={[styles.totalAmount, { color: colors.primary }]}>RM 1,550</Text>
       </View>
-      <TouchableOpacity style={[styles.generateReportBtn, { backgroundColor: colors.primary }]} onPress={() => alert("Generating LHDN formatted PDF report...")}>
+      <TouchableOpacity 
+        style={[styles.generateReportBtn, { backgroundColor: colors.primary }]} 
+        onPress={handleGenerateReport}
+        disabled={isGenerating !== 'idle'}
+      >
           <Feather name="file-text" size={18} color="#fff" />
           <Text style={{color: '#fff', fontSize: 16, fontWeight: '700', marginLeft: 8}}>Generate LHDN Report</Text>
       </TouchableOpacity>
@@ -441,18 +417,40 @@ export default function SummaryScreen() {
   );
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} scrollEventThrottle={16}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}><Feather name="arrow-left" size={24} color={colors.text} /></TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Insights</Text>
-      </View>
-      <View style={[styles.tabContainer, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={[styles.tab, { borderBottomWidth: activeTab === 'summary' ? 2 : 0, borderBottomColor: colors.primary }]} onPress={() => setActiveTab('summary')}><Text style={[styles.tabText, { color: activeTab === 'summary' ? colors.primary : colors.secondary }]}>Summary</Text></TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, { borderBottomWidth: activeTab === 'tax' ? 2 : 0, borderBottomColor: colors.primary }]} onPress={() => setActiveTab('tax')}><Text style={[styles.tabText, { color: activeTab === 'tax' ? colors.primary : colors.secondary }]}>Tax Relief</Text></TouchableOpacity>
-      </View>
-      <View style={styles.tabContent}>{activeTab === 'summary' ? renderSummaryTab() : renderTaxTab()}</View>
-      <View style={{ height: 40 }} />
-    </ScrollView>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} scrollEventThrottle={16}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}><Feather name="arrow-left" size={24} color={colors.text} /></TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>Insights</Text>
+        </View>
+        <View style={[styles.tabContainer, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity style={[styles.tab, { borderBottomWidth: activeTab === 'summary' ? 2 : 0, borderBottomColor: colors.primary }]} onPress={() => setActiveTab('summary')}><Text style={[styles.tabText, { color: activeTab === 'summary' ? colors.primary : colors.secondary }]}>Summary</Text></TouchableOpacity>
+          <TouchableOpacity style={[styles.tab, { borderBottomWidth: activeTab === 'tax' ? 2 : 0, borderBottomColor: colors.primary }]} onPress={() => setActiveTab('tax')}><Text style={[styles.tabText, { color: activeTab === 'tax' ? colors.primary : colors.secondary }]}>Tax Relief</Text></TouchableOpacity>
+        </View>
+        <View style={styles.tabContent}>{activeTab === 'summary' ? renderSummaryTab() : renderTaxTab()}</View>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      {isGenerating !== 'idle' && (
+        <Animated.View entering={FadeIn} exiting={FadeOut} style={[styles.notiOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+          <Animated.View entering={FadeIn} style={[styles.notiCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {isGenerating === 'loading' ? (
+              <>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.notiText, { color: colors.text }]}>Generating Report...</Text>
+                <Text style={[styles.notiSubText, { color: colors.secondary }]}>This will just take a few seconds</Text>
+              </>
+            ) : (
+              <>
+                <View style={[styles.notiIconWrapper, { backgroundColor: '#15fabd20' }]}><Ionicons name="checkmark-circle" size={60} color="#15fabd" /></View>
+                <Text style={[styles.notiText, { color: colors.text }]}>Report Ready!</Text>
+                <Text style={[styles.notiSubText, { color: colors.secondary }]}>The LHDN PDF has been saved to your downloads.</Text>
+              </>
+            )}
+          </Animated.View>
+        </Animated.View>
+      )}
+    </View>
   );
 }
 
@@ -466,53 +464,12 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 14, fontWeight: '600' },
   tabContent: { paddingHorizontal: 16, paddingTop: 16 },
   filterContainer: { position: 'relative', marginBottom: 24, zIndex: 1000 },
-  splitDropdown: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1.5,
-  },
-  dropdownLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  dropdownValue: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  pickerDropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    marginTop: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-  },
-  pickerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  pickerItemText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  splitDropdown: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1.5 },
+  dropdownLabel: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5, marginBottom: 2 },
+  dropdownValue: { fontSize: 13, fontWeight: '700' },
+  pickerDropdown: { position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, borderRadius: 16, borderWidth: 1, overflow: 'hidden', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
+  pickerItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  pickerItemText: { fontSize: 14, fontWeight: '600' },
   chartsContainer: { gap: 16, marginBottom: 24 },
   chartCard: { borderRadius: 16, padding: 16, borderWidth: 1 },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
@@ -541,4 +498,9 @@ const styles = StyleSheet.create({
   taxItemName: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
   taxItemAmount: { fontSize: 14, fontWeight: '700' },
   viewButton: { fontSize: 13, fontWeight: '700' },
+  notiOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 2000 },
+  notiCard: { width: width * 0.8, padding: 32, borderRadius: 32, borderWidth: 1.5, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.4, shadowRadius: 30, elevation: 20 },
+  notiIconWrapper: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  notiText: { fontSize: 20, fontWeight: '900', marginTop: 16, marginBottom: 8, fontFamily: 'sans-serif-rounded' },
+  notiSubText: { fontSize: 14, fontWeight: '500', textAlign: 'center', lineHeight: 20 },
 });
