@@ -30,6 +30,7 @@ import {
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { FinancialProvider } from '@/context/FinancialContext';
+import { RewardsProvider } from '@/components/rewards/context';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -70,6 +71,7 @@ export default function RootLayout() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+    <RewardsProvider>
     <FinancialProvider>
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack
@@ -116,6 +118,7 @@ export default function RootLayout() {
       <StatusBar style="auto" />
     </ThemeProvider>
     </FinancialProvider>
+    </RewardsProvider>
     </SafeAreaView>
   );
 }

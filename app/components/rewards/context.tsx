@@ -3,6 +3,10 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 interface RewardsContextType {
   points: number;
   setPoints: React.Dispatch<React.SetStateAction<number>>;
+  streak: number;
+  setStreak: React.Dispatch<React.SetStateAction<number>>;
+  freezeStreaks: number;
+  setFreezeStreaks: React.Dispatch<React.SetStateAction<number>>;
   ownsChair: boolean;
   setOwnsChair: React.Dispatch<React.SetStateAction<boolean>>;
   ownsLocker: boolean;
@@ -19,6 +23,8 @@ const RewardsContext = createContext<RewardsContextType | undefined>(undefined);
 
 export const RewardsProvider = ({ children }: { children: ReactNode }) => {
   const [points, setPoints] = useState(1357);
+  const [streak, setStreak] = useState(12); // Example: 12 day streak
+  const [freezeStreaks, setFreezeStreaks] = useState(2); // Example: 2 freezes available
   const [ownsChair, setOwnsChair] = useState(false);
   const [ownsLocker, setOwnsLocker] = useState(false);
   const [ownsPlant, setOwnsPlant] = useState(false);
@@ -28,6 +34,8 @@ export const RewardsProvider = ({ children }: { children: ReactNode }) => {
   return (
     <RewardsContext.Provider value={{
       points, setPoints,
+      streak, setStreak,
+      freezeStreaks, setFreezeStreaks,
       ownsChair, setOwnsChair,
       ownsLocker, setOwnsLocker,
       ownsPlant, setOwnsPlant,

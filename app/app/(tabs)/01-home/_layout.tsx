@@ -7,12 +7,14 @@ import { Feather, AntDesign, MaterialIcons, Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useFinancial } from '@/context/FinancialContext';
+import { useRewards } from '@/components/rewards/context';
 
 export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { pockets } = useFinancial();
+  const { streak } = useRewards();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
   // Financial summary based on context data
@@ -32,6 +34,9 @@ export default function HomeScreen() {
 
   const trafficColor = getTrafficColor();
 
+  // Fix date to May 12, 2026 for all features
+  const mockToday = new Date(2026, 4, 12); // May 12, 2026 (0-indexed month)
+
   // Helper to mask all numbers including dots
   const formatBalance = (amount: string | number) => {
     return isBalanceVisible ? amount.toString() : '••••••';
@@ -48,7 +53,7 @@ export default function HomeScreen() {
   const handleTransactionHistory = () => router.push('../modals/transaction-history' as any);
 
   const getGreeting = () => {
-    const hour = new Date().getHours();
+    const hour = mockToday.getHours();
     if (hour < 12) return "Good morning";
     if (hour < 18) return "Good afternoon";
     return "Good evening";
@@ -95,8 +100,14 @@ export default function HomeScreen() {
               <View style={[styles.statusPulse, { backgroundColor: trafficColor }]} />
               <Text style={[styles.spendingLabel, { color: trafficColor, fontWeight: '800' }]}>DAILY LIMIT</Text>
             </View>
-            <View style={[styles.percentageBadge, { backgroundColor: trafficColor + '20' }]}>
-              <Text style={[styles.percentageText, { color: trafficColor }]}>{Math.round(spendingProgress * 100)}%</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={[styles.streakBadge, { backgroundColor: 'rgba(255, 215, 0, 0.2)' }]}>
+                <Ionicons name="flame" size={14} color="#FFD700" />
+                <Text style={styles.streakBadgeText}>{streak}</Text>
+              </View>
+              <View style={[styles.percentageBadge, { backgroundColor: trafficColor + '20' }]}>
+                <Text style={[styles.percentageText, { color: trafficColor }]}>{Math.round(spendingProgress * 100)}%</Text>
+              </View>
             </View>
           </View>
 
@@ -129,25 +140,25 @@ export default function HomeScreen() {
       {/* Quick Action Icons */}
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
       <View style={styles.quickActions}>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border, height: 110, justifyContent: 'center' }]} onPress={handleTransfer}>
-          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15', width: 48, height: 48, marginBottom: 8 }]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleTransfer}>
+          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15' }]}>
             <Feather name="send" size={24} color={colors.primary} />
           </View>
-          <Text style={[styles.actionLabel, { color: colors.text, fontSize: 13 }]}>Transfer</Text>
+          <Text style={[styles.actionLabel, { color: colors.text }]}>Transfer</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border, height: 110, justifyContent: 'center' }]} onPress={handleExploreCredit}>
-          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15', width: 48, height: 48, marginBottom: 8 }]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleExploreCredit}>
+          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15' }]}>
             <AntDesign name="credit-card" size={24} color={colors.primary} />
           </View>
-          <Text style={[styles.actionLabel, { color: colors.text, fontSize: 13 }]}>Credit</Text>
+          <Text style={[styles.actionLabel, { color: colors.text }]}>Credit</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border, height: 110, justifyContent: 'center' }]} onPress={handleInsights}>
-          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15', width: 48, height: 48, marginBottom: 8 }]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleInsights}>
+          <View style={[styles.actionIconBg, { backgroundColor: colors.primary + '15' }]}>
             <MaterialIcons name="insights" size={24} color={colors.primary} />
           </View>
-          <Text style={[styles.actionLabel, { color: colors.text, fontSize: 13 }]}>Insights</Text>
+          <Text style={[styles.actionLabel, { color: colors.text }]}>Insights</Text>
         </TouchableOpacity>
       </View>
 
@@ -280,13 +291,31 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   percentageBadge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 42,
   },
   percentageText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800',
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    justifyContent: 'center',
+    minWidth: 42,
+  },
+  streakBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFD700',
   },
   amountDisplay: {
     marginTop: 8,
@@ -334,8 +363,9 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+    height: 110,
     alignItems: 'center',
-    paddingVertical: 16,
+    justifyContent: 'center',
     borderRadius: 16,
     borderWidth: 1,
   },
@@ -345,10 +375,10 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   actionLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   accountsContainer: {

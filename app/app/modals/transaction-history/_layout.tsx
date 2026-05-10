@@ -37,13 +37,13 @@ export default function TransactionHistoryScreen() {
 
   // Flattened transaction data for easier processing
   const rawTransactions = useMemo(() => [
-    { id: '1', amount: -12.50, description: 'Mamak Ali Restoran', category: 'Food', time: '12:45 PM', date: '2026-05-10', dateLabel: 'Today, 10 May' },
-    { id: '2', amount: -8.00, description: 'GrabRide - Home to Office', category: 'Transport', time: '08:30 AM', date: '2026-05-10', dateLabel: 'Today, 10 May' },
-    { id: '3', amount: -150.00, description: 'Shopee Malaysia', category: 'Shopping', time: '11:20 PM', date: '2026-05-09', dateLabel: 'Yesterday, 09 May' },
-    { id: '4', amount: 2500.00, description: 'Salary Credit', category: 'Income', time: '10:00 AM', date: '2026-05-09', dateLabel: 'Yesterday, 09 May' },
-    { id: '5', amount: -45.20, description: 'Village Grocer', category: 'Food', time: '09:15 AM', date: '2026-05-09', dateLabel: 'Yesterday, 09 May' },
-    { id: '6', amount: -120.00, description: 'TNB - Electricity Bill', category: 'Utilities', time: '02:00 PM', date: '2026-05-08', dateLabel: '08 May 2026' },
-    { id: '7', amount: -15.50, description: 'Starbucks Coffee', category: 'Food', time: '10:30 AM', date: '2026-05-08', dateLabel: '08 May 2026' },
+    { id: '1', amount: -12.50, description: 'Mamak Ali Restoran', category: 'Food', time: '12:45 PM', date: '2026-05-12', dateLabel: 'Today, 12 May' },
+    { id: '2', amount: -8.00, description: 'GrabRide - Home to Office', category: 'Transport', time: '08:30 AM', date: '2026-05-12', dateLabel: 'Today, 12 May' },
+    { id: '3', amount: -150.00, description: 'Shopee Malaysia', category: 'Shopping', time: '11:20 PM', date: '2026-05-11', dateLabel: 'Yesterday, 11 May' },
+    { id: '4', amount: 2500.00, description: 'Salary Credit', category: 'Income', time: '10:00 AM', date: '2026-05-11', dateLabel: 'Yesterday, 11 May' },
+    { id: '5', amount: -45.20, description: 'Village Grocer', category: 'Food', time: '09:15 AM', date: '2026-05-11', dateLabel: 'Yesterday, 11 May' },
+    { id: '6', amount: -120.00, description: 'TNB - Electricity Bill', category: 'Utilities', time: '02:00 PM', date: '2026-05-10', dateLabel: '10 May 2026' },
+    { id: '7', amount: -15.50, description: 'Starbucks Coffee', category: 'Food', time: '10:30 AM', date: '2026-05-10', dateLabel: '10 May 2026' },
   ], []);
 
   // Filter and Sort logic
@@ -55,7 +55,7 @@ export default function TransactionHistoryScreen() {
       
       // Period filtering logic
       const transDate = new Date(item.date);
-      const now = new Date('2026-05-10'); // Reference date
+      const now = new Date('2026-05-12'); // Reference date FIXED
       const diffDays = (now.getTime() - transDate.getTime()) / (1000 * 3600 * 24);
       
       let matchesPeriod = true;

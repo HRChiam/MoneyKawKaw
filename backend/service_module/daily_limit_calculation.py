@@ -5,7 +5,8 @@ def calculate_daily_limit(total_discretionary, spent_so_far):
     """
     Calculates the 'Safe to Spend' daily limit based on the remaining budget and days left in the month.
     """
-    today = datetime.now()
+    # FIXED: Using May 12, 2026 as today for all features
+    today = datetime(2026, 5, 12)
     # Get the total number of days in the current month
     _, total_days_in_month = calendar.monthrange(today.year, today.month)
     

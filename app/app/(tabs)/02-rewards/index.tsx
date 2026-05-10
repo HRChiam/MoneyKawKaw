@@ -22,7 +22,7 @@ export default function RewardsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { points } = useRewards();
+  const { points, streak, freezeStreaks } = useRewards();
   const [showRewardsModal, setShowRewardsModal] = useState(false);
   const [showChallengesModal, setShowChallengesModal] = useState(false);
 
@@ -30,10 +30,11 @@ export default function RewardsScreen() {
     { 
       id: 1, 
       title: 'Savior Streak', 
-      description: '7 days under daily limit',
+      description: `7 days under daily limit`,
       image: require('../../../assets/images/savior_streak_badge.png'), 
       status: 'active',
-      badgeColor: colors.success
+      badgeColor: colors.success,
+      onPress: () => {} // Navigation removed from badge
     },
     { 
       id: 2, 
@@ -41,7 +42,8 @@ export default function RewardsScreen() {
       description: '0 days checking AI insights',
       image: require('../../../assets/images/reviewer_streak_badge.png'), 
       status: 'inactive',
-      badgeColor: colors.secondary
+      badgeColor: colors.secondary,
+      onPress: () => {}
     },
   ];
 
@@ -62,12 +64,31 @@ export default function RewardsScreen() {
             <Ionicons name="gift" size={24} color={colors.text} style={{ marginRight: 12 }} />
             <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, fontFamily: 'sans-serif-rounded' }}>Reward</Text>
           </View>
-          <HeaderPills points={points} freezeCount={3} />
+          <HeaderPills points={points} freezeCount={freezeStreaks} />
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
+        {/* Saving Streak Card - Dedicated Box moved from Home */}
+        <TouchableOpacity 
+          onPress={() => router.push('/(tabs)/02-rewards/streak')}
+          activeOpacity={0.8}
+          style={[styles.streakCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <View style={[styles.streakIconCircle, { backgroundColor: 'rgba(255, 215, 0, 0.15)' }]}>
+            <Ionicons name="flame" size={24} color="#FFD700" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 16 }}>
+            <Text style={[styles.streakCardTitle, { color: colors.text }]}>Saving Streak</Text>
+            <Text style={[styles.streakCardSub, { color: colors.secondary }]}>You&rsquo;ve stayed on track for {streak} days!</Text>
+          </View>
+          <View style={styles.streakCardCount}>
+            <Text style={styles.streakCardCountText}>{streak}</Text>
+            <Text style={styles.streakCardDaysText}>DAYS</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* MoneyKawKaw Space Button - Restored Design */}
         <TouchableOpacity 
           onPress={() => router.push('/(tabs)/02-rewards/space')}
@@ -95,31 +116,34 @@ export default function RewardsScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
-        <View style={styles.streakSection}>
+        <View style={styles.badgeSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Badges</Text>
           <View style={styles.streakGrid}>
-            {streaks.map(streak => (
-              <View key={streak.id} style={[styles.largeStreakCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {streaks.map(streakItem => (
+              <View 
+                key={streakItem.id} 
+                style={[styles.largeStreakCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
                 <View style={styles.badgeDisplayArea}>
-                  <View style={[styles.badgeGlow, { backgroundColor: streak.status === 'active' ? streak.badgeColor + '30' : 'transparent' }]}>
+                  <View style={[styles.badgeGlow, { backgroundColor: streakItem.status === 'active' ? streakItem.badgeColor + '30' : 'transparent' }]}>
                     <Image 
-                      source={streak.image} 
+                      source={streakItem.image} 
                       style={[
                         styles.badgeImage, 
-                        { opacity: streak.status === 'active' ? 1 : 0.4 } 
+                        { opacity: streakItem.status === 'active' ? 1 : 0.4 } 
                       ]} 
                       resizeMode="contain" 
                     />
                   </View>
-                  {streak.status === 'inactive' && (
+                  {streakItem.status === 'inactive' && (
                     <View style={[styles.inProgressTag, { backgroundColor: colors.border }]}>
                       <Text style={[styles.inProgressText, { color: colors.secondary }]}>In progress</Text>
                     </View>
                   )}
                 </View>
                 <View style={styles.streakTextArea}>
-                  <Text style={[styles.streakTitle, { color: colors.text }]}>{streak.title}</Text>
-                  <Text style={[styles.streakDescription, { color: colors.secondary }]}>{streak.description}</Text>
+                  <Text style={[styles.badgeTitle, { color: colors.text }]}>{streakItem.title}</Text>
+                  <Text style={[styles.badgeDescription, { color: colors.secondary }]}>{streakItem.description}</Text>
                 </View>
               </View>
             ))}
@@ -233,7 +257,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 12,
   },
-  streakSection: { 
+  streakCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  streakIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  streakCardSub: {
+    fontSize: 12,
+  },
+  streakCardCount: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingLeft: 16,
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255,255,255,0.1)',
+  },
+  streakCardCountText: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#FFD700',
+  },
+  streakCardDaysText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFD700',
+    marginTop: -4,
+  },
+  badgeSection: { 
     marginBottom: 32 
   },
   sectionTitle: { 
@@ -288,13 +353,13 @@ const styles = StyleSheet.create({
     marginTop: 12, 
     alignItems: 'center' 
   },
-  streakTitle: { 
+  badgeTitle: { 
     fontSize: 14, 
     fontWeight: '700', 
     textAlign: 'center', 
     marginBottom: 4 
   },
-  streakDescription: { 
+  badgeDescription: { 
     fontSize: 11, 
     textAlign: 'center' 
   },
