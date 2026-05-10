@@ -5,65 +5,103 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const [aiActionState, setAiActionState] = useState<'pending' | 'confirmed'>('pending');
+  const [aiConfirmedIds, setAiConfirmedIds] = useState<number[]>([]);
+  const [loadingIds, setLoadingIds] = useState<number[]>([]);
+  const [securityActionState, setSecurityActionState] = useState<'pending' | 'verified' | 'blocked'>('pending');
 
   const primaryBrand = '#771FFF'; // GX Violet
+  const white = '#FFFFFF';
 
   const notifications = [
     {
       id: 1,
-      type: 'ai_learning',
-      title: 'Monthly Insight',
-      message: "Last month you spent more on food and less on entertainment. I've auto-adjusted your new Monthly Limits to match your actual lifestyle. Look good?",
+      type: 'ai_debt_routing',
+      title: 'Smart Surplus Detected',
+      message: "I've spotted RM300 in safe surplus this month! Re-routing this to your GX FlexiCredit could save you RM45 in interest this month. Shall I optimize your repayment now?",
       timestamp: 'Just now',
-      icon: 'brain',
+      icon: 'calculator-variant',
       color: '#771FFF',
       isAI: true
     },
     {
       id: 2,
+      type: 'ai_consolidation',
+      title: 'Interest Savings Alert',
+      message: "You're paying 18% interest on an external card. Transferring this to GX FlexiCredit at 4.9% could save you RM120/month. Ready to start the transfer?",
+      timestamp: '2 hours ago',
+      icon: 'bank-transfer',
+      color: '#771FFF',
+      isAI: true
+    },
+    {
+      id: 3,
+      type: 'ai_learning',
+      title: 'Lifestyle Limit Update',
+      message: "Your spending habits changed! I've drafted new limits for Food and Entertainment that better match your lifestyle. Apply these changes?",
+      timestamp: '5 hours ago',
+      icon: 'brain',
+      color: '#771FFF',
+      isAI: true
+    },
+    {
+      id: 4,
       type: 'spending',
       title: 'Daily Spending Alert',
       message: 'You have used 85% of your daily limit for Food. Consider a home-cooked meal tonight!',
-      timestamp: '2 hours ago',
+      timestamp: 'Yesterday',
       icon: 'trending-up',
       color: '#FB7185',
       route: '../modals/analysis/Food'
     },
     {
-      id: 3,
+      id: 5,
       type: 'reward',
       title: 'Savings Streak Unlocked',
       message: "You've hit your no-spend goal for 5 days straight! +50 GX Points added.",
-      timestamp: 'Yesterday',
+      timestamp: '2 days ago',
       icon: 'gift',
       color: '#FBBF24',
       route: '../modals/savings-streak'
     },
     {
-      id: 4,
+      id: 6,
       type: 'security',
       title: 'Login Detected',
       message: 'A new login was detected on a Samsung S24 in Petaling Jaya.',
-      timestamp: '2 days ago',
+      timestamp: '3 days ago',
       icon: 'shield-check',
       color: '#34D399',
     },
   ];
 
-  const handleAiConfirm = () => {
-    setAiActionState('confirmed');
+  const handleAiConfirm = (id: number) => {
+    setLoadingIds(prev => [...prev, id]);
+    setTimeout(() => {
+      setLoadingIds(prev => prev.filter(loadingId => loadingId !== id));
+      setAiConfirmedIds(prev => [...prev, id]);
+    }, 1200);
   };
 
-  const handleManualAdjust = () => {
-    router.push('../modals/limit-adjustment' as any);
+  const handleManualAdjust = (type: string) => {
+    switch (type) {
+      case 'ai_debt_routing':
+        router.push('../modals/pockets' as any);
+        break;
+      case 'ai_consolidation':
+        router.push('../modals/flexicredit' as any);
+        break;
+      case 'ai_learning':
+        router.push('../modals/limit-adjustment' as any);
+        break;
+      default:
+        router.push('../modals/limit-adjustment' as any);
+    }
   };
 
   const handleViewDetails = (route?: string) => {
@@ -78,7 +116,7 @@ export default function NotificationsScreen() {
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Inbox</Text>
         <TouchableOpacity style={styles.markReadBtn}>
-          <Text style={[styles.markReadText, { color: primaryBrand }]}>Clear All</Text>
+          <Text style={[styles.markReadText, { color: white }]}>Clear All</Text>
         </TouchableOpacity>
       </View>
 
@@ -109,16 +147,13 @@ export default function NotificationsScreen() {
                 </View>
                 <View style={styles.headerMain}>
                   <View style={styles.titleRow}>
-                    <Text style={[styles.notifTitle, { color: colors.text }]}>{n.title}</Text>
+                    <Text style={[styles.notifTitle, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
+                      {n.title}
+                    </Text>
                     {n.isAI && (
-                      <LinearGradient
-                        colors={[primaryBrand, '#F8326D']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.aiBadge}
-                      >
+                      <View style={[styles.aiBadge, { backgroundColor: primaryBrand }]}>
                         <Text style={styles.aiBadgeText}>AI INSIGHT</Text>
-                      </LinearGradient>
+                      </View>
                     )}
                   </View>
                   <Text style={[styles.timeText, { color: colors.secondary }]}>{n.timestamp}</Text>
@@ -126,11 +161,31 @@ export default function NotificationsScreen() {
               </View>
 
               <View style={styles.messageWrapper}>
-                {n.isAI && aiActionState === 'confirmed' ? (
+                {n.isAI && aiConfirmedIds.includes(n.id) ? (
                   <Animated.View entering={FadeInUp} style={[styles.successState, { backgroundColor: '#15fabd20', borderColor: '#15fabd' }]}>
                     <Ionicons name="checkmark-circle" size={18} color="#15fabd" />
                     <Text style={[styles.message, { color: '#15fabd', marginLeft: 8, fontWeight: '700' }]}>
-                      Updated! Your limits are now optimized.
+                      {n.type === 'ai_debt_routing' ? 'Optimization complete! Surplus re-routed.' : 
+                       n.type === 'ai_consolidation' ? 'Transfer initiated! You saved RM120/mo.' :
+                       'Limits updated! Your plan is now optimized.'}
+                    </Text>
+                  </Animated.View>
+                ) : n.type === 'security' && securityActionState !== 'pending' ? (
+                   <Animated.View entering={FadeInUp} style={[styles.successState, { 
+                     backgroundColor: securityActionState === 'verified' ? '#15fabd20' : '#FB718520', 
+                     borderColor: securityActionState === 'verified' ? '#15fabd' : '#FB7185' 
+                   }]}>
+                    <Ionicons 
+                      name={securityActionState === 'verified' ? "checkmark-circle" : "shield-checkmark"}
+                      size={18} 
+                      color={securityActionState === 'verified' ? "#15fabd" : "#FB7185"} 
+                    />
+                    <Text style={[styles.message, { 
+                      color: securityActionState === 'verified' ? '#15fabd' : '#FB7185', 
+                      marginLeft: 8, 
+                      fontWeight: '700' 
+                    }]}>
+                      {securityActionState === 'verified' ? 'Login verified. It was you!' : 'Account secured. Session blocked.'}
                     </Text>
                   </Animated.View>
                 ) : (
@@ -139,23 +194,44 @@ export default function NotificationsScreen() {
               </View>
 
               {n.isAI ? (
-                aiActionState === 'pending' && (
+                !aiConfirmedIds.includes(n.id) && (
                   <View style={styles.actionRow}>
-                    <TouchableOpacity onPress={handleAiConfirm} style={styles.primaryActionWrapper}>
-                      <LinearGradient
-                        colors={[primaryBrand, '#F8326D']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.primaryAction}
-                      >
-                        <Text style={styles.actionText}>Look good!</Text>
-                      </LinearGradient>
+                    <TouchableOpacity 
+                      onPress={() => handleAiConfirm(n.id)} 
+                      style={styles.primaryActionWrapper}
+                      disabled={loadingIds.includes(n.id)}
+                    >
+                      <View style={[styles.primaryAction, { backgroundColor: primaryBrand, opacity: loadingIds.includes(n.id) ? 0.6 : 1 }]}>
+                        <Text style={styles.actionText}>
+                          {loadingIds.includes(n.id) ? 'Processing...' : 'Look good!'}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                     <TouchableOpacity 
                       style={[styles.secondaryAction, { borderColor: 'rgba(255,255,255,0.1)' }]}
-                      onPress={handleManualAdjust}
+                      onPress={() => handleManualAdjust(n.type)}
+                      disabled={loadingIds.includes(n.id)}
                     >
                       <Text style={[styles.secondaryActionText, { color: colors.text }]}>Custom</Text>
+                    </TouchableOpacity>
+                  </View>
+                )
+              ) : n.type === 'security' ? (
+                securityActionState === 'pending' && (
+                   <View style={styles.actionRow}>
+                    <TouchableOpacity 
+                      onPress={() => setSecurityActionState('verified')} 
+                      style={styles.primaryActionWrapper}
+                    >
+                      <View style={[styles.primaryAction, { backgroundColor: '#34D399' }]}>
+                        <Text style={styles.actionText}>Yes, it&apos;s me</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.secondaryAction, { borderColor: '#FB7185' }]}
+                      onPress={() => setSecurityActionState('blocked')}
+                    >
+                      <Text style={[styles.secondaryActionText, { color: '#FB7185' }]}>No, block</Text>
                     </TouchableOpacity>
                   </View>
                 )
@@ -201,7 +277,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: '#771fff',
   },
   markReadText: {
     fontSize: 13,

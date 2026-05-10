@@ -18,7 +18,8 @@ export function useGxSpaceRoom(
     ownsChair, setOwnsChair,
     ownsLocker, setOwnsLocker,
     ownsPlant, setOwnsPlant,
-    ownsTable, setOwnsTable
+    ownsTable, setOwnsTable,
+    ownsCurtain, setOwnsCurtain
   } = rewards;
 
   const [activeTab, setActiveTab] = useState<'furniture' | 'decor'>('furniture');
@@ -82,10 +83,12 @@ export function useGxSpaceRoom(
     ownsLocker,
     ownsPlant,
     ownsTable,
+    ownsCurtain,
     setOwnsChair,
     setOwnsLocker,
     setOwnsPlant,
     setOwnsTable,
+    setOwnsCurtain,
     // store state
     activeTab,
     isStoreOpen,

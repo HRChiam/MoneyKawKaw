@@ -7,18 +7,15 @@ import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
+import { useFinancial } from '@/context/FinancialContext';
+
 export default function PocketsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { pockets, setPockets } = useFinancial();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
-
-  const [pockets, setPockets] = useState([
-    { id: 1, name: 'Saving', balance: 50.00, icon: 'safe', color: '#15fabd' }, // Neon Turquoise
-    { id: 2, name: 'Food', balance: 800.00, icon: 'food-fork-drink', color: '#FB7185' }, // Rose/Pink
-    { id: 3, name: 'Transport', balance: 200.00, icon: 'car-side', color: '#60A5FA' }, // Sky Blue
-  ]);
 
   const primaryBrand = '#771FFF'; // GX Violet
 

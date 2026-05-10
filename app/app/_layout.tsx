@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
+import { FinancialProvider } from '@/context/FinancialContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -18,6 +19,7 @@ export default function RootLayout() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+    <FinancialProvider>
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack
         screenOptions={{
@@ -62,6 +64,7 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
+    </FinancialProvider>
     </SafeAreaView>
   );
 }
