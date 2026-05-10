@@ -50,7 +50,10 @@ export default function ProfileScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Custom Header */}
       <View style={styles.headerRow}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Feather name="user" size={24} color={colors.text} style={{ marginRight: 12 }} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
+        </View>
         <TouchableOpacity style={[styles.settingsBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Feather name="settings" size={20} color={colors.text} />
         </TouchableOpacity>
@@ -152,7 +155,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerTitle: { fontSize: 24, fontWeight: '800' },
+  headerTitle: { fontSize: 20, fontWeight: '800' },
   settingsBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent: { paddingHorizontal: 20 },
   heroCard: { borderRadius: 28, padding: 24, marginBottom: 24 },

@@ -49,7 +49,7 @@ export default function OnboardingScreen() {
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [currentStep]);
+  }, [currentStep, logoOpacity]);
 
   useEffect(() => {
     if (currentStep === 'loading') {
@@ -58,7 +58,7 @@ export default function OnboardingScreen() {
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [currentStep]);
+  }, [currentStep, router]);
 
   const toggleExpense = (expense: string) => {
     setSelectedExpenses(prev => {
@@ -314,13 +314,13 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   title: {
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: '900',
     fontFamily: 'sans-serif-rounded',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '600',
     fontFamily: 'sans-serif-rounded',
     marginTop: 8,
@@ -345,13 +345,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   currencyPrefix: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: '700',
     fontFamily: 'sans-serif-rounded',
     marginRight: 12,
   },
   mainInput: {
-    fontSize: 48,
+    fontSize: 36,
     fontWeight: '900',
     fontFamily: 'sans-serif-rounded',
     flex: 1,

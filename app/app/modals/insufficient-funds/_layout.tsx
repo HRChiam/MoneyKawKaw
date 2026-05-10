@@ -2,8 +2,6 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'rea
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
@@ -87,7 +85,7 @@ export default function InsufficientFundsScreen() {
 
         {/* Action Section */}
         <View style={styles.alternativesSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Here's a solution:</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Here&apos;s a solution:</Text>
           
           <TouchableOpacity
             style={styles.actionButton}

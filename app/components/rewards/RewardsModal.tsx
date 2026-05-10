@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Modal } from 'react-native';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function RewardsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const colorScheme = useColorScheme();

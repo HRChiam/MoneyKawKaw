@@ -15,10 +15,7 @@ export default function NotificationsScreen() {
   const [loadingIds, setLoadingIds] = useState<number[]>([]);
   const [securityActionState, setSecurityActionState] = useState<'pending' | 'verified' | 'blocked'>('pending');
 
-  const primaryBrand = '#771FFF'; // GX Violet
-  const white = '#FFFFFF';
-
-  const notifications = [
+  const [notifications, setNotifications] = useState([
     {
       id: 1,
       type: 'ai_debt_routing',
@@ -78,7 +75,14 @@ export default function NotificationsScreen() {
       icon: 'shield-check',
       color: '#34D399',
     },
-  ];
+  ]);
+
+  const primaryBrand = '#771FFF'; // GX Violet
+  const white = '#FFFFFF';
+
+  const clearAll = () => {
+    setNotifications([]);
+  };
 
   const handleAiConfirm = (id: number) => {
     setLoadingIds(prev => [...prev, id]);
@@ -114,8 +118,11 @@ export default function NotificationsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header - Fixed */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Inbox</Text>
-        <TouchableOpacity style={styles.markReadBtn}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <MaterialCommunityIcons name="bell-outline" size={24} color={colors.text} style={{ marginRight: 12 }} />
+          <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
+        </View>
+        <TouchableOpacity style={styles.markReadBtn} onPress={clearAll}>
           <Text style={[styles.markReadText, { color: white }]}>Clear All</Text>
         </TouchableOpacity>
       </View>
@@ -124,131 +131,143 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <Animated.View entering={FadeInUp.duration(600)}>
-          {notifications.map((n, index) => (
-            <Animated.View 
-              key={n.id} 
-              entering={FadeInDown.delay(index * 100).duration(600)}
-              style={[
-                styles.notifCard, 
-                { 
-                  backgroundColor: 'rgba(255,255,255,0.03)',
-                  borderColor: n.isAI ? primaryBrand + '40' : 'rgba(255,255,255,0.08)' 
-                }
-              ]}
-            >
-              <View style={styles.cardHeader}>
-                <View style={[styles.iconWrapper, { backgroundColor: n.color + '20' }]}>
-                  {n.isAI ? (
-                    <MaterialCommunityIcons name="robot-outline" size={24} color={n.color} />
-                  ) : (
-                    <MaterialCommunityIcons name={n.icon as any} size={24} color={n.color} />
-                  )}
-                </View>
-                <View style={styles.headerMain}>
-                  <View style={styles.titleRow}>
-                    <Text style={[styles.notifTitle, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
-                      {n.title}
-                    </Text>
-                    {n.isAI && (
-                      <View style={[styles.aiBadge, { backgroundColor: primaryBrand }]}>
-                        <Text style={styles.aiBadgeText}>AI INSIGHT</Text>
-                      </View>
+        {notifications.length > 0 ? (
+          <Animated.View entering={FadeInUp.duration(600)}>
+            {notifications.map((n, index) => (
+              <Animated.View 
+                key={n.id} 
+                entering={FadeInDown.delay(index * 100).duration(600)}
+                style={[
+                  styles.notifCard, 
+                  { 
+                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    borderColor: n.isAI ? primaryBrand + '40' : 'rgba(255,255,255,0.08)' 
+                  }
+                ]}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={[styles.iconWrapper, { backgroundColor: n.color + '20' }]}>
+                    {n.isAI ? (
+                      <MaterialCommunityIcons name="robot-outline" size={24} color={n.color} />
+                    ) : (
+                      <MaterialCommunityIcons name={n.icon as any} size={24} color={n.color} />
                     )}
                   </View>
-                  <Text style={[styles.timeText, { color: colors.secondary }]}>{n.timestamp}</Text>
+                  <View style={styles.headerMain}>
+                    <View style={styles.titleRow}>
+                      <Text style={[styles.notifTitle, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
+                        {n.title}
+                      </Text>
+                      {n.isAI && (
+                        <View style={[styles.aiBadge, { backgroundColor: primaryBrand }]}>
+                          <Text style={styles.aiBadgeText}>AI INSIGHT</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.timeText, { color: colors.secondary }]}>{n.timestamp}</Text>
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.messageWrapper}>
-                {n.isAI && aiConfirmedIds.includes(n.id) ? (
-                  <Animated.View entering={FadeInUp} style={[styles.successState, { backgroundColor: '#15fabd20', borderColor: '#15fabd' }]}>
-                    <Ionicons name="checkmark-circle" size={18} color="#15fabd" />
-                    <Text style={[styles.message, { color: '#15fabd', marginLeft: 8, fontWeight: '700' }]}>
-                      {n.type === 'ai_debt_routing' ? 'Optimization complete! Surplus re-routed.' : 
-                       n.type === 'ai_consolidation' ? 'Transfer initiated! You saved RM120/mo.' :
-                       'Limits updated! Your plan is now optimized.'}
-                    </Text>
-                  </Animated.View>
-                ) : n.type === 'security' && securityActionState !== 'pending' ? (
-                   <Animated.View entering={FadeInUp} style={[styles.successState, { 
-                     backgroundColor: securityActionState === 'verified' ? '#15fabd20' : '#FB718520', 
-                     borderColor: securityActionState === 'verified' ? '#15fabd' : '#FB7185' 
-                   }]}>
-                    <Ionicons 
-                      name={securityActionState === 'verified' ? "checkmark-circle" : "shield-checkmark"}
-                      size={18} 
-                      color={securityActionState === 'verified' ? "#15fabd" : "#FB7185"} 
-                    />
-                    <Text style={[styles.message, { 
-                      color: securityActionState === 'verified' ? '#15fabd' : '#FB7185', 
-                      marginLeft: 8, 
-                      fontWeight: '700' 
-                    }]}>
-                      {securityActionState === 'verified' ? 'Login verified. It was you!' : 'Account secured. Session blocked.'}
-                    </Text>
-                  </Animated.View>
+                <View style={styles.messageWrapper}>
+                  {n.isAI && aiConfirmedIds.includes(n.id) ? (
+                    <Animated.View entering={FadeInUp} style={[styles.successState, { backgroundColor: '#15fabd20', borderColor: '#15fabd' }]}>
+                      <Ionicons name="checkmark-circle" size={18} color="#15fabd" />
+                      <Text style={[styles.message, { color: '#15fabd', marginLeft: 8, fontWeight: '700' }]}>
+                        {n.type === 'ai_debt_routing' ? 'Optimization complete! Surplus re-routed.' : 
+                         n.type === 'ai_consolidation' ? 'Transfer initiated! You saved RM120/mo.' :
+                         'Limits updated! Your plan is now optimized.'}
+                      </Text>
+                    </Animated.View>
+                  ) : n.type === 'security' && securityActionState !== 'pending' ? (
+                     <Animated.View entering={FadeInUp} style={[styles.successState, { 
+                       backgroundColor: securityActionState === 'verified' ? '#15fabd20' : '#FB718520', 
+                       borderColor: securityActionState === 'verified' ? '#15fabd' : '#FB7185' 
+                     }]}>
+                      <Ionicons 
+                        name={securityActionState === 'verified' ? "checkmark-circle" : "shield-checkmark"}
+                        size={18} 
+                        color={securityActionState === 'verified' ? "#15fabd" : "#FB7185"} 
+                      />
+                      <Text style={[styles.message, { 
+                        color: securityActionState === 'verified' ? '#15fabd' : '#FB7185', 
+                        marginLeft: 8, 
+                        fontWeight: '700' 
+                      }]}>
+                        {securityActionState === 'verified' ? 'Login verified. It was you!' : 'Account secured. Session blocked.'}
+                      </Text>
+                    </Animated.View>
+                  ) : (
+                    <Text style={[styles.message, { color: colors.text }]}>{n.message}</Text>
+                  )}
+                </View>
+
+                {n.isAI ? (
+                  !aiConfirmedIds.includes(n.id) && (
+                    <View style={styles.actionRow}>
+                      <TouchableOpacity 
+                        onPress={() => handleAiConfirm(n.id)} 
+                        style={styles.primaryActionWrapper}
+                        disabled={loadingIds.includes(n.id)}
+                      >
+                        <View style={[styles.primaryAction, { backgroundColor: primaryBrand, opacity: loadingIds.includes(n.id) ? 0.6 : 1 }]}>
+                          <Text style={styles.actionText}>
+                            {loadingIds.includes(n.id) ? 'Processing...' : 'Looks good!'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.secondaryAction, { borderColor: 'rgba(255,255,255,0.1)' }]}
+                        onPress={() => handleManualAdjust(n.type)}
+                        disabled={loadingIds.includes(n.id)}
+                      >
+                        <Text style={[styles.secondaryActionText, { color: colors.text }]}>Custom</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )
+                ) : n.type === 'security' ? (
+                  securityActionState === 'pending' && (
+                     <View style={styles.actionRow}>
+                      <TouchableOpacity 
+                        onPress={() => setSecurityActionState('verified')} 
+                        style={styles.primaryActionWrapper}
+                      >
+                        <View style={[styles.primaryAction, { backgroundColor: '#34D399' }]}>
+                          <Text style={styles.actionText}>Yes, it&apos;s me</Text>
+                        </View>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.secondaryAction, { borderColor: '#FB7185' }]}
+                        onPress={() => setSecurityActionState('blocked')}
+                      >
+                        <Text style={[styles.secondaryActionText, { color: '#FB7185' }]}>No, block</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )
                 ) : (
-                  <Text style={[styles.message, { color: colors.text }]}>{n.message}</Text>
+                  n.route && (
+                    <TouchableOpacity 
+                      style={styles.detailsBtn}
+                      onPress={() => handleViewDetails(n.route)}
+                    >
+                      <Text style={[styles.detailsText, { color: n.color }]}>View Details</Text>
+                      <Feather name="chevron-right" size={16} color={n.color} />
+                    </TouchableOpacity>
+                  )
                 )}
-              </View>
-
-              {n.isAI ? (
-                !aiConfirmedIds.includes(n.id) && (
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity 
-                      onPress={() => handleAiConfirm(n.id)} 
-                      style={styles.primaryActionWrapper}
-                      disabled={loadingIds.includes(n.id)}
-                    >
-                      <View style={[styles.primaryAction, { backgroundColor: primaryBrand, opacity: loadingIds.includes(n.id) ? 0.6 : 1 }]}>
-                        <Text style={styles.actionText}>
-                          {loadingIds.includes(n.id) ? 'Processing...' : 'Look good!'}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.secondaryAction, { borderColor: 'rgba(255,255,255,0.1)' }]}
-                      onPress={() => handleManualAdjust(n.type)}
-                      disabled={loadingIds.includes(n.id)}
-                    >
-                      <Text style={[styles.secondaryActionText, { color: colors.text }]}>Custom</Text>
-                    </TouchableOpacity>
-                  </View>
-                )
-              ) : n.type === 'security' ? (
-                securityActionState === 'pending' && (
-                   <View style={styles.actionRow}>
-                    <TouchableOpacity 
-                      onPress={() => setSecurityActionState('verified')} 
-                      style={styles.primaryActionWrapper}
-                    >
-                      <View style={[styles.primaryAction, { backgroundColor: '#34D399' }]}>
-                        <Text style={styles.actionText}>Yes, it&apos;s me</Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.secondaryAction, { borderColor: '#FB7185' }]}
-                      onPress={() => setSecurityActionState('blocked')}
-                    >
-                      <Text style={[styles.secondaryActionText, { color: '#FB7185' }]}>No, block</Text>
-                    </TouchableOpacity>
-                  </View>
-                )
-              ) : (
-                n.route && (
-                  <TouchableOpacity 
-                    style={styles.detailsBtn}
-                    onPress={() => handleViewDetails(n.route)}
-                  >
-                    <Text style={[styles.detailsText, { color: n.color }]}>View Details</Text>
-                    <Feather name="chevron-right" size={16} color={n.color} />
-                  </TouchableOpacity>
-                )
-              )}
-            </Animated.View>
-          ))}
-        </Animated.View>
+              </Animated.View>
+            ))}
+          </Animated.View>
+        ) : (
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <MaterialCommunityIcons name="bell-off-outline" size={48} color={primaryBrand} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>All Caught Up!</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.secondary }]}>
+              You have no new notifications. We&apos;ll let you know when something important happens.
+            </Text>
+          </View>
+        )}
         <View style={{ height: 100 }} />
       </ScrollView>
     </View>
@@ -268,10 +287,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '900',
+    fontSize: 20,
+    fontWeight: '800',
     fontFamily: 'sans-serif-rounded',
-    letterSpacing: -0.5,
   },
   markReadBtn: {
     paddingVertical: 8,
@@ -395,6 +413,35 @@ const styles = StyleSheet.create({
   detailsText: {
     fontSize: 13,
     fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 100,
+    paddingHorizontal: 40,
+  },
+  emptyIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
+    marginBottom: 12,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '600',
     fontFamily: 'sans-serif-rounded',
   },
 });

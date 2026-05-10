@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, DimensionValue } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, DimensionValue } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import Slider from '@react-native-community/slider';
@@ -6,8 +6,7 @@ import Svg, { Path } from 'react-native-svg';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-
-const { width } = Dimensions.get('window');
+import { Feather } from '@expo/vector-icons';
 
 export default function FlexiCreditScreen() {
   const router = useRouter();
@@ -27,7 +26,7 @@ export default function FlexiCreditScreen() {
     if (monthlyPayment < minPayment) {
       setMonthlyPayment(minPayment);
     }
-  }, [parsedAmount, minPayment]);
+  }, [parsedAmount, minPayment, monthlyPayment]);
 
   const generateSimulatorData = () => {
     if (parsedAmount === 0 || parsedRate === 0) return { months: 0, interest: 0, maxInterest: 1 };
@@ -83,9 +82,9 @@ export default function FlexiCreditScreen() {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} scrollEventThrottle={16}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol size={24} name="chevron.left" color={colors.text} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>FlexiCredit</Text>
+          <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>   FlexiCredit</Text>
       </View>
 
       <View style={styles.section}>
@@ -204,7 +203,7 @@ export default function FlexiCreditScreen() {
         <TouchableOpacity
           style={[
             styles.applyButton,
-            { backgroundColor: hasInteracted ? colors.primary : 'transparent', borderColor: hasInteracted ? colors.primaryEnd : colors.border }
+            { backgroundColor: hasInteracted ? colors.primary : 'transparent', borderColor: hasInteracted ? colors.primary : colors.border }
           ]}
           onPress={handleApplyNow}
           disabled={!hasInteracted}
@@ -223,7 +222,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#333' },
   backButton: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '600' },
+  headerTitle: { fontSize: 20, fontWeight: '800' },
   section: { paddingHorizontal: 16, marginVertical: 16 },
   
   inputRow: { flexDirection: 'row', gap: 12 },
