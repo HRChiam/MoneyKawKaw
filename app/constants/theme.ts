@@ -1,8 +1,5 @@
-import { Platform } from 'react-native';
-
 // MoneyKawKaw Color Scheme
 const gxPurple = '#771fff'; 
-const gxPurpleLight = '#9d5eff'; // Lighter purple for subtle gradients
 const gxPink = '#f8326d'; // Secondary accent / Gradient end
 const tintColorDark = gxPurple;
 
@@ -16,7 +13,6 @@ const darkColorScheme = {
   tabIconSelected: gxPurple,
   // MoneyKawKaw specific colors
   primary: gxPurple,
-  primaryEnd: gxPurpleLight, // Lighter purple for primary elements
   accent: gxPink, // GX Pink for high-impact accents
   secondary: '#64748B',
   success: '#10B981',
@@ -38,7 +34,7 @@ export const Colors = {
 export const Gradients = {
   // Pure Purple Gradient
   primary: {
-    colors: [gxPurple, gxPurpleLight],
+    colors: [gxPurple],
     start: { x: 0, y: 0 },
     end: { x: 1, y: 1 },
   },

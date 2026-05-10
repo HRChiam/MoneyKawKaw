@@ -1,9 +1,9 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
+import { Feather, MaterialCommunityIcons} from '@expo/vector-icons';
+import Animated, { FadeInDown} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ProfileScreen() {
@@ -11,31 +11,31 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const labelColor = '#771FFF'; // GX Violet
-  const darkLavender = '#7C3AED';
+  const gxPurple = '#771fff'; // GX Violet
+  const gxPink = '#f8326d';
 
   const menuSections = [
     {
       title: 'ACCOUNT',
       items: [
-        { id: 1, title: 'Personal Information', icon: 'user', type: 'feather', color: labelColor },
-        { id: 2, title: 'Payment Methods', icon: 'credit-card', type: 'feather', color: labelColor },
-        { id: 3, title: 'Transaction History', icon: 'file-text', type: 'feather', color: labelColor, route: '../modals/transaction-history' },
+        { id: 1, title: 'Personal Information', icon: 'user', type: 'feather', color: gxPurple },
+        { id: 2, title: 'Payment Methods', icon: 'credit-card', type: 'feather', color: gxPurple },
+        { id: 3, title: 'Transaction History', icon: 'file-text', type: 'feather', color: gxPurple, route: '../modals/transaction-history' },
       ]
     },
     {
       title: 'PREFERENCES',
       items: [
-        { id: 4, title: 'Notifications', icon: 'bell', type: 'feather', color: labelColor },
-        { id: 5, title: 'Security & Privacy', icon: 'shield', type: 'feather', color: labelColor },
-        { id: 6, title: 'App Theme', icon: 'moon', type: 'feather', color: labelColor },
+        { id: 4, title: 'Notifications', icon: 'bell', type: 'feather', color: gxPurple },
+        { id: 5, title: 'Security & Privacy', icon: 'shield', type: 'feather', color: gxPurple },
+        { id: 6, title: 'App Theme', icon: 'moon', type: 'feather', color: gxPurple },
       ]
     },
     {
       title: 'SUPPORT',
       items: [
-        { id: 7, title: 'Help Center', icon: 'help-circle', type: 'feather', color: labelColor },
-        { id: 8, title: 'Terms of Service', icon: 'info', type: 'feather', color: labelColor },
+        { id: 7, title: 'Help Center', icon: 'help-circle', type: 'feather', color: gxPurple },
+        { id: 8, title: 'Terms of Service', icon: 'info', type: 'feather', color: gxPurple },
       ]
     }
   ];
@@ -63,7 +63,7 @@ export default function ProfileScreen() {
         <Animated.View entering={FadeInDown.duration(600)}>
           {/* User Hero Section with Gradient */}
           <LinearGradient
-            colors={[labelColor, darkLavender]}
+            colors={[gxPurple, gxPink]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.heroCard}
@@ -92,11 +92,11 @@ export default function ProfileScreen() {
           {/* Quick Stats */}
           <View style={styles.statsRow}>
             <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: labelColor }]}>1,357</Text>
+              <Text style={[styles.statValue, { color: '#ffffff' }]}>1,357</Text>
               <Text style={[styles.statLabel, { color: colors.secondary }]}>GX Points</Text>
             </View>
             <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: labelColor }]}>5.2k</Text>
+              <Text style={[styles.statValue, { color: '#ffffff' }]}>5.2k</Text>
               <Text style={[styles.statLabel, { color: colors.secondary }]}>Total Saved</Text>
             </View>
           </View>
