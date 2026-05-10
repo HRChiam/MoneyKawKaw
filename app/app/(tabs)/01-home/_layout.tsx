@@ -18,11 +18,11 @@ export default function HomeScreen() {
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
   // Financial summary based on context data
-  const mainAccountBalance = 0.00; // Hardcoded to 0 per instructions
+  const mainAccountBalance = 0.00; 
   const pocketsTotal = pockets.reduce((s, p) => s + p.balance, 0);
   
-  const spent = 180; // Current mock spent
-  const limit = 200;
+  const spent = 20.50; // Current mock spent
+  const limit = 90;
   const spendingProgress = spent / limit;
 
   // Traffic light logic with GX-inspired sophisticated shades
@@ -37,9 +37,11 @@ export default function HomeScreen() {
   // Fix date to May 12, 2026 for all features
   const mockToday = new Date(2026, 4, 12); // May 12, 2026 (0-indexed month)
 
-  // Helper to mask all numbers including dots
+  // Helper to mask all numbers including dots and ensure 2 decimal places for numbers
   const formatBalance = (amount: string | number) => {
-    return isBalanceVisible ? amount.toString() : '••••••';
+    if (!isBalanceVisible) return '••••••';
+    if (typeof amount === 'number') return amount.toFixed(2);
+    return amount;
   };
 
   // Helper to add commas to large numbers (e.g. 10000 -> 10,000.00)

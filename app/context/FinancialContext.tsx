@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
 
 export interface Pocket {
   id: number;
@@ -14,19 +14,18 @@ interface FinancialContextType {
   expenses: Record<string, number>;
   setExpenses: (val: Record<string, number>) => void;
   pockets: Pocket[];
-  setPockets: (val: Pocket[]) => void;
+  setPockets: Dispatch<SetStateAction<Pocket[]>>;
   syncPocketsWithExpenses: () => void;
 }
 
 const FinancialContext = createContext<FinancialContextType | undefined>(undefined);
 
 const defaultExpenses = {
-  'Loan': 1500,
+  'Loan': 1000,
   'F&B': 800,
-  'Transport': 300,
-  'Groceries': 500,
-  'Entertainment': 400,
-  'Other': 0
+  'Transport': 400,
+  'Groceries': 800,
+  'Entertainment': 800,
 };
 
 const pocketColors: Record<string, string> = {
@@ -53,12 +52,12 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
   const [income, setIncome] = useState(5000);
   const [expenses, setExpenses] = useState<Record<string, number>>(defaultExpenses);
   const [pockets, setPockets] = useState<Pocket[]>([
-    { id: 1, name: 'Saving', balance: 1050, icon: 'safe', color: '#15fabd' },
-    { id: 2, name: 'F&B', balance: 700, icon: 'food-fork-drink', color: '#FB7185' },
-    { id: 3, name: 'Transport', balance: 350, icon: 'car-side', color: '#60A5FA' },
-    { id: 4, name: 'Loan', balance: 1500, icon: 'bank-outline', color: '#FBBF24' },
-    { id: 5, name: 'Groceries', balance: 500, icon: 'cart-outline', color: '#34D399' },
-    { id: 6, name: 'Entertainment', balance: 400, icon: 'controller-classic-outline', color: '#F472B6' },
+    { id: 1, name: 'Saving', balance: 1200, icon: 'safe', color: '#15fabd' },
+    { id: 2, name: 'F&B', balance: 800, icon: 'food-fork-drink', color: '#FB7185' },
+    { id: 3, name: 'Transport', balance: 400, icon: 'car-side', color: '#60A5FA' },
+    { id: 4, name: 'Loan', balance: 1000, icon: 'bank-outline', color: '#FBBF24' },
+    { id: 5, name: 'Groceries', balance: 800, icon: 'cart-outline', color: '#34D399' },
+    { id: 6, name: 'Entertainment', balance: 800, icon: 'controller-classic-outline', color: '#F472B6' },
   ]);
 
   const syncPocketsWithExpenses = () => {

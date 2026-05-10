@@ -64,9 +64,12 @@ export default function SummaryScreen() {
         { label: 'W4', value: 600, budget: 500 }  
       ],
       categories: [
-        { name: 'Saving', amount: 800, color: '#A78BFA' },
+        { name: 'Saving', amount: 1200, color: '#15fabd' },
+        { name: 'Loan', amount: 1000, color: '#FBBF24' },
         { name: 'F&B', amount: 600, color: '#FB7185' },
-        { name: 'Entertainment', amount: 200, color: '#60A5FA' },
+        { name: 'Groceries', amount: 500, color: '#34D399' },
+        { name: 'Transport', amount: 350, color: '#60A5FA' },
+        { name: 'Entertainment', amount: 400, color: '#F472B6' },
       ]
     },
     prev_month: {
@@ -78,9 +81,12 @@ export default function SummaryScreen() {
         { label: 'W4', value: 420, budget: 500 }  
       ],
       categories: [
-        { name: 'Saving', amount: 900, color: '#A78BFA' },
+        { name: 'Saving', amount: 1000, color: '#15fabd' },
+        { name: 'Loan', amount: 1000, color: '#FBBF24' },
         { name: 'F&B', amount: 750, color: '#FB7185' },
-        { name: 'Entertainment', amount: 250, color: '#60A5FA' },
+        { name: 'Groceries', amount: 480, color: '#34D399' },
+        { name: 'Transport', amount: 320, color: '#60A5FA' },
+        { name: 'Entertainment', amount: 250, color: '#F472B6' },
       ]
     },
     year: {

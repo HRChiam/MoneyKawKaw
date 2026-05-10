@@ -23,7 +23,7 @@ export default function OnboardingScreen() {
   
   const logoOpacity = useSharedValue(0);
 
-  const expenses = ['Rental/House Loan', 'PTPTN', 'Car Loan', 'Insurance', 'Loan'];
+  const expenses = ['Rental/House Loan', 'PTPTN', 'Car Loan', 'Insurance', 'Other Loan'];
   const personas = [
     { name: 'Conservative', desc: 'Prioritize safety and steady growth', icon: 'shield-check' },
     { name: 'Balanced', desc: 'Mix of growth and capital protection', icon: 'scale-balance' },

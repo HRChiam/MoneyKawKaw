@@ -48,7 +48,7 @@ export default function PocketsScreen() {
   const addPocket = () => {
     if (!newName) return;
     const id = Math.max(0, ...pockets.map(p => p.id)) + 1;
-    setPockets(prev => [...prev, { 
+    setPockets([...pockets, {
       id, 
       name: newName, 
       balance: Number(newAmount) || 0,
@@ -62,7 +62,7 @@ export default function PocketsScreen() {
 
   const applyRename = () => {
     if (renameTarget == null || !renameValue) return;
-    setPockets(prev => prev.map(p => p.id === renameTarget ? { ...p, name: renameValue } : p));
+    setPockets(pockets.map(p => p.id === renameTarget ? { ...p, name: renameValue } : p));
     setRenameModal(false);
   };
 
@@ -77,7 +77,7 @@ export default function PocketsScreen() {
     const amount = parseFloat(moveAmount);
     if (!moveSource || !moveTarget || isNaN(amount) || amount <= 0) return;
 
-    setPockets(prev => prev.map(p => {
+    setPockets(pockets.map(p => {
       if (p.id === moveSource) return { ...p, balance: p.balance - amount };
       if (p.id === moveTarget) return { ...p, balance: p.balance + amount };
       return p;
@@ -87,7 +87,7 @@ export default function PocketsScreen() {
 
   const applyDelete = () => {
     if (pocketToDelete) {
-      setPockets(prev => prev.filter(p => p.id !== pocketToDelete.id));
+      setPockets(pockets.filter(p => p.id !== pocketToDelete.id));
       setDeleteModal(false);
       setPocketToDelete(null);
     }
