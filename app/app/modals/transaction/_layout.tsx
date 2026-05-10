@@ -4,9 +4,10 @@ import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-type TransferSource = 'Main' | 'Saving' | 'Food' | 'Transport' | 'Utilities';
+type TransferSource = 'Saving' | 'Food' | 'Transport' | 'Utilities';
 
 export default function TransactionScreen() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function TransactionScreen() {
   const [showBankPicker, setShowBankPicker] = useState(false);
 
   const pockets = [
-    { name: 'Saving', icon: 'safe', balance: 50.00, color: '#771FFF' }, // GX Violet
+    { name: 'Saving', icon: 'safe', balance: 50.00, color: '#15fabd' }, // Neon Turquoise
     { name: 'Food', icon: 'food-fork-drink', balance: 800.00, color: '#FB7185' }, // Rose/Pink
     { name: 'Transport', icon: 'car-side', balance: 200.00, color: '#60A5FA' }, // Sky Blue
     { name: 'Utilities', icon: 'lightning-bolt', balance: 120.00, color: '#FBBF24' }, // Amber
@@ -33,14 +34,14 @@ export default function TransactionScreen() {
 
   const quickAmounts = ['10', '50', '100', '200'];
 
-  // All labels unified to GX Violet
-  const labelColor = '#771FFF'; 
-
+  // GX Violet for primary actions
+  const primaryBrand = '#771FFF'; 
+  
   // Permanent icon colors
   const iconPalette = {
-    recipient: '#771FFF', // GX Violet
+    recipient: '#15fabd', // Neon Turquoise
     amount: '#FBBF24',    // Amber
-    source: '#34D399',    // Emerald
+    source: '#771FFF',    // GX Violet
     reference: '#60A5FA', // Sky Blue
   };
 
@@ -68,15 +69,15 @@ export default function TransactionScreen() {
           entering={FadeInDown.duration(600)}
           style={styles.successContainer}
         >
-          <View style={[styles.successIconWrapper, { backgroundColor: colors.success + '20' }]}>
-            <Ionicons name="checkmark-circle" size={100} color={colors.success} />
+          <View style={[styles.successIconWrapper, { backgroundColor: '#15fabd20' }]}>
+            <Ionicons name="checkmark-circle" size={100} color="#15fabd" />
           </View>
           <Text style={[styles.successTitle, { color: colors.text }]}>Transfer Successful!</Text>
           
-          <View style={[styles.receiptCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.receiptCard, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }]}>
             <View style={styles.receiptRow}>
               <Text style={[styles.receiptLabel, { color: colors.secondary }]}>Amount</Text>
-              <Text style={[styles.receiptValue, { color: iconPalette.amount }]}>RM {parseFloat(amount).toFixed(2)}</Text>
+              <Text style={[styles.receiptValue, { color: '#FBBF24' }]}>RM {parseFloat(amount).toFixed(2)}</Text>
             </View>
             <View style={styles.receiptRow}>
               <Text style={[styles.receiptLabel, { color: colors.secondary }]}>To Account</Text>
@@ -88,15 +89,19 @@ export default function TransactionScreen() {
             </View>
             <View style={styles.receiptRow}>
               <Text style={[styles.receiptLabel, { color: colors.secondary }]}>From</Text>
-              <Text style={[styles.receiptValue, { color: iconPalette.source }]}>{selectedSource} {selectedSource === 'Main' ? 'Account' : 'Pocket'}</Text>
+              <Text style={[styles.receiptValue, { color: primaryBrand }]}>{selectedSource} Pocket</Text>
             </View>
           </View>
           
-          <TouchableOpacity 
-            style={[styles.doneButton, { backgroundColor: colors.primary }]}
-            onPress={handleDone}
-          >
-            <Text style={styles.doneButtonText}>Done</Text>
+          <TouchableOpacity onPress={handleDone} style={styles.doneButtonWrapper}>
+            <LinearGradient
+              colors={['#771FFF', '#F8326D']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.gradientButton}
+            >
+              <Text style={styles.doneButtonText}>Done</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -111,9 +116,9 @@ export default function TransactionScreen() {
       {/* Header */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color={colors.text} />
+          <Feather name="chevron-left" size={32} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Transaction</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Send Money</Text>
       </View>
 
       <ScrollView 
@@ -122,25 +127,56 @@ export default function TransactionScreen() {
       >
         <Animated.View entering={FadeInUp.delay(100).duration(500)}>
           
-          {/* Recipient Details Section */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: labelColor }]}>TO RECIPIENT</Text>
+          {/* Amount Hero Section */}
+          <View style={styles.heroSection}>
+            <Text style={[styles.heroLabel, { color: colors.secondary }]}>YOU ARE SENDING</Text>
+            <View style={styles.amountInputRow}>
+              <Text style={[styles.heroCurrency, { color: colors.text }]}>RM</Text>
+              <TextInput
+                style={[styles.heroAmountInput, { color: colors.text }]}
+                placeholder="0.00"
+                placeholderTextColor="rgba(255,255,255,0.2)"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="decimal-pad"
+                autoFocus
+              />
+            </View>
+            <View style={styles.quickAmountRow}>
+              {quickAmounts.map(val => (
+                <TouchableOpacity 
+                  key={val}
+                  style={[styles.quickAmountBtn, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }]}
+                  onPress={() => setAmount(val)}
+                >
+                  <Text style={[styles.quickAmountText, { color: colors.text }]}>RM{val}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Recipient Section */}
+          <View style={styles.glassSection}>
+            <Text style={[styles.sectionLabel, { color: colors.secondary }]}>TO RECIPIENT</Text>
             
             <TouchableOpacity 
-              style={[styles.bankSelector, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[styles.glassItem, { borderColor: showBankPicker ? primaryBrand : 'rgba(255,255,255,0.1)' }]}
               onPress={() => setShowBankPicker(!showBankPicker)}
             >
-              <View style={styles.bankInfo}>
-                <View style={[styles.iconCircle, { backgroundColor: iconPalette.recipient + '20' }]}>
+              <View style={styles.itemInfo}>
+                <View style={[styles.itemIconCircle, { backgroundColor: iconPalette.recipient + '20' }]}>
                   <MaterialCommunityIcons name="bank" size={20} color={iconPalette.recipient} />
                 </View>
-                <Text style={[styles.bankName, { color: colors.text }]}>{toBank}</Text>
+                <View>
+                  <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Bank</Text>
+                  <Text style={[styles.itemTitle, { color: colors.text }]}>{toBank}</Text>
+                </View>
               </View>
               <Feather name={showBankPicker ? "chevron-up" : "chevron-down"} size={20} color={colors.secondary} />
             </TouchableOpacity>
 
             {showBankPicker && (
-              <View style={[styles.bankPickerList, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.bankPickerList}>
                 {banks.map(bank => (
                   <TouchableOpacity 
                     key={bank} 
@@ -157,79 +193,27 @@ export default function TransactionScreen() {
               </View>
             )}
 
-            <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 12 }]}>
-              <Feather name="hash" size={18} color={iconPalette.recipient} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: colors.text }]}
-                placeholder="Account Number"
-                placeholderTextColor={colors.secondary}
-                value={toAccount}
-                onChangeText={setToAccount}
-                keyboardType="number-pad"
-              />
-            </View>
-          </View>
-
-          {/* Amount Section */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: labelColor }]}>AMOUNT</Text>
-            <View style={[styles.amountInputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.currencyPrefix, { color: labelColor }]}>RM</Text>
-              <TextInput
-                style={[styles.amountInput, { color: colors.text }]}
-                placeholder="0.00"
-                placeholderTextColor={colors.secondary}
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View style={styles.quickAmountRow}>
-              {quickAmounts.map(val => (
-                <TouchableOpacity 
-                  key={val}
-                  style={[styles.quickAmountBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={() => setAmount(val)}
-                >
-                  <Text style={[styles.quickAmountText, { color: labelColor }]}>RM{val}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={[styles.glassInputWrapper, { marginTop: 16 }]}>
+              <View style={[styles.itemIconCircle, { backgroundColor: primaryBrand + '20' }]}>
+                <Feather name="hash" size={18} color={primaryBrand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Account Number</Text>
+                <TextInput
+                  style={[styles.glassInput, { color: colors.text }]}
+                  placeholder="Enter account number"
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  value={toAccount}
+                  onChangeText={setToAccount}
+                  keyboardType="number-pad"
+                />
+              </View>
             </View>
           </View>
 
           {/* Source Account Selection */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: labelColor }]}>FROM SOURCE</Text>
-            
-            <TouchableOpacity
-              style={[
-                styles.mainAccountSource,
-                { 
-                  backgroundColor: colors.card, 
-                  borderColor: selectedSource === 'Main' ? iconPalette.source : colors.border 
-                }
-              ]}
-              onPress={() => setSelectedSource('Main')}
-            >
-              <View style={styles.sourceInfo}>
-                <View style={[styles.iconCircle, { backgroundColor: iconPalette.source }]}>
-                  <Ionicons name="wallet" size={22} color="#fff" />
-                </View>
-                <View>
-                  <Text style={[styles.sourceName, { color: colors.text }]}>Main Account</Text>
-                  <Text style={[styles.sourceBalance, { color: colors.secondary }]}>Available: RM 0.00</Text>
-                </View>
-              </View>
-              {selectedSource === 'Main' && (
-                <View style={[styles.selectedBadge, { backgroundColor: iconPalette.source }]}>
-                  <Feather name="check" size={12} color="#fff" />
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.pocketHeaderRow}>
-              <Text style={[styles.label, { color: labelColor }]}>OR FROM POCKETS</Text>
-            </View>
+          <View style={styles.glassSection}>
+            <Text style={[styles.sectionLabel, { color: colors.secondary }]}>FROM SOURCE (POCKETS)</Text>
             
             <View style={styles.pocketGrid}>
               {pockets.map((pocket) => (
@@ -238,34 +222,20 @@ export default function TransactionScreen() {
                   style={[
                     styles.pocketCard,
                     { 
-                      backgroundColor: colors.card, 
-                      borderColor: selectedSource === pocket.name ? pocket.color : colors.border 
+                      backgroundColor: selectedSource === pocket.name ? pocket.color + '20' : 'rgba(255,255,255,0.03)', 
+                      borderColor: selectedSource === pocket.name ? pocket.color : 'rgba(255,255,255,0.08)' 
                     }
                   ]}
                   onPress={() => setSelectedSource(pocket.name as TransferSource)}
                 >
-                  <View style={[
-                    styles.pocketIconWrapper, 
-                    { backgroundColor: pocket.color + '20' }
-                  ]}>
-                    <MaterialCommunityIcons 
-                      name={pocket.icon as any} 
-                      size={24} 
-                      color={pocket.color} 
-                    />
+                  <View style={[styles.pocketIconWrapper, { backgroundColor: pocket.color }]}>
+                    <MaterialCommunityIcons name={pocket.icon as any} size={20} color="#fff" />
                   </View>
-                  <Text style={[
-                    styles.pocketName, 
-                    { color: colors.text }
-                  ]}>
-                    {pocket.name}
-                  </Text>
-                  <Text style={[styles.pocketBalance, { color: colors.secondary }]}>
-                    RM {pocket.balance.toFixed(0)}
-                  </Text>
+                  <Text style={[styles.pocketName, { color: colors.text }]}>{pocket.name}</Text>
+                  <Text style={[styles.pocketBalance, { color: colors.secondary }]}>RM {pocket.balance.toFixed(0)}</Text>
                   {selectedSource === pocket.name && (
-                    <View style={[styles.selectedBadge, { backgroundColor: pocket.color }]}>
-                      <Feather name="check" size={12} color="#fff" />
+                    <View style={[styles.pocketSelectedBadge, { backgroundColor: pocket.color }]}>
+                      <Feather name="check" size={10} color="#fff" />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -274,42 +244,47 @@ export default function TransactionScreen() {
           </View>
 
           {/* Reference Section */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: labelColor }]}>REFERENCE (OPTIONAL)</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Feather name="file-text" size={18} color={iconPalette.reference} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: colors.text }]}
-                placeholder="Transaction reference"
-                placeholderTextColor={colors.secondary}
-                value={reference}
-                onChangeText={setReference}
-              />
+          <View style={styles.glassSection}>
+            <View style={styles.glassInputWrapper}>
+              <View style={[styles.itemIconCircle, { backgroundColor: iconPalette.reference + '20' }]}>
+                <Feather name="file-text" size={18} color={iconPalette.reference} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Reference (Optional)</Text>
+                <TextInput
+                  style={[styles.glassInput, { color: colors.text }]}
+                  placeholder="What's this for?"
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  value={reference}
+                  onChangeText={setReference}
+                />
+              </View>
             </View>
           </View>
 
         </Animated.View>
-        <View style={{ height: 120 }} />
+        <View style={{ height: 140 }} />
       </ScrollView>
 
-      {/* Footer */}
-      <View style={[styles.footer, { backgroundColor: colors.background }]}>
+      {/* Footer - Fixed at bottom */}
+      <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: 'rgba(255,255,255,0.08)' }]}>
         <TouchableOpacity
-          style={[
-            styles.confirmButton,
-            { 
-              backgroundColor: (!toAccount || !amount || !selectedSource) ? colors.border : colors.primary,
-              opacity: (!toAccount || !amount || !selectedSource) ? 0.6 : 1
-            }
-          ]}
           onPress={handleConfirm}
           disabled={isLoading || !toAccount || !amount || !selectedSource}
+          style={styles.confirmButtonWrapper}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.confirmButtonText}>Confirm Transfer</Text>
-          )}
+          <LinearGradient
+            colors={(!toAccount || !amount || !selectedSource) ? ['#3f3751', '#3f3751'] : ['#771FFF', '#F8326D']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.gradientButton, { opacity: (!toAccount || !amount || !selectedSource) ? 0.6 : 1 }]}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.confirmButtonText}>Confirm Transfer</Text>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -323,62 +298,124 @@ const styles = StyleSheet.create({
   headerRow: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 24,
     flexDirection: 'row',
     alignItems: 'center',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+    marginRight: 12,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
+    letterSpacing: -0.5,
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 16,
   },
-  section: {
-    marginBottom: 28,
+  heroSection: {
+    alignItems: 'center',
+    marginBottom: 40,
+    paddingVertical: 20,
   },
-  label: {
+  heroLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    marginBottom: 16,
+    fontFamily: 'sans-serif-rounded',
+  },
+  amountInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroCurrency: {
+    fontSize: 32,
+    fontWeight: '700',
+    marginRight: 8,
+    marginTop: 8,
+    fontFamily: 'sans-serif-rounded',
+  },
+  heroAmountInput: {
+    fontSize: 64,
+    fontWeight: '900',
+    minWidth: 150,
+    textAlign: 'center',
+    fontFamily: 'sans-serif-rounded',
+  },
+  quickAmountRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 24,
+    gap: 10,
+  },
+  quickAmountBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 100,
+    borderWidth: 1,
+  },
+  quickAmountText: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'sans-serif-rounded',
+  },
+  glassSection: {
+    marginBottom: 24,
+    padding: 20,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  sectionLabel: {
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.2,
-    marginBottom: 12,
+    marginBottom: 16,
+    fontFamily: 'sans-serif-rounded',
   },
-  bankSelector: {
+  glassItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 60,
+    padding: 16,
     borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1,
-    paddingHorizontal: 16,
   },
-  bankInfo: {
+  itemInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+  itemIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
-  bankName: {
-    fontSize: 16,
+  itemSubtitle: {
+    fontSize: 11,
     fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+    fontFamily: 'sans-serif-rounded',
+  },
+  itemTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
   },
   bankPickerList: {
+    marginTop: 12,
     borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 4,
     overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   bankItem: {
     flexDirection: 'row',
@@ -390,84 +427,24 @@ const styles = StyleSheet.create({
   },
   bankItemText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'sans-serif-rounded',
   },
-  inputWrapper: {
+  glassInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
-    borderRadius: 16,
-    borderWidth: 1,
     paddingHorizontal: 16,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  amountInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 80,
-    borderRadius: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1,
-    paddingHorizontal: 20,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  currencyPrefix: {
-    fontSize: 24,
-    fontWeight: '800',
-    marginRight: 12,
-  },
-  amountInput: {
-    flex: 1,
-    fontSize: 32,
-    fontWeight: '800',
-  },
-  quickAmountRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    gap: 8,
-  },
-  quickAmountBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickAmountText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  mainAccountSource: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginBottom: 20,
-  },
-  sourceInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sourceName: {
+  glassInput: {
     fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  sourceBalance: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  pocketHeaderRow: {
-    marginBottom: 12,
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
+    height: 24,
   },
   pocketGrid: {
     flexDirection: 'row',
@@ -478,33 +455,35 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 16,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.5,
     position: 'relative',
   },
   pocketIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
   pocketName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
     marginBottom: 4,
   },
   pocketBalance: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'sans-serif-rounded',
   },
-  selectedBadge: {
+  pocketSelectedBadge: {
     position: 'absolute',
     top: 12,
     right: 12,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -513,70 +492,79 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 24,
   },
-  confirmButton: {
-    height: 60,
+  confirmButtonWrapper: {
+    width: '100%',
+  },
+  gradientButton: {
+    height: 64,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   confirmButtonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
   },
   successContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   successIconWrapper: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   successTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    marginBottom: 24,
+    fontSize: 32,
+    fontWeight: '900',
+    marginBottom: 32,
     textAlign: 'center',
+    fontFamily: 'sans-serif-rounded',
+    letterSpacing: -1,
   },
   receiptCard: {
     width: '100%',
     padding: 24,
-    borderRadius: 24,
-    borderWidth: 1,
-    marginBottom: 32,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    marginBottom: 40,
   },
   receiptRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   receiptLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontFamily: 'sans-serif-rounded',
   },
   receiptValue: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
   },
-  doneButton: {
+  doneButtonWrapper: {
     width: '100%',
-    height: 60,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   doneButtonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
+    fontFamily: 'sans-serif-rounded',
   },
 });
