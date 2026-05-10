@@ -29,7 +29,7 @@ export const TransactionSuccess: React.FC<TransactionSuccessProps> = ({
   const router = useRouter();
 
   const handleDone = () => {
-    router.navigate('../(tabs)/01-home');
+    router.replace('../(tabs)/01-home');
   };
 
   return (
@@ -140,3 +140,5 @@ const styles = StyleSheet.create({
     fontFamily: 'sans-serif-rounded',
   },
 });
+
+export default TransactionSuccess;

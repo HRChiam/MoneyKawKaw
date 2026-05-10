@@ -33,7 +33,7 @@ export default function InsufficientFundsScreen() {
 
   const handleCancel = () => {
     // Navigate back to home page
-    router.navigate('../(tabs)/01-home');
+    router.replace('../(tabs)/01-home');
   };
 
   return (
