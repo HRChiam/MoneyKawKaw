@@ -1,7 +1,11 @@
 import os
+import json
+import joblib
+import numpy as np
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
 
 # Load environment variables from .env
 load_dotenv()
@@ -9,21 +13,84 @@ load_dotenv()
 # Initialize your AI (Replace with your actual API key from Google AI Studio)
 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=os.getenv("GEMINI_API_KEY"))
 
+# --- Load Trained ML Model ---
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "models", "gx_smart_predictor.pkl")
+try:
+    predictor_model = joblib.load(MODEL_PATH)
+except Exception as e:
+    predictor_model = None
+    print(f"Warning: Could not load GX Smart Predictor model: {e}")
+
 # ==========================================
 # ⚙️ HYBRID AI (Backend Math -> LLM Messaging)
 # ==========================================
 
 # --- Feature 1: Initial Setup Allocation ---
-def generate_welcome_message(persona, food_pct, savings_pct):
-    template = """
-    You are the MoneyKawKaw AI assistant. The user just chose the '{persona}' lifestyle.
-    The backend math has allocated {food_pct}% of their money to Food, and {savings_pct}% to Savings.
-    Write a fun, encouraging 2-sentence welcome message explaining this setup. 
-    Keep it very short and use Malaysian slang (like 'lah' or 'makan') subtly.
+def calculate_initial_allocation(income, fixed_expenses_dict, mode):
     """
+    income: Total monthly income (RM)
+    fixed_expenses_dict: Dict of chosen fixed expenses { 'Loan': 500, 'PTPTN': 200, ... }
+    mode: 'Balanced', 'Saver', or 'Socialite'
+    """
+    total_fixed = sum(fixed_expenses_dict.values())
+    disposable = max(0, income - total_fixed)
+    
+    # Mathematical Baseline (as a starting point for AI)
+    modes = {
+        "Balanced": {"Saving": 0.3, "F&B": 0.2, "Transport": 0.1, "Groceries": 0.2, "Entertainment": 0.2},
+        "Saver": {"Saving": 0.5, "F&B": 0.1, "Transport": 0.1, "Groceries": 0.1, "Entertainment": 0.2},
+        "Socialite": {"Saving": 0.1, "F&B": 0.3, "Transport": 0.1, "Groceries": 0.2, "Entertainment": 0.3}
+    }
+    ratios = modes.get(mode, modes["Balanced"])
+    baseline = {k: round(disposable * v, 2) for k, v in ratios.items()}
+
+    # AI Smart Adjustment
+    template = """
+    You are a professional financial planner for the MoneyKawKaw app.
+    The user has a monthly income of RM{income}.
+    They have fixed expenses (Non-negotiable) totaling RM{total_fixed}: {fixed_details}.
+    They have RM{disposable} left for their disposable pockets.
+    Their desired lifestyle mode is '{mode}'.
+
+    Here is a mathematical baseline for their disposable pockets:
+    {baseline}
+
+    CRITICAL RULES:
+    1. If fixed expenses are > 50% of income, prioritize 'Saving' (at least 10% of disposable) and 'Groceries' and 'Food & Beverage' over 'Entertainment'.
+    2. If fixed expenses are very high (> 70%), you MUST reduce 'Entertainment' to a minimum (e.g. RM50 or less) to ensure they have enough for 'Groceries' and 'Saving'.
+    3. If they are in 'Socialite' mode but have little money, be realistic—reduce F&B slightly to keep 'Transport' and 'Groceries' viable.
+    4. The total of [Saving, F&B, Transport, Groceries, Entertainment] MUST exactly equal RM{disposable}.
+    5. Return ONLY a JSON object with these keys: Saving, F&B, Transport, Groceries, Entertainment. Use numbers only.
+    """
+    
     prompt = PromptTemplate.from_template(template)
-    chain = prompt | llm
-    return chain.invoke({"persona": persona, "food_pct": food_pct, "savings_pct": savings_pct}).content
+    chain = prompt | llm | JsonOutputParser()
+    
+    try:
+        # Get AI adjusted pockets
+        smart_pockets = chain.invoke({
+            "income": income,
+            "total_fixed": total_fixed,
+            "fixed_details": json.dumps(fixed_expenses_dict),
+            "disposable": disposable,
+            "mode": mode,
+            "baseline": json.dumps(baseline)
+        })
+        
+        # Merge with fixed expenses
+        final_allocation = {k: float(v) for k, v in fixed_expenses_dict.items()}
+        for k, v in smart_pockets.items():
+            final_allocation[k] = float(v)
+            
+        return final_allocation
+    except Exception as e:
+        print(f"AI Allocation failed, falling back to math: {e}")
+        # Fallback to math
+        allocation = {k: float(v) for k, v in fixed_expenses_dict.items()}
+        for k, v in baseline.items():
+            allocation[k] = float(v)
+        return allocation
+
 
 # --- Feature 6: Receiving Money Routing (The Freelancer Buffer) ---
 def summarize_weekly_buffer(total_pooled, food_amt, savings_amt):
@@ -39,16 +106,43 @@ def summarize_weekly_buffer(total_pooled, food_amt, savings_amt):
     return chain.invoke({"total": total_pooled, "food": food_amt, "savings": savings_amt}).content
 
 # --- Feature 7: Momentum & Prediction ---
-def generate_momentum_warning(category, days_over, predicted_shortfall):
+def generate_momentum_warning(category, days_over, daily_limit, current_avg_spend):
+    """
+    Combines ML Prediction (Shortfall) with LLM Messaging.
+    """
+    predicted_shortfall = 0
+    
+    # 1. Use the trained ML model to predict shortfall
+    if predictor_model:
+        try:
+            # We assume the model expects: [days_over, daily_limit, current_avg_spend]
+            # NOTE: If your model requires more/different features, update this list!
+            features = np.array([[days_over, daily_limit, current_avg_spend]])
+            prediction = predictor_model.predict(features)
+            predicted_shortfall = round(float(prediction[0]), 2)
+        except Exception as e:
+            print(f"ML Prediction failed: {e}")
+            # Fallback simple math: (overspend per day) * remaining days
+            predicted_shortfall = (current_avg_spend - daily_limit) * 20
+    else:
+        # Fallback if no model is loaded
+        predicted_shortfall = (current_avg_spend - daily_limit) * 20
+
+    # 2. Use LLM to generate the human-friendly warning
     template = """
-    You are a strict but empathetic financial AI. 
+    You are a strict but empathetic financial AI for MoneyKawKaw. 
     The user has exceeded their daily limit for {category} for {days_over} days in a row.
-    If they keep this up, they will be short RM{predicted_shortfall} by the end of the month.
+    Our ML momentum engine predicts they will be short RM{predicted_shortfall} by the end of the month if they don't stop.
+    
     Give them a 2-sentence reality check. Be direct but don't panic them.
     """
     prompt = PromptTemplate.from_template(template)
     chain = prompt | llm
-    return chain.invoke({"category": category, "days_over": days_over, "predicted_shortfall": predicted_shortfall}).content
+    return chain.invoke({
+        "category": category, 
+        "days_over": days_over, 
+        "predicted_shortfall": predicted_shortfall
+    }).content
 
 # --- Feature 8: Continuous Learning (The Monthly Rebalancer) ---
 def continuous_learning_rebalance(pocket_name, budgeted, actual_spent):
@@ -130,14 +224,16 @@ def agentic_debt_router(surplus_amount, liabilities):
 # 🚀 TEST BLOCK (Run this to see the magic)
 # ==========================================
 if __name__ == "__main__":
-    print("--- 1. Initial Setup ---")
-    print(generate_welcome_message("Balanced", 40, 20))
+    print("--- 1. Initial Setup (Smart AI Allocation) ---")
+    mock_fixed = {"Rental": 2500, "PTPTN": 150, "Car_Loan":300} # High fixed expenses
+    print(calculate_initial_allocation(5000, mock_fixed, "Balanced"))
     
     print("\n--- 6. Silent Buffer Sweep ---")
     print(summarize_weekly_buffer(150, 100, 50))
     
-    print("\n--- 7. Momentum Warning ---")
-    print(generate_momentum_warning("Food", 3, 150))
+    print("\n--- 7. Momentum Warning (ML + AI) ---")
+    # Simulation: Daily limit is RM30, but user is spending RM50/day
+    print(generate_momentum_warning("Food", 4, 30, 50))
     
     print("\n--- 8. Monthly Rebalancer ---")
     print(continuous_learning_rebalance("Food", 600, 850))

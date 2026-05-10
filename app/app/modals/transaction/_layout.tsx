@@ -8,9 +8,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { TransactionSuccess } from './TransactionSuccess';
 
-type TransferSource = 'Saving' | 'Food' | 'Transport' | 'Utilities';
+import { useFinancial } from '@/context/FinancialContext';
+
+type TransferSource = 'Saving' | 'F&B' | 'Transport' | 'Loan' | 'Groceries' | 'Entertainment';
 
 export default function TransactionScreen() {
+  const { pockets } = useFinancial();
   const router = useRouter();
   const params = useLocalSearchParams();
   const colorScheme = useColorScheme();
@@ -37,13 +40,7 @@ export default function TransactionScreen() {
 
   const banks = ['GXBank', 'Maybank', 'CIMB Bank', 'Public Bank', 'RHB Bank'];
   const [showBankPicker, setShowBankPicker] = useState(false);
-
-  const pockets = [
-    { name: 'Saving', icon: 'safe', balance: 50.00, color: '#15fabd' }, // Neon Turquoise
-    { name: 'Food', icon: 'food-fork-drink', balance: 800.00, color: '#FB7185' }, // Rose/Pink
-    { name: 'Transport', icon: 'car-side', balance: 200.00, color: '#60A5FA' }, // Sky Blue
-    { name: 'Utilities', icon: 'lightning-bolt', balance: 120.00, color: '#FBBF24' }, // Amber
-  ];
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
 
   const quickAmounts = ['10', '50', '100', '200'];
 
@@ -204,32 +201,67 @@ export default function TransactionScreen() {
           <View style={styles.glassSection}>
             <Text style={[styles.sectionLabel, { color: colors.secondary }]}>FROM SOURCE (POCKETS)</Text>
             
-            <View style={styles.pocketGrid}>
-              {pockets.map((pocket) => (
-                <TouchableOpacity
-                  key={pocket.name}
-                  style={[
-                    styles.pocketCard,
-                    { 
-                      backgroundColor: selectedSource === pocket.name ? pocket.color + '20' : 'rgba(255,255,255,0.03)', 
-                      borderColor: selectedSource === pocket.name ? pocket.color : 'rgba(255,255,255,0.08)' 
-                    }
-                  ]}
-                  onPress={() => setSelectedSource(pocket.name as TransferSource)}
-                >
-                  <View style={[styles.pocketIconWrapper, { backgroundColor: pocket.color }]}>
-                    <MaterialCommunityIcons name={pocket.icon as any} size={20} color="#fff" />
-                  </View>
-                  <Text style={[styles.pocketName, { color: colors.text }]}>{pocket.name}</Text>
-                  <Text style={[styles.pocketBalance, { color: colors.secondary }]}>RM {pocket.balance.toFixed(0)}</Text>
-                  {selectedSource === pocket.name && (
-                    <View style={[styles.pocketSelectedBadge, { backgroundColor: pocket.color }]}>
-                      <Feather name="check" size={10} color="#fff" />
+            <TouchableOpacity 
+              style={[styles.glassItem, { borderColor: showSourcePicker ? primaryBrand : 'rgba(255,255,255,0.1)' }]}
+              onPress={() => setShowSourcePicker(!showSourcePicker)}
+            >
+              <View style={styles.itemInfo}>
+                {selectedSource ? (
+                  <>
+                    <View style={[styles.itemIconCircle, { backgroundColor: pockets.find(p => p.name === selectedSource)?.color + '20' }]}>
+                      <MaterialCommunityIcons 
+                        name={pockets.find(p => p.name === selectedSource)?.icon as any} 
+                        size={20} 
+                        color={pockets.find(p => p.name === selectedSource)?.color} 
+                      />
                     </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
+                    <View>
+                      <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Selected Pocket</Text>
+                      <Text style={[styles.itemTitle, { color: colors.text }]}>
+                        {selectedSource} (RM {pockets.find(p => p.name === selectedSource)?.balance.toFixed(0)})
+                      </Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={[styles.itemIconCircle, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+                      <MaterialCommunityIcons name="wallet-outline" size={20} color={colors.secondary} />
+                    </View>
+                    <View>
+                      <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Source</Text>
+                      <Text style={[styles.itemTitle, { color: colors.text, opacity: 0.5 }]}>Choose a pocket</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+              <Feather name={showSourcePicker ? "chevron-up" : "chevron-down"} size={20} color={colors.secondary} />
+            </TouchableOpacity>
+
+            {showSourcePicker && (
+              <View style={styles.bankPickerList}>
+                {pockets.map(pocket => (
+                  <TouchableOpacity 
+                    key={pocket.name} 
+                    style={styles.bankItem}
+                    onPress={() => {
+                      setSelectedSource(pocket.name as TransferSource);
+                      setShowSourcePicker(false);
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={[styles.miniPocketIcon, { backgroundColor: pocket.color }]}>
+                        <MaterialCommunityIcons name={pocket.icon as any} size={14} color="#fff" />
+                      </View>
+                      <Text style={[styles.bankItemText, { color: colors.text }]}>{pocket.name}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={{ color: colors.secondary, fontSize: 13, fontWeight: '600' }}>RM {pocket.balance.toFixed(0)}</Text>
+                      {selectedSource === pocket.name && <Feather name="check" size={16} color={primaryBrand} />}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* Reference Section */}
@@ -418,6 +450,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     fontFamily: 'sans-serif-rounded',
+  },
+  miniPocketIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   glassInputWrapper: {
     flexDirection: 'row',
