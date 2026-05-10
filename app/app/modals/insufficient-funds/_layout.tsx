@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -33,7 +33,7 @@ export default function InsufficientFundsScreen() {
 
   const handleCancel = () => {
     // Navigate back to home page
-    router.navigate('../(tabs)/01-home');
+    router.replace('../(tabs)/01-home');
   };
 
   return (
@@ -50,14 +50,7 @@ export default function InsufficientFundsScreen() {
         
         {/* Status Illustration Area */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.statusArea}>
-          <View style={styles.iconRing}>
-            <LinearGradient
-              colors={['#cb184e20', '#cb184e40']}
-              style={styles.iconBackground}
-            >
-            <FontAwesome5 name="sad-tear" size={60} color="#ffffff" />
-            </LinearGradient>
-          </View>
+          <Image source={require('@/assets/images/orz.png')} style={{ objectFit: 'scale-down', height: 120 , marginBottom: 20 }} />
           <Text style={[styles.alertTitle, { color: colors.text }]}>Oops! Not enough funds</Text>
           <Text style={[styles.alertSubtitle, { color: colors.secondary }]}>
             Your {selectedSource} Pocket is a bit short for this transfer.
@@ -105,9 +98,9 @@ export default function InsufficientFundsScreen() {
                 <MaterialCommunityIcons name="lightning-bolt" size={24} color="white" />
               </View>
               <View style={styles.buttonTextContent}>
-                <Text style={styles.buttonMainText}>AI Suggestion</Text>
-                <Text style={styles.buttonSubText}>
-                  Move RM {shortfall.toFixed(2)} from Entertainment to complete this.
+                <Text style={styles.buttonSubText}>AI Suggestion</Text>
+                <Text style={styles.buttonMainText}>
+                  Move RM {shortfall.toFixed(2)} from Entertainment to {selectedSource}.
                 </Text>
               </View>
             </View>
@@ -153,23 +146,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 32,
-  },
-  iconRing: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: '#cb184e30',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  iconBackground: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   alertTitle: {
     fontSize: 24,

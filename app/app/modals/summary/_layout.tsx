@@ -1,117 +1,335 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
+import Svg, { Path, Circle, G } from 'react-native-svg';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
 export default function SummaryScreen() {
+  const handlePieTouch = (event: any) => {
+    // Get exact finger coordinates relative to the 120x120 box
+    const { locationX, locationY } = event.nativeEvent;
+    
+    // Calculate distance from the center (60, 60)
+    const dx = locationX - 60;
+    const dy = locationY - 60;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // If the tap is outside the pie radius, ignore it
+    if (distance > 56) return;
+
+    // Calculate the angle of the tap using Math.atan2
+    let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    
+    // Adjust standard math angles to match our top-starting pie chart
+    angle = angle + 90;
+    if (angle < 0) angle += 360;
+
+    // Find which slice this angle belongs to
+    let accumulated = 0;
+    for (let i = 0; i < pieSlices.length; i++) {
+      const sliceAngle = (pieSlices[i].amount / totalCategorySpend) * 360;
+      if (angle >= accumulated && angle < accumulated + sliceAngle) {
+        // Toggle the slice
+        setActiveCategoryIndex(activeCategoryIndex === i ? null : i);
+        break;
+      }
+      accumulated += sliceAngle;
+    }
+  };
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
   const [activeTab, setActiveTab] = useState<'summary' | 'tax'>('summary');
   const [timeframe, setTimeframe] = useState<'month' | 'year'>('month');
+  
+  const [activePoint, setActivePoint] = useState<number | null>(null); 
+  const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
 
-  const spendingCategories = [
-    { name: 'Saving', amount: 800 },
-    { name: 'F&B', amount: 600 },
-    { name: 'Entertainment', amount: 200 },
-  ];
+  const scrollRef = useRef<ScrollView>(null);
 
-  const taxItems = [
-    { name: 'Books', amount: 99 },
-    { name: 'Medical', amount: 150 },
-    { name: 'Education', amount: 200 },
-  ];
+  const data = {
+    month: {
+      periodLabel: "May 2026",
+      trend: [ 
+        { label: 'W1', value: 450, budget: 500 }, 
+        { label: 'W2', value: 820, budget: 500 }, 
+        { label: 'W3', value: 300, budget: 500 }, 
+        { label: 'W4', value: 600, budget: 500 }  
+      ],
+      categories: [
+        { name: 'Saving', amount: 800, color: '#A78BFA' },
+        { name: 'F&B', amount: 600, color: '#FB7185' },
+        { name: 'Entertainment', amount: 200, color: '#60A5FA' },
+      ]
+    },
+    year: {
+      periodLabel: "2026",
+      trend: [ 
+        { label: 'Jan', value: 3200, budget: 3500 }, 
+        { label: 'Feb', value: 2800, budget: 3500 }, 
+        { label: 'Mar', value: 3800, budget: 3500 }, 
+        { label: 'Apr', value: 2900, budget: 3500 }, 
+        { label: 'May', value: 3100, budget: 3500 }, 
+        { label: 'Jun', value: null, budget: 3500 }, 
+        { label: 'Jul', value: null, budget: 3500 }, 
+        { label: 'Aug', value: null, budget: 3500 }, 
+        { label: 'Sep', value: null, budget: 3500 }, 
+        { label: 'Oct', value: null, budget: 3500 }, 
+        { label: 'Nov', value: null, budget: 3500 }, 
+        { label: 'Dec', value: null, budget: 3500 } 
+      ],
+      categories: [
+        { name: 'Saving', amount: 3200, color: '#A78BFA' },
+        { name: 'F&B', amount: 2400, color: '#FB7185' },
+        { name: 'Entertainment', amount: 800, color: '#60A5FA' },
+      ]
+    }
+  };
+
+  const currentData = data[timeframe];
+
+  const validTrends = currentData.trend.filter(d => d.value !== null) as {label: string, value: number, budget: number}[];
+  const maxSpend = Math.max(...validTrends.map(d => d.value));
+  const minSpend = Math.min(...validTrends.map(d => d.value)) * 0.5; 
+  
+  const CHART_HEIGHT = 140;
+  const VIEWPORT_WIDTH = width - 64; 
+  const CHART_WIDTH = timeframe === 'year' ? VIEWPORT_WIDTH * 2 : VIEWPORT_WIDTH; 
+
+  const generateSpendLine = () => {
+    const points = currentData.trend
+      .map((val, index) => {
+        if (val.value === null) return null;
+        const x = (index / (currentData.trend.length - 1)) * CHART_WIDTH;
+        const y = CHART_HEIGHT - ((val.value - minSpend) / (maxSpend - minSpend)) * CHART_HEIGHT;
+        return `${x},${y}`;
+      })
+      .filter(p => p !== null);
+    return `M ${points.join(' L ')}`;
+  };
+
+  const PIE_RADIUS = 25; 
+  const PIE_STROKE_WIDTH = 50; 
+// --- SPEND BREAKDOWN: PERFECT TOUCH FILLED WEDGES ---
+  const totalCategorySpend = currentData.categories.reduce((sum, cat) => sum + cat.amount, 0);
+
+  const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+    const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+    return {
+      x: centerX + radius * Math.cos(angleInRadians),
+      y: centerY + radius * Math.sin(angleInRadians),
+    };
+  };
+
+  let accumulatedAngle = 0;
+  const pieSlices = currentData.categories.map((cat) => {
+    const percentage = cat.amount / totalCategorySpend;
+    const sliceAngle = percentage * 360;
+    
+    const startAngle = accumulatedAngle;
+    const endAngle = accumulatedAngle + sliceAngle;
+    accumulatedAngle += sliceAngle;
+
+    // Normal state radius is 50, Active (popped out) state radius is 56
+    const R_NORMAL = 50;
+    const R_ACTIVE = 56;
+    
+    const startNormal = polarToCartesian(60, 60, R_NORMAL, startAngle);
+    const endNormal = polarToCartesian(60, 60, R_NORMAL, endAngle);
+    
+    const startActive = polarToCartesian(60, 60, R_ACTIVE, startAngle);
+    const endActive = polarToCartesian(60, 60, R_ACTIVE, endAngle);
+
+    const largeArcFlag = sliceAngle > 180 ? '1' : '0';
+    
+    // Draw a solid closed wedge: Move to center (60,60), line to edge, arc, line back to center (Z)
+    const dNormal = sliceAngle > 359.9 
+      ? `M 60 ${60 - R_NORMAL} A ${R_NORMAL} ${R_NORMAL} 0 1 1 59.9 ${60 - R_NORMAL} Z`
+      : `M 60 60 L ${startNormal.x} ${startNormal.y} A ${R_NORMAL} ${R_NORMAL} 0 ${largeArcFlag} 1 ${endNormal.x} ${endNormal.y} Z`;
+
+    const dActive = sliceAngle > 359.9 
+      ? `M 60 ${60 - R_ACTIVE} A ${R_ACTIVE} ${R_ACTIVE} 0 1 1 59.9 ${60 - R_ACTIVE} Z`
+      : `M 60 60 L ${startActive.x} ${startActive.y} A ${R_ACTIVE} ${R_ACTIVE} 0 ${largeArcFlag} 1 ${endActive.x} ${endActive.y} Z`;
+
+    return { ...cat, dNormal, dActive, percentage: (percentage * 100).toFixed(0) };
+  });
+
+  useEffect(() => { 
+    setActivePoint(null); 
+    setActiveCategoryIndex(null);
+    if (timeframe === 'year' && scrollRef.current) {
+      const itemWidth = CHART_WIDTH / 11;
+      const currentMonthX = (4 * itemWidth) - (VIEWPORT_WIDTH / 2);
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ x: Math.max(0, currentMonthX), animated: true });
+      }, 100);
+    }
+  }, [timeframe]);
+
+  const renderTooltip = () => {
+    if (activePoint === null || currentData.trend[activePoint].value === null) return null;
+    const trend = currentData.trend[activePoint];
+    
+    const activeX = (activePoint / (currentData.trend.length - 1)) * CHART_WIDTH;
+    const activeY = CHART_HEIGHT - ((trend.value! - minSpend) / (maxSpend - minSpend)) * CHART_HEIGHT;
+
+    const TOOLTIP_WIDTH = 120;
+    const TOOLTIP_HEIGHT = 65; 
+
+    let left = activeX + 12; 
+    let top = activeY - (TOOLTIP_HEIGHT / 2); 
+
+    if (left + TOOLTIP_WIDTH > CHART_WIDTH) {
+      left = activeX - TOOLTIP_WIDTH - 12; 
+    }
+
+    if (top < 0) {
+      top = 0; 
+    } else if (top + TOOLTIP_HEIGHT > CHART_HEIGHT) {
+      top = CHART_HEIGHT - TOOLTIP_HEIGHT; 
+    }
+
+    return (
+      <View style={[styles.tooltip, { 
+         backgroundColor: colors.text,
+         top,
+         left,
+         width: TOOLTIP_WIDTH 
+      }]}>
+        <Text style={{color: colors.background, fontSize: 10, fontWeight: '700', opacity: 0.8, textTransform: 'uppercase'}} numberOfLines={1}>
+          {currentData.periodLabel} • {trend.label}
+        </Text>
+        
+        <View style={{marginTop: 4}}>
+          <Text style={{color: colors.background, fontSize: 14, fontWeight: '900'}}>RM {trend.value}</Text>
+        </View>
+
+        <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 4}}>
+          <Text style={{fontSize: 12}}>{trend.value! > trend.budget ? "😢" : "😊"}</Text>
+          <Text style={{
+            color: trend.value! > trend.budget ? '#FCA5A5' : '#86EFAC', 
+            fontSize: 11, 
+            fontWeight: '800'
+          }}>
+            {trend.value! > trend.budget ? "Over Budget" : "On Track"}
+          </Text>
+        </View>
+      </View>
+    );
+  };
 
   const renderSummaryTab = () => (
     <View>
       <View style={styles.filterContainer}>
         <TouchableOpacity
-          style={[
-            styles.filterButton,
-            {
-              backgroundColor: timeframe === 'month' ? colors.primary : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
+          style={[styles.filterButton, { backgroundColor: timeframe === 'month' ? colors.primary : colors.card, borderColor: colors.border }]}
           onPress={() => setTimeframe('month')}
         >
-          <Text
-            style={[
-              styles.filterButtonText,
-              {
-                color: timeframe === 'month' ? '#fff' : colors.text,
-              },
-            ]}
-          >
-            Month
-          </Text>
+          <Text style={[styles.filterButtonText, { color: timeframe === 'month' ? '#fff' : colors.text }]}>Month</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
-          style={[
-            styles.filterButton,
-            {
-              backgroundColor: timeframe === 'year' ? colors.primary : colors.card,
-              borderColor: colors.border,
-            },
-          ]}
+          style={[styles.filterButton, { backgroundColor: timeframe === 'year' ? colors.primary : colors.card, borderColor: colors.border }]}
           onPress={() => setTimeframe('year')}
         >
-          <Text
-            style={[
-              styles.filterButtonText,
-              {
-                color: timeframe === 'year' ? '#fff' : colors.text,
-              },
-            ]}
-          >
-            Year
-          </Text>
+          <Text style={[styles.filterButtonText, { color: timeframe === 'year' ? '#fff' : colors.text }]}>Year</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.chartsContainer}>
+        {/* --- 1. SPENDING TREND --- */}
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.chartTitle, { color: colors.text }]}>Income Graph</Text>
-          <View style={[styles.chartPlaceholder, { backgroundColor: colors.border }]}>
-            <IconSymbol size={32} name="chart.line" color={colors.secondary} />
+          <View style={styles.chartHeader}>
+             <Text style={[styles.chartTitle, { color: colors.text }]}>Spending Trend</Text>
+             <Text style={{fontSize: 12, color: colors.secondary}}>Tap for details</Text>
           </View>
+          
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} ref={scrollRef} contentContainerStyle={{ width: CHART_WIDTH, paddingBottom: 10 }}>
+            <View style={{ width: CHART_WIDTH }}>
+              <View style={[styles.chartArea, { height: CHART_HEIGHT }]}>
+                <Svg width="100%" height="100%">
+                  <Path d={generateSpendLine()} fill="none" stroke={colors.primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  {currentData.trend.map((val, index) => {
+                      if (val.value === null) return null;
+                      const x = (index / (currentData.trend.length - 1)) * CHART_WIDTH;
+                      const y = CHART_HEIGHT - ((val.value - minSpend) / (maxSpend - minSpend)) * CHART_HEIGHT;
+                      return (
+                          <Circle key={index} cx={x} cy={y} r={activePoint === index ? 6 : 4} fill={colors.card} stroke={colors.primary} strokeWidth={activePoint === index ? 3 : 2} />
+                      );
+                  })}
+                </Svg>
+                
+                <View style={styles.touchOverlay}>
+                   {currentData.trend.map((val, index) => (
+                     <TouchableOpacity key={index} style={styles.touchColumn} onPress={() => val.value !== null && setActivePoint(index)} activeOpacity={1} />
+                   ))}
+                </View>
+
+                {/* Render Dynamic Smart-Positioned Tooltip */}
+                {renderTooltip()}
+                
+              </View>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between', marginTop: 12}}>
+                  {currentData.trend.map((val, i) => (
+                     <Text key={i} style={{fontSize: 12, color: colors.secondary, fontWeight: '600'}}>{val.label}</Text>
+                  ))}
+              </View>
+            </View>
+          </ScrollView>
         </View>
 
-        <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.chartTitle, { color: colors.text }]}>Spend Graph</Text>
-          <View style={[styles.chartPlaceholder, { backgroundColor: colors.border }]}>
-            <IconSymbol size={32} name="chart.bar" color={colors.secondary} />
+        {/* --- 2. SPEND BREAKDOWN: SMALLER SOLID PIE --- */}
+        <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border, paddingVertical: 24, minHeight: 180 }]}>
+          <Text style={[styles.chartTitle, { color: colors.text, marginBottom: 20 }]}>Spend Breakdown</Text>
+          <View style={styles.donutRow}>
+             {/* Wrap the entire SVG and let math do the work */}
+             <TouchableOpacity activeOpacity={1} onPress={handlePieTouch}>
+               <Svg width="120" height="120" viewBox="0 0 120 120">
+                  {pieSlices.map((slice, index) => (
+                    <Path 
+                       key={index} 
+                       d={activeCategoryIndex === index ? slice.dActive : slice.dNormal} 
+                       fill={slice.color} 
+                       // REMOVED onPress from here!
+                    />
+                  ))}
+               </Svg>
+             </TouchableOpacity>
+
+             <View style={styles.donutSideText}>
+                {activeCategoryIndex !== null ? (
+                   <>
+                      <Text style={[styles.donutCategoryName, { color: pieSlices[activeCategoryIndex].color }]}>{pieSlices[activeCategoryIndex].name}</Text>
+                      <Text style={[styles.donutPercentage, { color: colors.text }]}>{pieSlices[activeCategoryIndex].percentage}%</Text>
+                      <Text style={[styles.donutTotal, { color: colors.secondary }]}>RM {pieSlices[activeCategoryIndex].amount}</Text>
+                   </>
+                ) : (
+                   <>
+                      <Text style={[styles.donutPeriod, { color: colors.text }]}>{currentData.periodLabel}</Text>
+                      <Text style={[styles.donutTotal, { color: colors.secondary, marginTop: 4 }]}>Total Spent</Text>
+                      <Text style={[styles.donutPercentage, { color: colors.text }]}>RM {totalCategorySpend}</Text>
+                   </>
+                )}
+             </View>
           </View>
         </View>
       </View>
 
+      {/* Categories List */}
       <View style={styles.listSection}>
-        <View style={styles.listHeader}>
-          <Text style={[styles.listTitle, { color: colors.text }]}>Spending Category</Text>
-          <TouchableOpacity>
-            <Text style={[styles.sortButton, { color: colors.primary }]}>Sort</Text>
+        <Text style={[styles.listTitle, { color: colors.text, marginBottom: 12 }]}>Category Breakdown</Text>
+        {currentData.categories.map((category, index) => (
+          <TouchableOpacity key={index} style={[styles.categoryItem, { borderBottomColor: colors.border }, index === currentData.categories.length - 1 && { borderBottomWidth: 0 }, activeCategoryIndex === index && { backgroundColor: category.color + '10' }]} onPress={() => setActiveCategoryIndex(activeCategoryIndex === index ? null : index)}>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
+                <View style={{width: 12, height: 12, borderRadius: 6, backgroundColor: category.color}} />
+                <Text style={[styles.categoryName, { color: colors.text }]}>{category.name}</Text>
+            </View>
+            <Text style={[styles.categoryAmount, { color: colors.text, fontWeight: '700' }]}>RM {category.amount}</Text>
           </TouchableOpacity>
-        </View>
-
-        {spendingCategories.map((category, index) => (
-          <View
-            key={index}
-            style={[
-              styles.categoryItem,
-              { borderBottomColor: colors.border },
-              index === spendingCategories.length - 1 && { borderBottomWidth: 0 },
-            ]}
-          >
-            <Text style={[styles.categoryName, { color: colors.text }]}>{category.name}</Text>
-            <Text style={[styles.categoryAmount, { color: colors.primary }]}>RM {category.amount}</Text>
-          </View>
         ))}
       </View>
     </View>
@@ -120,29 +338,22 @@ export default function SummaryScreen() {
   const renderTaxTab = () => (
     <View>
       <View style={[styles.totalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.totalLabel, { color: colors.secondary }]}>Monthly Total</Text>
-        <Text style={[styles.totalAmount, { color: colors.primary }]}>RM 449</Text>
+        <Text style={[styles.totalLabel, { color: colors.secondary }]}>Potential Tax Relief (LHDN)</Text>
+        <Text style={[styles.totalAmount, { color: colors.primary }]}>RM 1,550</Text>
       </View>
-
+      <TouchableOpacity style={[styles.generateReportBtn, { backgroundColor: colors.primary }]} onPress={() => alert("Generating LHDN formatted PDF report...")}>
+          <Feather name="file-text" size={18} color="#fff" />
+          <Text style={{color: '#fff', fontSize: 16, fontWeight: '700', marginLeft: 8}}>Generate LHDN Report</Text>
+      </TouchableOpacity>
       <View style={styles.listSection}>
-        <Text style={[styles.listTitle, { color: colors.text }]}>Tax Exemption Suggestion</Text>
-
-        {taxItems.map((item, index) => (
-          <View
-            key={index}
-            style={[
-              styles.taxItem,
-              { borderBottomColor: colors.border },
-              index === taxItems.length - 1 && { borderBottomWidth: 0 },
-            ]}
-          >
+        <Text style={[styles.listTitle, { color: colors.text, marginBottom: 12 }]}>Tracked Exemptions</Text>
+        {[{ name: 'Tech / Lifestyle', amount: 1200 }, { name: 'Medical', amount: 150 }, { name: 'Education', amount: 200 }].map((item, index) => (
+          <View key={index} style={[styles.taxItem, { borderBottomColor: colors.border }, index === 2 && { borderBottomWidth: 0 }]}>
             <View style={styles.taxItemLeft}>
               <Text style={[styles.taxItemName, { color: colors.text }]}>{item.name}</Text>
               <Text style={[styles.taxItemAmount, { color: colors.primary }]}>RM {item.amount}</Text>
             </View>
-            <TouchableOpacity>
-              <Text style={[styles.viewButton, { color: colors.primary }]}>View status</Text>
-            </TouchableOpacity>
+            <TouchableOpacity><Text style={[styles.viewButton, { color: colors.primary }]}>View Receipts</Text></TouchableOpacity>
           </View>
         ))}
       </View>
@@ -150,211 +361,59 @@ export default function SummaryScreen() {
   );
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      scrollEventThrottle={16}
-    >
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} scrollEventThrottle={16}>
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Summary</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}><Feather name="arrow-left" size={24} color={colors.text} /></TouchableOpacity>
+        <Text style={[styles.title, { color: colors.text }]}>Insights</Text>
       </View>
-
       <View style={[styles.tabContainer, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            {
-              borderBottomWidth: activeTab === 'summary' ? 2 : 0,
-              borderBottomColor: colors.primary,
-            },
-          ]}
-          onPress={() => setActiveTab('summary')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              {
-                color: activeTab === 'summary' ? colors.primary : colors.secondary,
-              },
-            ]}
-          >
-            Summary
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            {
-              borderBottomWidth: activeTab === 'tax' ? 2 : 0,
-              borderBottomColor: colors.primary,
-            },
-          ]}
-          onPress={() => setActiveTab('tax')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              {
-                color: activeTab === 'tax' ? colors.primary : colors.secondary,
-              },
-            ]}
-          >
-            Tax
-          </Text>
-        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tab, { borderBottomWidth: activeTab === 'summary' ? 2 : 0, borderBottomColor: colors.primary }]} onPress={() => setActiveTab('summary')}><Text style={[styles.tabText, { color: activeTab === 'summary' ? colors.primary : colors.secondary }]}>Summary</Text></TouchableOpacity>
+        <TouchableOpacity style={[styles.tab, { borderBottomWidth: activeTab === 'tax' ? 2 : 0, borderBottomColor: colors.primary }]} onPress={() => setActiveTab('tax')}><Text style={[styles.tabText, { color: activeTab === 'tax' ? colors.primary : colors.secondary }]}>Tax Relief</Text></TouchableOpacity>
       </View>
-
-      <View style={styles.tabContent}>
-        {activeTab === 'summary' ? renderSummaryTab() : renderTaxTab()}
-      </View>
-
-      <View style={{ height: 20 }} />
+      <View style={styles.tabContent}>{activeTab === 'summary' ? renderSummaryTab() : renderTaxTab()}</View>
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerRow: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    paddingHorizontal: 16,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  tabContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  filterButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  filterButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  chartsContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  chartCard: {
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-  },
-  chartTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  chartPlaceholder: {
-    height: 120,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listSection: {
-    marginBottom: 24,
-  },
-  listHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  listTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  sortButton: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  categoryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  categoryName: {
-    fontSize: 14,
-  },
-  categoryAmount: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  totalCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-  },
-  totalLabel: {
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  totalAmount: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  taxItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  taxItemLeft: {
-    flex: 1,
-  },
-  taxItemName: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  taxItemAmount: {
-    fontSize: 12,
-  },
-  viewButton: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  container: { flex: 1 },
+  headerRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, flexDirection: 'row', alignItems: 'center' },
+  backButton: { width: 40, height: 40, justifyContent: 'center' },
+  title: { fontSize: 20, fontWeight: '800' },
+  tabContainer: { flexDirection: 'row', borderBottomWidth: 1, paddingHorizontal: 16 },
+  tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
+  tabText: { fontSize: 14, fontWeight: '600' },
+  tabContent: { paddingHorizontal: 16, paddingTop: 16 },
+  filterContainer: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  filterButton: { flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 1 },
+  filterButtonText: { fontSize: 13, fontWeight: '700' },
+  chartsContainer: { gap: 16, marginBottom: 24 },
+  chartCard: { borderRadius: 16, padding: 16, borderWidth: 1 },
+  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  chartTitle: { fontSize: 16, fontWeight: '700' },
+  donutRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', paddingLeft: 8 },
+  donutSideText: { marginLeft: 25, flex: 1 },
+  donutPeriod: { fontSize: 16, fontWeight: '800' },
+  donutCategoryName: { fontSize: 14, fontWeight: '800', marginBottom: 4 },
+  donutPercentage: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5 },
+  donutTotal: { fontSize: 14, fontWeight: '600' },
+  chartArea: { width: '100%', position: 'relative', marginTop: 8 },
+  touchOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, flexDirection: 'row' },
+  touchColumn: { flex: 1, height: '100%' }, 
+  tooltip: { position: 'absolute', padding: 8, borderRadius: 8, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, zIndex: 100 },
+  listSection: { marginBottom: 24 },
+  listTitle: { fontSize: 16, fontWeight: '700' },
+  categoryItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, paddingHorizontal: 8, borderRadius: 8 },
+  categoryName: { fontSize: 15, fontWeight: '600' },
+  categoryAmount: { fontSize: 15, fontWeight: '700' },
+  totalCard: { borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, alignItems: 'center' },
+  totalLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  totalAmount: { fontSize: 32, fontWeight: '800' },
+  generateReportBtn: { flexDirection: 'row', paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  taxItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1 },
+  taxItemLeft: { flex: 1 },
+  taxItemName: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
+  taxItemAmount: { fontSize: 14, fontWeight: '700' },
+  viewButton: { fontSize: 13, fontWeight: '700' },
 });
