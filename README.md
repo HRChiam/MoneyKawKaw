@@ -3,21 +3,15 @@
 
 This is the solution for UTMxHackathon 2026 for Case Study 2: The Youth Resilience Challenge, presented by Team Protect Liver.  
 
----
-
 ## 📌 Overview
 
 **MoneyKawKaw** is an AI-powered active financial companion integrated within **GXBank** designed to transform traditional passive banking into an active financial habit builder. 
-
----
 
 ## ⚠️ The Problem: The Malaysian Youth Debt Trap
 Many young Malaysians struggle with financial literacy and easily fall into debt. 
 * **Rising Bankruptcy:** 15% of all bankruptcy cases involve youths aged 34 and below.
 * **Debt Drivers:** Personal loans heavily drive youth insolvency, while low financial literacy leads to "lazy" budgeting habits.
 * **Passive Tools:** Traditional banking apps are passive because they only store data instead of actively helping users manage their money.
-
----
 
 ## 💡 Our Solution & Key Features
 
@@ -43,8 +37,6 @@ MoneyKawKaw manages money effortlessly by replacing static charts and overwhelmi
 * **Healthy Streaks:** Users earn points by maintaining healthy financial streaks, such as staying within their daily budget and reviewing financial summaries.
 * **Redemption Ecosystem:** Points can be redeemed to decorate a virtual **MoneyKawKaw Space** or exchanged for external partner vouchers and cashback.
 
----
-
 ## 🧠 Intelligence & System Logic
 
 MoneyKawKaw combines advanced machine learning, large language models, and deterministic rule-based checks:
@@ -53,14 +45,10 @@ MoneyKawKaw combines advanced machine learning, large language models, and deter
 * **Large Language Models (Decision Orchestration):** Translates raw predicted numbers into intelligent financial decisions, such as automatically suggesting budget reductions in non-essential categories (e.g., reducing entertainment spending from RM300 to RM200) to absorb necessary costs.
 * **Rule-Based System (Financial Safety Checks):** Applies strict financial constraints to verify that total allocated expenses (Food + Travel + Entertainment + Rent + Savings) remain strictly within the user's valid income limits.
 
----
-
 ## 🎯 Who Is It For?
 MoneyKawKaw is targeted primarily at **students** relying on allowances or PTPTN, and **fresh graduates** earning between RM2,500 and RM3,500. 
 
 Unlike traditional apps that require heavy self-discipline and manual budgeting, MoneyKawKaw steps in daily with automated guidance and friction. This builds proactive habits, making users statistically less likely to fail at repaying loans.
-
----
 
 ## Run the project
 1. Navigate to the app directory:
