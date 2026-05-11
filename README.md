@@ -3,6 +3,10 @@
 
 This is the solution for UTMxHackathon 2026 for Case Study 2: The Youth Resilience Challenge, presented by Team Protect Liver.  
 
+## 🔗 Link
+* Pitching Video: https://youtu.be/ckEuW2629AY
+* Pitch Deck: https://canva.link/9p5h0g0g80pe5or
+
 ## 📌 Overview
 
 **MoneyKawKaw** is an AI-powered active financial companion integrated within **GXBank** designed to transform traditional passive banking into an active financial habit builder. 
