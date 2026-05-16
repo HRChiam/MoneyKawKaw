@@ -16,12 +16,21 @@ export default function PocketsScreen() {
   const { pockets, setPockets } = useFinancial();
   const [isBalanceVisible] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<'fixed' | 'variable' | null>(null);
 
   const primaryBrand = '#771FFF'; // GX Violet
 
   const formatBalance = (amount: string | number) => {
     return isBalanceVisible ? amount.toString() : '••••••';
   };
+
+  const fixedPockets = pockets.filter(p => p.isFixed);
+  const variablePockets = pockets.filter(p => !p.isFixed);
+
+  const totalFixedBalance = fixedPockets.reduce((acc, curr) => acc + curr.balance, 0);
+  const totalVariableBalance = variablePockets.reduce((acc, curr) => acc + curr.balance, 0);
+
+  const displayedPockets = selectedGroup === 'fixed' ? fixedPockets : selectedGroup === 'variable' ? variablePockets : pockets;
 
   // Add Pocket State
   const [showAdd, setShowAdd] = useState(false);
@@ -53,7 +62,8 @@ export default function PocketsScreen() {
       name: newName, 
       balance: Number(newAmount) || 0,
       icon: 'folder-outline',
-      color: primaryBrand
+      color: primaryBrand,
+      isFixed: selectedGroup === 'fixed'
     }]);
     setShowAdd(false);
     setNewName('');
@@ -97,25 +107,31 @@ export default function PocketsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}> 
       {/* Header Row */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => selectedGroup ? setSelectedGroup(null) : router.back()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Pockets</Text>
+        <Text style={[styles.title, { color: colors.text }]}>
+          {selectedGroup === 'fixed' ? 'Fixed Pockets' : selectedGroup === 'variable' ? 'Variable Pockets' : 'Pockets'}
+        </Text>
         
         <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={[styles.headerBtn, { backgroundColor: 'rgba(255,255,255,0.05)' }]} 
-            onPress={() => setShowAdd(true)}
-          >
-            <Feather name="plus" size={20} color={primaryBrand} />
-          </TouchableOpacity>
+          {selectedGroup !== null && (
+            <>
+              <TouchableOpacity 
+                style={[styles.headerBtn, { backgroundColor: 'rgba(255,255,255,0.05)' }]} 
+                onPress={() => setShowAdd(true)}
+              >
+                <Feather name="plus" size={20} color={primaryBrand} />
+              </TouchableOpacity>
 
-          <TouchableOpacity 
-            onPress={() => setIsEditMode(!isEditMode)}
-            style={[styles.headerBtn, { backgroundColor: isEditMode ? colors.error + '20' : 'rgba(255,255,255,0.05)' }]}
-          >
-            <Feather name={isEditMode ? "x" : "trash-2"} size={18} color={isEditMode ? colors.error : colors.secondary} />
-          </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => setIsEditMode(!isEditMode)}
+                style={[styles.headerBtn, { backgroundColor: isEditMode ? colors.error + '20' : 'rgba(255,255,255,0.05)' }]}
+              >
+                <Feather name={isEditMode ? "x" : "trash-2"} size={18} color={isEditMode ? colors.error : colors.secondary} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
 
@@ -129,64 +145,124 @@ export default function PocketsScreen() {
         </Animated.View>
 
         <View style={styles.pocketsList}>
-          {pockets.map((p, index) => (
-            <Animated.View key={p.id} entering={FadeInDown.delay(index * 100).duration(600)}>
-              <TouchableOpacity 
-                activeOpacity={0.8}
-                onPress={() => !isEditMode && router.push(`../category/${p.name}`)}
-                style={[
-                  styles.pocketCard, 
-                  { 
-                    backgroundColor: 'rgba(255,255,255,0.03)',
-                    borderColor: isEditMode ? colors.error + '40' : 'rgba(255,255,255,0.08)' 
-                  }
-                ]}
-              > 
-                <View style={styles.cardMain}>
-                  <View style={[styles.iconWrapper, { backgroundColor: p.color + '20' }]}>
-                    <MaterialCommunityIcons name={p.icon as any} size={28} color={p.color} />
+          {selectedGroup === null ? (
+            <>
+              {/* Fixed Pockets Group Card */}
+              <Animated.View entering={FadeInDown.delay(0).duration(600)}>
+                <TouchableOpacity 
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedGroup('fixed')}
+                  style={[
+                    styles.pocketCard, 
+                    { 
+                      backgroundColor: 'rgba(255,255,255,0.03)',
+                      borderColor: 'rgba(255,255,255,0.08)' 
+                    }
+                  ]}
+                > 
+                  <View style={styles.cardMain}>
+                    <View style={[styles.iconWrapper, { backgroundColor: '#3b82f620' }]}>
+                      <MaterialCommunityIcons name="lock-outline" size={28} color="#3b82f6" />
+                    </View>
+                    <View style={styles.pocketInfo}>
+                      <Text style={[styles.pocketName, { color: colors.text }]}>Fixed Pocket</Text>
+                      <Text style={[styles.pocketBalance, { color: colors.text }]}>
+                        <Text style={{ fontSize: 16, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalFixedBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-right" size={20} color={colors.secondary} />
                   </View>
-                  <View style={styles.pocketInfo}>
-                    <Text style={[styles.pocketName, { color: colors.text }]}>{p.name}</Text>
-                    <Text style={[styles.pocketBalance, { color: colors.text }]}>
-                      <Text style={{ fontSize: 16, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(p.balance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
-                    </Text>
+                </TouchableOpacity>
+              </Animated.View>
+
+              {/* Variable Pockets Group Card */}
+              <Animated.View entering={FadeInDown.delay(100).duration(600)}>
+                <TouchableOpacity 
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedGroup('variable')}
+                  style={[
+                    styles.pocketCard, 
+                    { 
+                      backgroundColor: 'rgba(255,255,255,0.03)',
+                      borderColor: 'rgba(255,255,255,0.08)' 
+                    }
+                  ]}
+                > 
+                  <View style={styles.cardMain}>
+                    <View style={[styles.iconWrapper, { backgroundColor: '#3b82f620' }]}>
+                      <MaterialCommunityIcons name="lock-open-outline" size={28} color="#3b82f6" />
+                    </View>
+                    <View style={styles.pocketInfo}>
+                      <Text style={[styles.pocketName, { color: colors.text }]}>Variable Pocket</Text>
+                      <Text style={[styles.pocketBalance, { color: colors.text }]}>
+                        <Text style={{ fontSize: 16, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalVariableBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-right" size={20} color={colors.secondary} />
                   </View>
-                  
-                  {isEditMode ? (
-                    <TouchableOpacity 
-                      style={[styles.deleteBtn, { backgroundColor: colors.error + '20' }]} 
-                      onPress={() => {
-                        setPocketToDelete({ id: p.id, name: p.name, balance: p.balance });
-                        setDeleteModal(true);
-                      }}
-                    >
-                      <Feather name="trash-2" size={20} color={colors.error} />
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                </TouchableOpacity>
+              </Animated.View>
+            </>
+          ) : (
+            displayedPockets.map((p, index) => (
+              <Animated.View key={p.id} entering={FadeInDown.delay(index * 100).duration(600)}>
+                <TouchableOpacity 
+                  activeOpacity={0.8}
+                  onPress={() => !isEditMode && router.push(`../category/${p.name}`)}
+                  style={[
+                    styles.pocketCard, 
+                    { 
+                      backgroundColor: 'rgba(255,255,255,0.03)',
+                      borderColor: isEditMode ? colors.error + '40' : 'rgba(255,255,255,0.08)' 
+                    }
+                  ]}
+                > 
+                  <View style={styles.cardMain}>
+                    <View style={[styles.iconWrapper, { backgroundColor: p.color + '20' }]}>
+                      <MaterialCommunityIcons name={p.icon as any} size={28} color={p.color} />
+                    </View>
+                    <View style={styles.pocketInfo}>
+                      <Text style={[styles.pocketName, { color: colors.text }]}>{p.name}</Text>
+                      <Text style={[styles.pocketBalance, { color: colors.text }]}>
+                        <Text style={{ fontSize: 16, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(p.balance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
+                      </Text>
+                    </View>
+                    
+                    {isEditMode ? (
                       <TouchableOpacity 
-                        style={styles.moveBtn}
-                        onPress={() => startMove(p.id)}
-                      >
-                        <Feather name="repeat" size={20} color={primaryBrand} />
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.moveBtn}
+                        style={[styles.deleteBtn, { backgroundColor: colors.error + '20' }]} 
                         onPress={() => {
-                          setRenameTarget(p.id);
-                          setRenameValue(p.name);
-                          setRenameModal(true);
+                          setPocketToDelete({ id: p.id, name: p.name, balance: p.balance });
+                          setDeleteModal(true);
                         }}
                       >
-                        <Feather name="edit-3" size={20} color={colors.secondary} />
+                        <Feather name="trash-2" size={20} color={colors.error} />
                       </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-          ))}
+                    ) : (
+                      <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity 
+                          style={styles.moveBtn}
+                          onPress={() => startMove(p.id)}
+                        >
+                          <Feather name="repeat" size={20} color={primaryBrand} />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.moveBtn}
+                          onPress={() => {
+                            setRenameTarget(p.id);
+                            setRenameValue(p.name);
+                            setRenameModal(true);
+                          }}
+                        >
+                          <Feather name="edit-3" size={20} color={colors.secondary} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            ))
+          )}
         </View>
         <View style={{ height: 100 }} />
       </ScrollView>
