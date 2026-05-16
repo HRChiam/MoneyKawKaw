@@ -281,23 +281,54 @@ export default function PocketsScreen() {
 
               <Text style={[styles.inputLabel, { color: colors.secondary }]}>TO TARGET POCKET</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  {pockets.filter(p => p.id !== moveSource).map(p => (
-                    <TouchableOpacity 
-                      key={p.id}
-                      onPress={() => setMoveTarget(p.id)}
-                      style={[
-                        styles.targetOption, 
-                        { 
-                          backgroundColor: moveTarget === p.id ? p.color + '20' : 'rgba(255,255,255,0.05)',
-                          borderColor: moveTarget === p.id ? p.color : 'rgba(255,255,255,0.1)'
-                        }
-                      ]}
-                    >
-                      <MaterialCommunityIcons name={p.icon as any} size={20} color={moveTarget === p.id ? p.color : colors.secondary} />
-                      <Text style={[styles.targetName, { color: moveTarget === p.id ? colors.text : colors.secondary }]}>{p.name}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <View style={{ flexDirection: 'row', gap: 24 }}>
+                  {/* Fixed Pockets Section */}
+                  <View>
+                    <Text style={[styles.groupLabel, { color: colors.primary }]}>FIXED</Text>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      {fixedPockets.filter(p => p.id !== moveSource).map(p => (
+                        <TouchableOpacity 
+                          key={p.id}
+                          onPress={() => setMoveTarget(p.id)}
+                          style={[
+                            styles.targetOption, 
+                            { 
+                              backgroundColor: moveTarget === p.id ? p.color + '20' : 'rgba(255,255,255,0.05)',
+                              borderColor: moveTarget === p.id ? p.color : 'rgba(255,255,255,0.1)'
+                            }
+                          ]}
+                        >
+                          <MaterialCommunityIcons name={p.icon as any} size={20} color={moveTarget === p.id ? p.color : colors.secondary} />
+                          <Text style={[styles.targetName, { color: moveTarget === p.id ? colors.text : colors.secondary }]}>{p.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Divider Line if needed, but spacing is usually enough */}
+
+                  {/* Variable Pockets Section */}
+                  <View>
+                    <Text style={[styles.groupLabel, { color: '#F8326D' }]}>VARIABLE</Text>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      {variablePockets.filter(p => p.id !== moveSource).map(p => (
+                        <TouchableOpacity 
+                          key={p.id}
+                          onPress={() => setMoveTarget(p.id)}
+                          style={[
+                            styles.targetOption, 
+                            { 
+                              backgroundColor: moveTarget === p.id ? p.color + '20' : 'rgba(255,255,255,0.05)',
+                              borderColor: moveTarget === p.id ? p.color : 'rgba(255,255,255,0.1)'
+                            }
+                          ]}
+                        >
+                          <MaterialCommunityIcons name={p.icon as any} size={20} color={moveTarget === p.id ? p.color : colors.secondary} />
+                          <Text style={[styles.targetName, { color: moveTarget === p.id ? colors.text : colors.secondary }]}>{p.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
                 </View>
               </ScrollView>
 
@@ -543,6 +574,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     fontFamily: 'sans-serif-rounded',
+  },
+  groupLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 8,
+    fontFamily: 'sans-serif-rounded',
+    textTransform: 'uppercase',
   },
   
   /* Modals */
