@@ -154,6 +154,7 @@ export default function PocketsScreen() {
                   onPress={() => setSelectedGroup('fixed')}
                   style={[
                     styles.pocketCard, 
+                    styles.groupCard,
                     { 
                       backgroundColor: 'rgba(255,255,255,0.03)',
                       borderColor: 'rgba(255,255,255,0.08)' 
@@ -161,16 +162,16 @@ export default function PocketsScreen() {
                   ]}
                 > 
                   <View style={styles.cardMain}>
-                    <View style={[styles.iconWrapper, { backgroundColor: '#3b82f620' }]}>
-                      <MaterialCommunityIcons name="lock-outline" size={28} color="#3b82f6" />
+                    <View style={[styles.iconWrapper, styles.groupIconWrapper, { backgroundColor: '#3b82f620' }]}>
+                      <MaterialCommunityIcons name="lock-outline" size={36} color="#3b82f6" />
                     </View>
                     <View style={styles.pocketInfo}>
-                      <Text style={[styles.pocketName, { color: colors.text }]}>Fixed Pocket</Text>
-                      <Text style={[styles.pocketBalance, { color: colors.text }]}>
-                        <Text style={{ fontSize: 16, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalFixedBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
+                      <Text style={[styles.pocketName, styles.groupName, { color: colors.text }]}>Fixed Pocket</Text>
+                      <Text style={[styles.pocketBalance, styles.groupBalance, { color: colors.text }]}>
+                        <Text style={{ fontSize: 20, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalFixedBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
                       </Text>
                     </View>
-                    <Feather name="chevron-right" size={20} color={colors.secondary} />
+                    <Feather name="chevron-right" size={24} color={colors.secondary} />
                   </View>
                 </TouchableOpacity>
               </Animated.View>
@@ -181,7 +182,8 @@ export default function PocketsScreen() {
                   activeOpacity={0.8}
                   onPress={() => setSelectedGroup('variable')}
                   style={[
-                    styles.pocketCard, 
+                    styles.pocketCard,
+                    styles.groupCard, 
                     { 
                       backgroundColor: 'rgba(255,255,255,0.03)',
                       borderColor: 'rgba(255,255,255,0.08)' 
@@ -189,16 +191,16 @@ export default function PocketsScreen() {
                   ]}
                 > 
                   <View style={styles.cardMain}>
-                    <View style={[styles.iconWrapper, { backgroundColor: '#3b82f620' }]}>
-                      <MaterialCommunityIcons name="lock-open-outline" size={28} color="#3b82f6" />
+                    <View style={[styles.iconWrapper, styles.groupIconWrapper, { backgroundColor: '#3b82f620' }]}>
+                      <MaterialCommunityIcons name="lock-open-outline" size={36} color="#3b82f6" />
                     </View>
                     <View style={styles.pocketInfo}>
-                      <Text style={[styles.pocketName, { color: colors.text }]}>Variable Pocket</Text>
-                      <Text style={[styles.pocketBalance, { color: colors.text }]}>
-                        <Text style={{ fontSize: 16, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalVariableBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
+                      <Text style={[styles.pocketName, styles.groupName, { color: colors.text }]}>Variable Pocket</Text>
+                      <Text style={[styles.pocketBalance, styles.groupBalance, { color: colors.text }]}>
+                        <Text style={{ fontSize: 20, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalVariableBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
                       </Text>
                     </View>
-                    <Feather name="chevron-right" size={20} color={colors.secondary} />
+                    <Feather name="chevron-right" size={24} color={colors.secondary} />
                   </View>
                 </TouchableOpacity>
               </Animated.View>
@@ -545,6 +547,23 @@ const styles = StyleSheet.create({
     fontSize: 20, 
     fontWeight: '900',
     fontFamily: 'sans-serif-rounded',
+  },
+  groupCard: {
+    paddingVertical: 24,
+    borderRadius: 28,
+  },
+  groupIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    marginRight: 20,
+  },
+  groupName: {
+    fontSize: 15,
+    marginBottom: 8,
+  },
+  groupBalance: {
+    fontSize: 28,
   },
   moveBtn: {
     width: 40,
