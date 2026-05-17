@@ -20,13 +20,23 @@ export default function NotificationsScreen() {
 
   const [notifications, setNotifications] = useState([
     {
+      id: 7,
+      type: 'anomaly_detection',
+      title: 'Unusual Spending Detected',
+      message: "I've detected a RM300 transaction at 'Fine Dining KL'. This is 4x higher than your usual meal spend. Can you confirm if this was you?",
+      timestamp: '5 mins ago',
+      icon: 'alert-decagram-outline',
+      color: '#771FFF',
+      isAI: true
+    },
+    {
       id: 0,
       type: 'tax_exemption',
       title: 'Tax Exemption Opportunity',
       message: "I've detected a RM250 spending at MPH Bookstores that qualifies for Lifestyle tax relief. Would you like to upload the receipt now for your tax filing?",
       timestamp: 'Just now',
       icon: 'file-document-edit-outline',
-      color: '#00D09C',
+      color: '#771FFF',
       isAI: true
     },
     {
@@ -206,6 +216,7 @@ export default function NotificationsScreen() {
                         {n.type === 'ai_debt_routing' ? 'Optimization complete! Surplus re-routed.' : 
                          n.type === 'ai_consolidation' ? 'Transfer initiated! You saved RM120/mo.' :
                          n.type === 'tax_exemption' ? 'Receipt uploaded! Linked to tax profile.' :
+                         n.type === 'anomaly_detection' ? 'Transaction verified. Thank you!' :
                          'Limits updated! Your plan is now optimized.'}
                       </Text>
                     </Animated.View>
@@ -240,19 +251,19 @@ export default function NotificationsScreen() {
                         style={styles.primaryActionWrapper}
                         disabled={loadingIds.includes(n.id)}
                       >
-                        <View style={[styles.primaryAction, { backgroundColor: n.type === 'tax_exemption' ? n.color : primaryBrand, opacity: loadingIds.includes(n.id) ? 0.6 : 1 }]}>
+                        <View style={[styles.primaryAction, { backgroundColor: (n.type === 'tax_exemption' || n.type === 'anomaly_detection') ? n.color : primaryBrand, opacity: loadingIds.includes(n.id) ? 0.6 : 1 }]}>
                           <Text style={styles.actionText}>
-                            {loadingIds.includes(n.id) ? 'Processing...' : (n.type === 'tax_exemption' ? 'Accept' : 'Looks good!')}
+                            {loadingIds.includes(n.id) ? 'Processing...' : (n.type === 'tax_exemption' ? 'Accept' : (n.type === 'anomaly_detection' ? "Yes, it's me" : 'Looks good!'))}
                           </Text>
                         </View>
                       </TouchableOpacity>
                       <TouchableOpacity 
                         style={[styles.secondaryAction, { borderColor: 'rgba(255,255,255,0.1)' }]}
-                        onPress={() => n.type === 'tax_exemption' ? handleReject(n.id) : handleManualAdjust(n.type)}
+                        onPress={() => (n.type === 'tax_exemption' || n.type === 'anomaly_detection') ? handleReject(n.id) : handleManualAdjust(n.type)}
                         disabled={loadingIds.includes(n.id)}
                       >
                         <Text style={[styles.secondaryActionText, { color: colors.text }]}>
-                          {n.type === 'tax_exemption' ? 'Reject' : 'Custom'}
+                          {n.type === 'tax_exemption' ? 'Reject' : (n.type === 'anomaly_detection' ? "No, flag it" : 'Custom')}
                         </Text>
                       </TouchableOpacity>
                     </View>
