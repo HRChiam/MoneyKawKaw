@@ -55,6 +55,9 @@ export default function TransactionScreen() {
     reference: '#60A5FA', // Sky Blue
   };
 
+  const fixedPockets = pockets.filter(p => p.isFixed);
+  const variablePockets = pockets.filter(p => !p.isFixed);
+
   const handleConfirm = async () => {
     if (!toAccount || !amount || !selectedSource) {
       alert('Please fill in all required fields');
@@ -240,31 +243,73 @@ export default function TransactionScreen() {
 
             {showSourcePicker && (
               <View style={styles.bankPickerList}>
-                {pockets.map(pocket => (
-                  <TouchableOpacity 
-                    key={pocket.name} 
-                    style={styles.bankItem}
-                    onPress={() => {
-                      setSelectedSource(pocket.name as TransferSource);
-                      setShowSourcePicker(false);
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                      <View style={[styles.miniPocketIcon, { backgroundColor: pocket.color }]}>
-                        <MaterialCommunityIcons name={pocket.icon as any} size={14} color="#fff" />
-                      </View>
-                      <Text style={[styles.bankItemText, { color: colors.text }]}>{pocket.name}</Text>
+                {/* Fixed Pockets Section */}
+                {fixedPockets.length > 0 && (
+                  <View>
+                    <View style={styles.pickerSectionHeader}>
+                      <Text style={[styles.pickerSectionLabel, { color: colors.primary }]}>FIXED POCKET</Text>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                      <Text style={{ color: colors.secondary, fontSize: 14, fontWeight: '700' }}>RM {pocket.balance.toFixed(2)}</Text>
-                      <MaterialCommunityIcons 
-                        name={selectedSource === pocket.name ? "radiobox-marked" : "radiobox-blank"} 
-                        size={20} 
-                        color={selectedSource === pocket.name ? primaryBrand : colors.secondary + '40'} 
-                      />
+                    {fixedPockets.map(pocket => (
+                      <TouchableOpacity 
+                        key={pocket.name} 
+                        style={styles.bankItem}
+                        onPress={() => {
+                          setSelectedSource(pocket.name as TransferSource);
+                          setShowSourcePicker(false);
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                          <View style={[styles.miniPocketIcon, { backgroundColor: pocket.color }]}>
+                            <MaterialCommunityIcons name={pocket.icon as any} size={14} color="#fff" />
+                          </View>
+                          <Text style={[styles.bankItemText, { color: colors.text }]}>{pocket.name}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                          <Text style={{ color: colors.secondary, fontSize: 14, fontWeight: '700' }}>RM {pocket.balance.toFixed(2)}</Text>
+                          <MaterialCommunityIcons 
+                            name={selectedSource === pocket.name ? "radiobox-marked" : "radiobox-blank"} 
+                            size={20} 
+                            color={selectedSource === pocket.name ? primaryBrand : colors.secondary + '40'} 
+                          />
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                {/* Variable Pockets Section */}
+                {variablePockets.length > 0 && (
+                  <View>
+                    <View style={styles.pickerSectionHeader}>
+                      <Text style={[styles.pickerSectionLabel, { color: colors.primary }]}>VARIABLE POCKET</Text>
                     </View>
-                  </TouchableOpacity>
-                ))}
+                    {variablePockets.map(pocket => (
+                      <TouchableOpacity 
+                        key={pocket.name} 
+                        style={styles.bankItem}
+                        onPress={() => {
+                          setSelectedSource(pocket.name as TransferSource);
+                          setShowSourcePicker(false);
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                          <View style={[styles.miniPocketIcon, { backgroundColor: pocket.color }]}>
+                            <MaterialCommunityIcons name={pocket.icon as any} size={14} color="#fff" />
+                          </View>
+                          <Text style={[styles.bankItemText, { color: colors.text }]}>{pocket.name}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                          <Text style={{ color: colors.secondary, fontSize: 14, fontWeight: '700' }}>RM {pocket.balance.toFixed(2)}</Text>
+                          <MaterialCommunityIcons 
+                            name={selectedSource === pocket.name ? "radiobox-marked" : "radiobox-blank"} 
+                            size={20} 
+                            color={selectedSource === pocket.name ? primaryBrand : colors.secondary + '40'} 
+                          />
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -460,6 +505,18 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pickerSectionHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  pickerSectionLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    fontFamily: 'sans-serif-rounded',
   },
   glassInputWrapper: {
     flexDirection: 'row',

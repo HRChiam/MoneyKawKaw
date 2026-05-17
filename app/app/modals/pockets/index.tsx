@@ -154,6 +154,7 @@ export default function PocketsScreen() {
                   onPress={() => setSelectedGroup('fixed')}
                   style={[
                     styles.pocketCard, 
+                    styles.groupCard,
                     { 
                       backgroundColor: 'rgba(255,255,255,0.03)',
                       borderColor: 'rgba(255,255,255,0.08)' 
@@ -161,16 +162,16 @@ export default function PocketsScreen() {
                   ]}
                 > 
                   <View style={styles.cardMain}>
-                    <View style={[styles.iconWrapper, { backgroundColor: '#3b82f620' }]}>
-                      <MaterialCommunityIcons name="lock-outline" size={28} color="#3b82f6" />
+                    <View style={[styles.iconWrapper, styles.groupIconWrapper, { backgroundColor: '#3b82f620' }]}>
+                      <MaterialCommunityIcons name="lock-outline" size={36} color="#3b82f6" />
                     </View>
                     <View style={styles.pocketInfo}>
-                      <Text style={[styles.pocketName, { color: colors.text }]}>Fixed Pocket</Text>
-                      <Text style={[styles.pocketBalance, { color: colors.text }]}>
-                        <Text style={{ fontSize: 16, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalFixedBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
+                      <Text style={[styles.pocketName, styles.groupName, { color: colors.text }]}>Fixed Pocket</Text>
+                      <Text style={[styles.pocketBalance, styles.groupBalance, { color: colors.text }]}>
+                        <Text style={{ fontSize: 20, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalFixedBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
                       </Text>
                     </View>
-                    <Feather name="chevron-right" size={20} color={colors.secondary} />
+                    <Feather name="chevron-right" size={24} color={colors.secondary} />
                   </View>
                 </TouchableOpacity>
               </Animated.View>
@@ -181,7 +182,8 @@ export default function PocketsScreen() {
                   activeOpacity={0.8}
                   onPress={() => setSelectedGroup('variable')}
                   style={[
-                    styles.pocketCard, 
+                    styles.pocketCard,
+                    styles.groupCard, 
                     { 
                       backgroundColor: 'rgba(255,255,255,0.03)',
                       borderColor: 'rgba(255,255,255,0.08)' 
@@ -189,16 +191,16 @@ export default function PocketsScreen() {
                   ]}
                 > 
                   <View style={styles.cardMain}>
-                    <View style={[styles.iconWrapper, { backgroundColor: '#3b82f620' }]}>
-                      <MaterialCommunityIcons name="lock-open-outline" size={28} color="#3b82f6" />
+                    <View style={[styles.iconWrapper, styles.groupIconWrapper, { backgroundColor: '#3b82f620' }]}>
+                      <MaterialCommunityIcons name="lock-open-outline" size={36} color="#3b82f6" />
                     </View>
                     <View style={styles.pocketInfo}>
-                      <Text style={[styles.pocketName, { color: colors.text }]}>Variable Pocket</Text>
-                      <Text style={[styles.pocketBalance, { color: colors.text }]}>
-                        <Text style={{ fontSize: 16, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalVariableBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
+                      <Text style={[styles.pocketName, styles.groupName, { color: colors.text }]}>Variable Pocket</Text>
+                      <Text style={[styles.pocketBalance, styles.groupBalance, { color: colors.text }]}>
+                        <Text style={{ fontSize: 20, color: colors.secondary, fontWeight: '600' }}>RM</Text> {formatBalance(totalVariableBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
                       </Text>
                     </View>
-                    <Feather name="chevron-right" size={20} color={colors.secondary} />
+                    <Feather name="chevron-right" size={24} color={colors.secondary} />
                   </View>
                 </TouchableOpacity>
               </Animated.View>
@@ -281,23 +283,54 @@ export default function PocketsScreen() {
 
               <Text style={[styles.inputLabel, { color: colors.secondary }]}>TO TARGET POCKET</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  {pockets.filter(p => p.id !== moveSource).map(p => (
-                    <TouchableOpacity 
-                      key={p.id}
-                      onPress={() => setMoveTarget(p.id)}
-                      style={[
-                        styles.targetOption, 
-                        { 
-                          backgroundColor: moveTarget === p.id ? p.color + '20' : 'rgba(255,255,255,0.05)',
-                          borderColor: moveTarget === p.id ? p.color : 'rgba(255,255,255,0.1)'
-                        }
-                      ]}
-                    >
-                      <MaterialCommunityIcons name={p.icon as any} size={20} color={moveTarget === p.id ? p.color : colors.secondary} />
-                      <Text style={[styles.targetName, { color: moveTarget === p.id ? colors.text : colors.secondary }]}>{p.name}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <View style={{ flexDirection: 'row', gap: 24 }}>
+                  {/* Fixed Pockets Section */}
+                  <View>
+                    <Text style={[styles.groupLabel, { color: colors.primary }]}>FIXED</Text>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      {fixedPockets.filter(p => p.id !== moveSource).map(p => (
+                        <TouchableOpacity 
+                          key={p.id}
+                          onPress={() => setMoveTarget(p.id)}
+                          style={[
+                            styles.targetOption, 
+                            { 
+                              backgroundColor: moveTarget === p.id ? p.color + '20' : 'rgba(255,255,255,0.05)',
+                              borderColor: moveTarget === p.id ? p.color : 'rgba(255,255,255,0.1)'
+                            }
+                          ]}
+                        >
+                          <MaterialCommunityIcons name={p.icon as any} size={20} color={moveTarget === p.id ? p.color : colors.secondary} />
+                          <Text style={[styles.targetName, { color: moveTarget === p.id ? colors.text : colors.secondary }]}>{p.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Divider Line if needed, but spacing is usually enough */}
+
+                  {/* Variable Pockets Section */}
+                  <View>
+                    <Text style={[styles.groupLabel, { color: '#F8326D' }]}>VARIABLE</Text>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      {variablePockets.filter(p => p.id !== moveSource).map(p => (
+                        <TouchableOpacity 
+                          key={p.id}
+                          onPress={() => setMoveTarget(p.id)}
+                          style={[
+                            styles.targetOption, 
+                            { 
+                              backgroundColor: moveTarget === p.id ? p.color + '20' : 'rgba(255,255,255,0.05)',
+                              borderColor: moveTarget === p.id ? p.color : 'rgba(255,255,255,0.1)'
+                            }
+                          ]}
+                        >
+                          <MaterialCommunityIcons name={p.icon as any} size={20} color={moveTarget === p.id ? p.color : colors.secondary} />
+                          <Text style={[styles.targetName, { color: moveTarget === p.id ? colors.text : colors.secondary }]}>{p.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
                 </View>
               </ScrollView>
 
@@ -515,6 +548,23 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontFamily: 'sans-serif-rounded',
   },
+  groupCard: {
+    paddingVertical: 24,
+    borderRadius: 28,
+  },
+  groupIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    marginRight: 20,
+  },
+  groupName: {
+    fontSize: 15,
+    marginBottom: 8,
+  },
+  groupBalance: {
+    fontSize: 28,
+  },
   moveBtn: {
     width: 40,
     height: 40,
@@ -543,6 +593,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     fontFamily: 'sans-serif-rounded',
+  },
+  groupLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 8,
+    fontFamily: 'sans-serif-rounded',
+    textTransform: 'uppercase',
   },
   
   /* Modals */

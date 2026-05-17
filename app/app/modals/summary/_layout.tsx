@@ -1,25 +1,27 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Image, Modal } from 'react-native';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
 
 export default function SummaryScreen() {
   const router = useRouter();
+  const { tab } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const [activeTab, setActiveTab] = useState<'summary' | 'tax'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'tax'>((tab as any) || 'summary');
   const [timeframe, setTimeframe] = useState<'month' | 'prev_month' | 'year' | 'prev_year'>('month');
   const [activePicker, setActivePicker] = useState<'month' | 'year' | null>(null);
   const [isGenerating, setIsGenerating] = useState<'idle' | 'loading' | 'success'>('idle');
   const [activePoint, setActivePoint] = useState<number | null>(null); 
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
+  const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number } | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
 
@@ -409,7 +411,9 @@ export default function SummaryScreen() {
               <Text style={[styles.taxItemName, { color: colors.text }]}>{item.name}</Text>
               <Text style={[styles.taxItemAmount, { color: colors.primary }]}>RM {item.amount}</Text>
             </View>
-            <TouchableOpacity><Text style={[styles.viewButton, { color: colors.primary }]}>View Receipts</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setViewingReceipt(item)}>
+              <Text style={[styles.viewButton, { color: colors.primary }]}>View Receipts</Text>
+            </TouchableOpacity>
           </View>
         ))}
       </View>
@@ -450,6 +454,49 @@ export default function SummaryScreen() {
           </Animated.View>
         </Animated.View>
       )}
+
+      <Modal
+        visible={!!viewingReceipt}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewingReceipt(null)}
+      >
+        <View style={styles.receiptModalOverlay}>
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFill} 
+            activeOpacity={1} 
+            onPress={() => setViewingReceipt(null)} 
+          />
+          <Animated.View 
+            entering={FadeIn.duration(200)} 
+            exiting={FadeOut.duration(200)}
+            style={[styles.receiptModalContent, { backgroundColor: colors.card }]}
+          >
+            <View style={styles.receiptModalHeader}>
+              <View>
+                <Text style={[styles.receiptModalTitle, { color: colors.text }]}>{viewingReceipt?.name}</Text>
+                <Text style={[styles.receiptModalSubtitle, { color: colors.secondary }]}>Proof of spending • RM {viewingReceipt?.amount}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setViewingReceipt(null)} style={styles.receiptCloseBtn}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.receiptImageContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Image 
+                source={require('@/assets/images/receipt.png')} 
+                style={styles.receiptImage}
+                resizeMode="contain"
+              />
+            </View>
+
+            <TouchableOpacity style={[styles.downloadBtn, { backgroundColor: colors.primary }]}>
+              <Feather name="download" size={20} color="#fff" />
+              <Text style={styles.downloadBtnText}>Download Receipt</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -503,4 +550,14 @@ const styles = StyleSheet.create({
   notiIconWrapper: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   notiText: { fontSize: 20, fontWeight: '900', marginTop: 16, marginBottom: 8, fontFamily: 'sans-serif-rounded' },
   notiSubText: { fontSize: 14, fontWeight: '500', textAlign: 'center', lineHeight: 20 },
+  receiptModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  receiptModalContent: { width: '100%', borderRadius: 32, padding: 24 },
+  receiptModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  receiptModalTitle: { fontSize: 20, fontWeight: '800', marginBottom: 4 },
+  receiptModalSubtitle: { fontSize: 14, fontWeight: '600' },
+  receiptCloseBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  receiptImageContainer: { width: '100%', height: 350, borderRadius: 20, borderWidth: 1, overflow: 'hidden', marginBottom: 24 },
+  receiptImage: { width: '100%', height: '100%' },
+  downloadBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 16, gap: 8 },
+  downloadBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
