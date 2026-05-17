@@ -1,10 +1,11 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import UploadReceiptModal from './uploadReceipt';
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -14,14 +15,26 @@ export default function NotificationsScreen() {
   const [aiConfirmedIds, setAiConfirmedIds] = useState<number[]>([]);
   const [loadingIds, setLoadingIds] = useState<number[]>([]);
   const [securityActionState, setSecurityActionState] = useState<'pending' | 'verified' | 'blocked'>('pending');
+  const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
+  const [activeUploadId, setActiveUploadId] = useState<number | null>(null);
 
   const [notifications, setNotifications] = useState([
+    {
+      id: 0,
+      type: 'tax_exemption',
+      title: 'Tax Exemption Opportunity',
+      message: "I've detected a RM250 spending at MPH Bookstores that qualifies for Lifestyle tax relief. Would you like to upload the receipt now for your tax filing?",
+      timestamp: 'Just now',
+      icon: 'file-document-edit-outline',
+      color: '#00D09C',
+      isAI: true
+    },
     {
       id: 1,
       type: 'ai_debt_routing',
       title: 'Smart Surplus Detected',
       message: "I've spotted RM300 in safe surplus this month! Re-routing this to your GX FlexiCredit could save you RM45 in interest this month. Shall I optimize your repayment now?",
-      timestamp: 'Just now',
+      timestamp: '2 hours ago',
       icon: 'calculator-variant',
       color: '#771FFF',
       isAI: true
@@ -31,7 +44,7 @@ export default function NotificationsScreen() {
       type: 'ai_consolidation',
       title: 'Interest Savings Alert',
       message: "You're paying 18% interest on an external card. Transferring this to GX FlexiCredit at 4.9% could save you RM120/month. Ready to start the transfer?",
-      timestamp: '2 hours ago',
+      timestamp: '4 hours ago',
       icon: 'bank-transfer',
       color: '#771FFF',
       isAI: true
@@ -41,7 +54,7 @@ export default function NotificationsScreen() {
       type: 'ai_learning',
       title: 'Lifestyle Limit Update',
       message: "Your spending habits changed! I've drafted new limits for Food and Entertainment that better match your lifestyle. Apply these changes?",
-      timestamp: '5 hours ago',
+      timestamp: '6 hours ago',
       icon: 'brain',
       color: '#771FFF',
       isAI: true
@@ -84,12 +97,22 @@ export default function NotificationsScreen() {
     setNotifications([]);
   };
 
-  const handleAiConfirm = (id: number) => {
+  const handleAiConfirm = (id: number, type: string) => {
+    if (type === 'tax_exemption') {
+      setActiveUploadId(id);
+      setIsUploadModalVisible(true);
+      return;
+    }
+
     setLoadingIds(prev => [...prev, id]);
     setTimeout(() => {
       setLoadingIds(prev => prev.filter(loadingId => loadingId !== id));
       setAiConfirmedIds(prev => [...prev, id]);
     }, 1200);
+  };
+
+  const handleReject = (id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const handleManualAdjust = (type: string) => {
@@ -105,6 +128,13 @@ export default function NotificationsScreen() {
         break;
       default:
         router.push('../modals/limit-adjustment' as any);
+    }
+  };
+
+  const handleSelectUploadOption = (option: 'camera' | 'gallery') => {
+    if (activeUploadId !== null) {
+      setAiConfirmedIds(prev => [...prev, activeUploadId]);
+      setActiveUploadId(null);
     }
   };
 
@@ -141,14 +171,14 @@ export default function NotificationsScreen() {
                   styles.notifCard, 
                   { 
                     backgroundColor: 'rgba(255,255,255,0.03)',
-                    borderColor: n.isAI ? primaryBrand + '40' : 'rgba(255,255,255,0.08)' 
+                    borderColor: n.isAI ? (n.type === 'tax_exemption' ? n.color + '40' : primaryBrand + '40') : 'rgba(255,255,255,0.08)' 
                   }
                 ]}
               >
                 <View style={styles.cardHeader}>
                   <View style={[styles.iconWrapper, { backgroundColor: n.color + '20' }]}>
                     {n.isAI ? (
-                      <MaterialCommunityIcons name="robot-outline" size={24} color={n.color} />
+                      <MaterialCommunityIcons name={n.type === 'tax_exemption' ? (n.icon as any) : "robot-outline"} size={24} color={n.color} />
                     ) : (
                       <MaterialCommunityIcons name={n.icon as any} size={24} color={n.color} />
                     )}
@@ -159,7 +189,7 @@ export default function NotificationsScreen() {
                         {n.title}
                       </Text>
                       {n.isAI && (
-                        <View style={[styles.aiBadge, { backgroundColor: primaryBrand }]}>
+                        <View style={[styles.aiBadge, { backgroundColor: n.type === 'tax_exemption' ? n.color : primaryBrand }]}>
                           <Text style={styles.aiBadgeText}>AI INSIGHT</Text>
                         </View>
                       )}
@@ -175,6 +205,7 @@ export default function NotificationsScreen() {
                       <Text style={[styles.message, { color: '#15fabd', marginLeft: 8, fontWeight: '700' }]}>
                         {n.type === 'ai_debt_routing' ? 'Optimization complete! Surplus re-routed.' : 
                          n.type === 'ai_consolidation' ? 'Transfer initiated! You saved RM120/mo.' :
+                         n.type === 'tax_exemption' ? 'Receipt uploaded! Linked to tax profile.' :
                          'Limits updated! Your plan is now optimized.'}
                       </Text>
                     </Animated.View>
@@ -205,22 +236,24 @@ export default function NotificationsScreen() {
                   !aiConfirmedIds.includes(n.id) && (
                     <View style={styles.actionRow}>
                       <TouchableOpacity 
-                        onPress={() => handleAiConfirm(n.id)} 
+                        onPress={() => handleAiConfirm(n.id, n.type)} 
                         style={styles.primaryActionWrapper}
                         disabled={loadingIds.includes(n.id)}
                       >
-                        <View style={[styles.primaryAction, { backgroundColor: primaryBrand, opacity: loadingIds.includes(n.id) ? 0.6 : 1 }]}>
+                        <View style={[styles.primaryAction, { backgroundColor: n.type === 'tax_exemption' ? n.color : primaryBrand, opacity: loadingIds.includes(n.id) ? 0.6 : 1 }]}>
                           <Text style={styles.actionText}>
-                            {loadingIds.includes(n.id) ? 'Processing...' : 'Looks good!'}
+                            {loadingIds.includes(n.id) ? 'Processing...' : (n.type === 'tax_exemption' ? 'Accept' : 'Looks good!')}
                           </Text>
                         </View>
                       </TouchableOpacity>
                       <TouchableOpacity 
                         style={[styles.secondaryAction, { borderColor: 'rgba(255,255,255,0.1)' }]}
-                        onPress={() => handleManualAdjust(n.type)}
+                        onPress={() => n.type === 'tax_exemption' ? handleReject(n.id) : handleManualAdjust(n.type)}
                         disabled={loadingIds.includes(n.id)}
                       >
-                        <Text style={[styles.secondaryActionText, { color: colors.text }]}>Custom</Text>
+                        <Text style={[styles.secondaryActionText, { color: colors.text }]}>
+                          {n.type === 'tax_exemption' ? 'Reject' : 'Custom'}
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   )
@@ -270,6 +303,12 @@ export default function NotificationsScreen() {
         )}
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <UploadReceiptModal
+        isVisible={isUploadModalVisible}
+        onClose={() => setIsUploadModalVisible(false)}
+        onSelectOption={handleSelectUploadOption}
+      />
     </View>
   );
 }
