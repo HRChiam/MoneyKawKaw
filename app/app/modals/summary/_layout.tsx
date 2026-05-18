@@ -18,12 +18,27 @@ export default function SummaryScreen() {
   const [activeTab, setActiveTab] = useState<'summary' | 'tax'>((tab as any) || 'summary');
   const [timeframe, setTimeframe] = useState<'month' | 'prev_month' | 'year' | 'prev_year'>('month');
   const [activePicker, setActivePicker] = useState<'month' | 'year' | null>(null);
+  const [taxCategoryFilter, setTaxCategoryFilter] = useState<string>('All Categories');
+  const [taxPickerVisible, setTaxPickerVisible] = useState(false);
   const [isGenerating, setIsGenerating] = useState<'idle' | 'loading' | 'success'>('idle');
   const [activePoint, setActivePoint] = useState<number | null>(null); 
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
   const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number } | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
+
+  const taxExemptions = [
+    { name: 'Tech / Lifestyle', amount: 1200, date: '12 May 2026' }, 
+    { name: 'Medical', amount: 150, date: '05 May 2026' }, 
+    { name: 'Education', amount: 200, date: '28 Apr 2026' }
+  ];
+
+  const taxCategories = ['All Categories', 'Tech / Lifestyle', 'Medical', 'Education'];
+
+  const filteredExemptions = useMemo(() => {
+    if (taxCategoryFilter === 'All Categories') return taxExemptions;
+    return taxExemptions.filter(item => item.name === taxCategoryFilter);
+  }, [taxCategoryFilter]);
 
   const handleGenerateReport = () => {
     setIsGenerating('loading');
@@ -389,36 +404,94 @@ export default function SummaryScreen() {
     </View>
   );
 
-  const renderTaxTab = () => (
-    <View>
-      <View style={[styles.totalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.totalLabel, { color: colors.secondary }]}>Potential Tax Relief (LHDN)</Text>
-        <Text style={[styles.totalAmount, { color: colors.primary }]}>RM 1,550</Text>
-      </View>
-      <TouchableOpacity 
-        style={[styles.generateReportBtn, { backgroundColor: colors.primary }]} 
-        onPress={handleGenerateReport}
-        disabled={isGenerating !== 'idle'}
-      >
-          <Feather name="file-text" size={18} color="#fff" />
-          <Text style={{color: '#fff', fontSize: 16, fontWeight: '700', marginLeft: 8}}>Generate LHDN Report</Text>
-      </TouchableOpacity>
-      <View style={styles.listSection}>
-        <Text style={[styles.listTitle, { color: colors.text, marginBottom: 12 }]}>Tracked Exemptions</Text>
-        {[{ name: 'Tech / Lifestyle', amount: 1200 }, { name: 'Medical', amount: 150 }, { name: 'Education', amount: 200 }].map((item, index) => (
-          <View key={index} style={[styles.taxItem, { borderBottomColor: colors.border }, index === 2 && { borderBottomWidth: 0 }]}>
+  const renderTaxTab = () => {
+    const filteredTotal = filteredExemptions.reduce((sum, item) => sum + item.amount, 0);
+
+    return (
+      <View>
+        <View style={[styles.totalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.totalLabel, { color: colors.secondary }]}>Potential Tax Relief (LHDN)</Text>
+          <Text style={[styles.totalAmount, { color: colors.primary }]}>RM 1,550</Text>
+        </View>
+        <TouchableOpacity 
+          style={[styles.generateReportBtn, { backgroundColor: colors.primary }]} 
+          onPress={handleGenerateReport}
+          disabled={isGenerating !== 'idle'}
+        >
+            <Feather name="file-text" size={18} color="#fff" />
+            <Text style={{color: '#fff', fontSize: 16, fontWeight: '700', marginLeft: 8}}>Generate LHDN Report</Text>
+        </TouchableOpacity>
+        <View style={[styles.listSection, { backgroundColor: colors.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border, zIndex: 1000 }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, zIndex: 1100 }}>
+            <View>
+              <Text style={[styles.listTitle, { color: colors.text }]}>Tracked Exemptions</Text>
+              <Text style={{ fontSize: 13, color: colors.secondary, fontWeight: '600', marginTop: 2 }}>Total: RM {filteredTotal.toLocaleString()}</Text>
+            </View>
+            <View style={{ position: 'relative' }}>
+            <TouchableOpacity 
+              style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                gap: 6, 
+                backgroundColor: colors.background, 
+                paddingHorizontal: 12, 
+                paddingVertical: 8, 
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.border
+              }}
+              onPress={() => setTaxPickerVisible(!taxPickerVisible)}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>{taxCategoryFilter}</Text>
+              <Feather name={taxPickerVisible ? "chevron-up" : "chevron-down"} size={14} color={colors.secondary} />
+            </TouchableOpacity>
+
+            {taxPickerVisible && (
+              <View style={[styles.pickerDropdown, { top: '100%', right: 0, width: 180, marginTop: 4, backgroundColor: colors.card, zIndex: 1200 }]}>
+                {taxCategories.map((cat) => (
+                  <TouchableOpacity 
+                    key={cat} 
+                    style={[styles.pickerItem, taxCategoryFilter === cat && { backgroundColor: colors.primary + '10' }]}
+                    onPress={() => {
+                      setTaxCategoryFilter(cat);
+                      setTaxPickerVisible(false);
+                    }}
+                  >
+                    <Text style={[styles.pickerItemText, { color: taxCategoryFilter === cat ? colors.primary : colors.text, fontSize: 13 }]}>{cat}</Text>
+                    {taxCategoryFilter === cat && <Feather name="check" size={14} color={colors.primary} />}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+
+        {filteredExemptions.map((item, index) => (
+          <View key={index} style={[styles.taxItem, { borderBottomColor: colors.border }, index === filteredExemptions.length - 1 && { borderBottomWidth: 0, paddingBottom: 0 }]}>
             <View style={styles.taxItemLeft}>
               <Text style={[styles.taxItemName, { color: colors.text }]}>{item.name}</Text>
-              <Text style={[styles.taxItemAmount, { color: colors.primary }]}>RM {item.amount}</Text>
+              <Text style={[styles.taxItemAmount, { color: colors.text }]}>RM {item.amount}</Text>
+              <Text style={{ fontSize: 12, color: colors.secondary, fontWeight: '500', marginTop: 4 }}>{item.date}</Text>
             </View>
-            <TouchableOpacity onPress={() => setViewingReceipt(item)}>
-              <Text style={[styles.viewButton, { color: colors.primary }]}>View Receipts</Text>
+            <TouchableOpacity 
+              onPress={() => setViewingReceipt(item)}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: colors.primary + '15',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Feather name="file-text" size={18} color={colors.primary} />
             </TouchableOpacity>
           </View>
         ))}
       </View>
     </View>
   );
+};
 
   return (
     <View style={{ flex: 1 }}>

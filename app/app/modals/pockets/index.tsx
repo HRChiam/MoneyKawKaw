@@ -35,7 +35,6 @@ export default function PocketsScreen() {
   // Add Pocket State
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newAmount, setNewAmount] = useState('');
 
   // Rename Pocket State
   const [renameModal, setRenameModal] = useState(false);
@@ -60,14 +59,13 @@ export default function PocketsScreen() {
     setPockets([...pockets, {
       id, 
       name: newName, 
-      balance: Number(newAmount) || 0,
+      balance: 0,
       icon: 'folder-outline',
       color: primaryBrand,
       isFixed: selectedGroup === 'fixed'
     }]);
     setShowAdd(false);
     setNewName('');
-    setNewAmount('');
   };
 
   const applyRename = () => {
@@ -405,18 +403,6 @@ export default function PocketsScreen() {
                   style={[styles.input, { color: colors.text, borderColor: colors.border }]} 
                   value={newName} 
                   onChangeText={setNewName} 
-                />
-              </View>
-              
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.secondary }]}>INITIAL AMOUNT (RM)</Text>
-                <TextInput 
-                  placeholder="0.00" 
-                  placeholderTextColor="rgba(255,255,255,0.2)" 
-                  style={[styles.input, { color: colors.text, borderColor: colors.border }]} 
-                  value={newAmount} 
-                  onChangeText={setNewAmount} 
-                  keyboardType="decimal-pad" 
                 />
               </View>
               

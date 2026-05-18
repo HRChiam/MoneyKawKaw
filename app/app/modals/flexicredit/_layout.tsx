@@ -14,107 +14,138 @@ export default function FlexiCreditScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   
-  const [creditAmount, setCreditAmount] = useState('1000');
-  const [interestRateInput] = useState('6.45');
-  const [monthlyPayment, setMonthlyPayment] = useState(50);
+  // GXBank Palette
+  const GXB_PURPLE = '#0C012B'; 
+  const GXB_TEAL = '#15FABD'; 
+  const GXB_WHITE = '#FFFFFF';
+  const GXB_PINK = '#FF00A8';
+  const GXB_ORANGE = '#F59E0B';
+  const GXB_BAR_PURPLE = '#771fff';
+
+  const [creditAmount, setCreditAmount] = useState('');
+  const [interestRateInput, setInterestRateInput] = useState('');
+  const [isSetupComplete, setIsSetupComplete] = useState(false);
+  const [monthlyPayment, setMonthlyPayment] = useState(500);
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [showBreakdown, setShowBreakdown] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
 
   const parsedAmount = parseInt(creditAmount) || 0;
   const parsedRate = (parseFloat(interestRateInput) || 0) / 100; 
+
+  // --- LOGIC FIX: CALCULATE INTEREST FIRST ---
+  const firstMonthInterest = (parsedAmount * parsedRate) / 12;
+  
+  // Update: Max payment must include the interest to clear in 1 month
   const minPayment = Math.max(parsedAmount * 0.05, 50); 
-  const maxPayment = parsedAmount > minPayment ? parsedAmount : minPayment + 100;
+  const maxPayment = parsedAmount + firstMonthInterest; 
   
   useEffect(() => {
-    if (monthlyPayment < minPayment) {
+    if (parsedAmount > 0 && monthlyPayment < minPayment) {
       setMonthlyPayment(minPayment);
     }
   }, [parsedAmount, minPayment, monthlyPayment]);
 
   const generateSimulatorData = () => {
-    if (parsedAmount === 0 || parsedRate === 0) return { months: 0, interest: 0, maxInterest: 1 };
+    if (parsedAmount === 0 || parsedRate === 0) return { months: 0, interest: '0', maxInterest: 1 };
     
-    const monthsToClear = Math.ceil(parsedAmount / monthlyPayment);
-    const totalInterest = (parsedAmount * parsedRate * monthsToClear) / 12;
+    // Calculate months: monthlyPayment pays interest first, then principal
+    // Formula: Remaining = Previous * (1 + rate/12) - Payment
+    let remaining = parsedAmount;
+    let monthsToClear = 0;
+    let totalInterestPaid = 0;
 
-    const maxMonths = Math.ceil(parsedAmount / minPayment);
-    const maxInterest = (parsedAmount * parsedRate * maxMonths) / 12;
+    while (remaining > 0 && monthsToClear < 120) { // Cap at 10 years
+        let interestThisMonth = (remaining * parsedRate) / 12;
+        totalInterestPaid += interestThisMonth;
+        remaining = remaining + interestThisMonth - monthlyPayment;
+        monthsToClear++;
+    }
 
     return {
       months: monthsToClear,
-      interest: totalInterest.toFixed(0),
-      maxInterest: maxInterest > 0 ? maxInterest : 1,
+      interest: totalInterestPaid.toFixed(2),
+      maxInterest: (parsedAmount * parsedRate * (parsedAmount / minPayment)) / 12,
     };
   };
 
   const { months, interest, maxInterest } = generateSimulatorData();
-
-  // --- STACKED BAR MATH ---
-  const firstMonthInterest = (parsedAmount * parsedRate) / 12;
   const actualInterestPortion = Math.min(monthlyPayment, firstMonthInterest); 
   const actualPrincipalPortion = monthlyPayment - actualInterestPortion;
+  const interestRatio = monthlyPayment > 0 ? (actualInterestPortion / monthlyPayment) * 100 : 0;
+  const principalRatio = monthlyPayment > 0 ? (actualPrincipalPortion / monthlyPayment) * 100 : 0;
 
-  const interestRatio = (actualInterestPortion / monthlyPayment) * 100;
-  const principalRatio = (actualPrincipalPortion / monthlyPayment) * 100;
-
-  // --- CHART DIMENSIONS & MATH ---
+  // Chart UI Logic
   const CHART_TRACK_HEIGHT = 160; 
   const BAR_DISTANCE = 160; 
-  const BAR_WIDTH = 32;
+  const BAR_WIDTH = 34;
   const OVERHANG = 30; 
 
-  const pPercent = Math.max((monthlyPayment / maxPayment) * 100, 5);
-  const iPercent = Math.max((Number(interest) / maxInterest) * 100, 5);
-
-  const paymentHeight: DimensionValue = `${pPercent}%`;
-  const interestHeight: DimensionValue = `${iPercent}%`;
+  const pPercent = Math.min(Math.max((monthlyPayment / (maxPayment || 1)) * 100, 5), 100);
+  const iPercent = Math.min(Math.max((Number(interest) / (maxInterest || 1)) * 100, 5), 100);
 
   const leftTopY = CHART_TRACK_HEIGHT - (CHART_TRACK_HEIGHT * (pPercent / 100));
   const rightTopY = CHART_TRACK_HEIGHT - (CHART_TRACK_HEIGHT * (iPercent / 100));
-  
   const leftX = OVERHANG + (BAR_WIDTH / 2);
   const rightX = leftX + BAR_DISTANCE;
   const totalSvgWidth = rightX + (BAR_WIDTH / 2) + OVERHANG;
 
-  const curvedLinePath = `
-    M 0 ${leftTopY} 
-    L ${leftX} ${leftTopY} 
-    C ${leftX + BAR_DISTANCE/2} ${leftTopY}, 
-      ${leftX + BAR_DISTANCE/2} ${rightTopY}, 
-      ${rightX} ${rightTopY} 
-    L ${totalSvgWidth} ${rightTopY}
-  `;
+  const curvedLinePath = `M 0 ${leftTopY} L ${leftX} ${leftTopY} C ${leftX + BAR_DISTANCE/2} ${leftTopY}, ${leftX + BAR_DISTANCE/2} ${rightTopY}, ${rightX} ${rightTopY} L ${totalSvgWidth} ${rightTopY}`;
 
-  const handleApplyNow = () => {
-    setIsApplied(true);
-    // Auto-close or navigate after showing success
-    setTimeout(() => {
-      router.back();
-    }, 2500);
-  };
-
-  if (isApplied) {
+  if (!isSetupComplete) {
     return (
-      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-        <Animated.View entering={FadeInDown.duration(600)} style={styles.successWrapper}>
-          <View style={[styles.successIcon, { backgroundColor: '#15fabd20' }]}>
-            <Ionicons name="checkmark-circle" size={100} color="#15fabd" />
-          </View>
-          <Text style={[styles.successTitle, { color: colors.text }]}>Application Submitted!</Text>
-          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-             <View style={styles.summaryRow}>
-               <Text style={[styles.summaryLabel, { color: colors.secondary }]}>Amount</Text>
-               <Text style={[styles.summaryValue, { color: colors.text }]}>RM {parseFloat(creditAmount).toFixed(2)}</Text>
-             </View>
-             <View style={styles.summaryRow}>
-               <Text style={[styles.summaryLabel, { color: colors.secondary }]}>Interest Rate</Text>
-               <Text style={[styles.summaryValue, { color: colors.text }]}>{interestRateInput}% p.a.</Text>
-             </View>
-          </View>
-          <Text style={[styles.successSubtitle, { color: colors.secondary }]}>
-            We&apos;re processing your application. You&apos;ll receive a notification shortly.
-          </Text>
+      <View style={[styles.container, { backgroundColor: GXB_PURPLE, justifyContent: 'center', padding: 24 }]}>
+        <TouchableOpacity 
+            onPress={() => router.back()} 
+            style={{ position: 'absolute', top: 60, left: 24, zIndex: 100 }}
+        >
+            <Feather name="arrow-left" size={32} color={GXB_WHITE} style={{ opacity: 0.8 }} />
+        </TouchableOpacity>
+
+        <Animated.View entering={FadeInDown.duration(600).springify()}>
+            
+            <Text style={{ color: GXB_TEAL, fontSize: 36, fontWeight: '900', marginBottom: 8 }}>FlexiCredit</Text>
+            <Text style={{ color: GXB_WHITE, fontSize: 18, marginBottom: 40, opacity: 0.7 }}>Setup your credit simulation</Text>
+            
+            <View style={{ marginBottom: 24 }}>
+                <Text style={{ color: GXB_WHITE, fontSize: 14, fontWeight: '700', marginBottom: 12, letterSpacing: 1 }}>CREDIT AMOUNT (RM)</Text>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <TextInput 
+                        style={{ color: GXB_WHITE, padding: 20, fontSize: 24, fontWeight: '700' }}
+                        placeholder="0.00"
+                        placeholderTextColor="rgba(255,255,255,0.2)"
+                        keyboardType="numeric"
+                        value={creditAmount}
+                        onChangeText={setCreditAmount}
+                        autoFocus
+                    />
+                </View>
+            </View>
+
+            <View style={{ marginBottom: 40 }}>
+                <Text style={{ color: GXB_WHITE, fontSize: 14, fontWeight: '700', marginBottom: 12, letterSpacing: 1 }}>ANNUAL INTEREST RATE (%)</Text>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <TextInput 
+                        style={{ color: GXB_WHITE, padding: 20, fontSize: 24, fontWeight: '700' }}
+                        placeholder="6.45"
+                        placeholderTextColor="rgba(255,255,255,0.2)"
+                        keyboardType="numeric"
+                        value={interestRateInput}
+                        onChangeText={setInterestRateInput}
+                    />
+                </View>
+            </View>
+
+            <TouchableOpacity 
+                style={{ backgroundColor: GXB_TEAL, padding: 22, borderRadius: 20, alignItems: 'center', shadowColor: GXB_TEAL, shadowOpacity: 0.3, shadowRadius: 15, elevation: 8 }}
+                onPress={() => {
+                    if (parsedAmount > 0 && parsedRate > 0) {
+                        setIsSetupComplete(true);
+                        setMonthlyPayment(Math.max(parsedAmount * 0.05, 50));
+                    }
+                }}
+            >
+                <Text style={{ color: GXB_PURPLE, fontWeight: '900', fontSize: 18, letterSpacing: 0.5 }}>View Simulation</Text>
+            </TouchableOpacity>
         </Animated.View>
       </View>
     );
@@ -129,6 +160,7 @@ export default function FlexiCreditScreen() {
         <Text style={[styles.title, { color: colors.text }]}>FlexiCredit</Text>
       </View>
 
+      {/* Input Section */}
       <View style={styles.section}>
         <View style={styles.inputRow}>
             <View style={styles.inputHalf}>
@@ -140,103 +172,73 @@ export default function FlexiCreditScreen() {
                         value={creditAmount}
                         onChangeText={setCreditAmount}
                         keyboardType="numeric"
-                        placeholder="1000"
                     />
                 </View>
             </View>
             <View style={styles.inputHalf}>
                 <Text style={[styles.inputLabel, { color: colors.text }]}>Interest Rate</Text>
-                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border, opacity: 0.7 }]}>
-                    <TextInput
-                        style={[styles.amountInput, { color: colors.text, textAlign: 'right' }]}
-                        value={interestRateInput}
-                        editable={false}
+                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <TextInput 
+                        style={[styles.amountInput, { color: colors.text, textAlign: 'right' }]} 
+                        value={interestRateInput} 
+                        onChangeText={setInterestRateInput}
+                        keyboardType="numeric"
                     />
-                    <Text style={[styles.currencyPrefix, { color: colors.secondary, marginLeft: 4, marginRight: 0 }]}>%</Text>
+                    <Text style={[styles.currencyPrefix, { color: colors.secondary, marginLeft: 4 }]}>%</Text>
                 </View>
-                <Text style={{ fontSize: 10, color: colors.secondary, marginTop: 6, fontStyle: 'italic' }}>
-                    *changed based on credit score
-                </Text>
             </View>
         </View>
       </View>
 
-      <View style={[styles.chartContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20}}>
-            <Text style={[styles.chartTitle, { color: colors.text }]}>Credit Simulator</Text>
-            <IconSymbol size={20} name="sparkles" color={colors.primary} />
+      {/* Simulator Card */}
+      <View style={[styles.chartContainer, { backgroundColor: GXB_PURPLE, borderColor: 'rgba(21, 250, 189, 0.2)' }]}>
+        <View style={styles.chartHeader}>
+            <Text style={[styles.chartTitle, { color: GXB_WHITE }]}>Credit Simulator</Text>
+            <IconSymbol size={20} name="sparkles" color={GXB_TEAL} />
         </View>
 
+        {/* Visual Graph */}
         <View style={styles.graphWrapper}>
             <View style={{ width: BAR_DISTANCE + BAR_WIDTH, flexDirection: 'row', justifyContent: 'space-between' }}>
-                
-                {/* 1. Left Column (STACKED: Payment) */}
-                <View style={[styles.barGroup, { zIndex: 10, elevation: 10 }]}>
-                    <Text style={[styles.barLabelTop, {color: colors.text}]}>RM {Math.floor(monthlyPayment)}</Text>
-                    
-                    <TouchableOpacity 
-                        activeOpacity={0.9} 
-                        onPress={() => setShowBreakdown(!showBreakdown)}
-                        style={[styles.barTrack, {backgroundColor: colorScheme === 'dark' ? '#333' : '#f3f4f6', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH}]}
-                    >
-                        <View style={[styles.barFill, { height: paymentHeight, overflow: 'hidden' }]}>
-                            <View style={{ height: `${interestRatio}%`, backgroundColor: '#ec4899', width: '100%' }} />
-                            <View style={{ height: `${principalRatio}%`, backgroundColor: '#8b5cf6', width: '100%' }} />
+                <View style={[styles.barGroup, { zIndex: 10 }]}>
+                    <Text style={[styles.barLabelTop, {color: GXB_WHITE}]}>RM {monthlyPayment.toFixed(2)}</Text>
+                    <View style={[styles.barTrack, {backgroundColor: 'rgba(255,255,255,0.1)', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH}]}>
+                        <View style={[styles.barFill, { height: `${pPercent}%`, overflow: 'hidden' }]}>
+                            <View style={{ height: `${interestRatio}%`, backgroundColor: GXB_ORANGE, width: '100%' }} />
+                            <View style={{ height: `${principalRatio}%`, backgroundColor: GXB_BAR_PURPLE, width: '100%' }} />
                         </View>
-                    </TouchableOpacity>
-
-                    <Text style={[styles.barLabelBottom, {color: colors.secondary}]}>Pay/Month</Text>
-                    <Text style={{fontSize: 10, color: colors.primary, marginTop: 2}}>(Tap Bar)</Text>
-
-                    {showBreakdown && (
-                        <View style={[styles.tooltipOverlay, { backgroundColor: colors.text }]}>
-                            <View style={styles.tooltipRow}>
-                                <View style={[styles.tooltipDot, { backgroundColor: '#8b5cf6' }]} />
-                                <Text style={[styles.tooltipText, { color: colors.background }]}>Loan: RM {actualPrincipalPortion.toFixed(0)}</Text>
-                            </View>
-                            <View style={styles.tooltipRow}>
-                                <View style={[styles.tooltipDot, { backgroundColor: '#ec4899' }]} />
-                                <Text style={[styles.tooltipText, { color: colors.background }]}>Interest: RM {actualInterestPortion.toFixed(0)}</Text>
-                            </View>
-                            <View style={styles.tooltipArrow} />
-                        </View>
-                    )}
+                    </View>
+                    <Text style={[styles.barLabelBottom, {color: 'rgba(255,255,255,0.5)'}]}>Pay/Month</Text>
                 </View>
 
-                {/* 2. The Smooth Extended SVG Line (Solid) - PUSHED TO THE FRONT */}
-                <View style={{ position: 'absolute', top: 24, left: -OVERHANG, right: -OVERHANG, height: CHART_TRACK_HEIGHT, zIndex: 20, elevation: 20 }} pointerEvents="none">
+                <View style={{ position: 'absolute', top: 24, left: -OVERHANG, right: -OVERHANG, height: CHART_TRACK_HEIGHT, zIndex: 20 }} pointerEvents="none">
                     <Svg height="100%" width="100%" viewBox={`0 0 ${totalSvgWidth} ${CHART_TRACK_HEIGHT}`}>
-                        <Path 
-                            d={curvedLinePath} 
-                            fill="none" 
-                            stroke={colors.text} 
-                            strokeWidth="1.5" 
-                            strokeLinecap="round"
-                        />
+                        <Path d={curvedLinePath} fill="none" stroke={GXB_BAR_PURPLE} strokeWidth="2" strokeLinecap="round" opacity={0.2} />
                     </Svg>
                 </View>
 
-                {/* 3. Right Column (Interest Pile) */}
-                <View style={[styles.barGroup, { zIndex: 1, elevation: 1 }]}>
-                    <Text style={[styles.barLabelTop, {color: colors.text}]}>RM {interest}</Text>
-                    <View style={[styles.barTrack, {backgroundColor: colorScheme === 'dark' ? '#333' : '#f3f4f6', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH}]}>
-                        <View style={[styles.barFill, { height: interestHeight, backgroundColor: months > 24 ? '#ef4444' : '#f97316' }]} />
+                <View style={[styles.barGroup, { zIndex: 1 }]}>
+                    <Text style={[styles.barLabelTop, {color: GXB_WHITE}]}>RM {interest}</Text>
+                    <View style={[styles.barTrack, {backgroundColor: 'rgba(255,255,255,0.1)', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH}]}>
+                        <View style={[styles.barFill, { height: `${iPercent}%`, backgroundColor: GXB_ORANGE }]} />
                     </View>
-                    <Text style={[styles.barLabelBottom, {color: colors.secondary}]}>Total Interest</Text>
-                    <View style={{ height: 14, marginTop: 2 }} /> 
+                    <Text style={[styles.barLabelBottom, {color: 'rgba(255,255,255,0.5)'}]}>Total Interest</Text>
                 </View>
-
             </View>
         </View>
 
-        <Text style={{ textAlign: 'center', fontSize: 13, color: months > 24 ? '#ef4444' : '#16a34a', fontWeight: '600', marginBottom: 24 }}>
-            {months > 24 ? `⚠️ This will take ${months} months to clear.` : `✨ Great! You will clear this in just ${months} months.`}
-        </Text>
+        {/* Timeline Status - Made obvious */}
+        <View style={[styles.statusBadge, { backgroundColor: months > 24 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', borderColor: months > 24 ? GXB_ORANGE : '#10B981', borderWidth: 1 }]}>
+          <Text style={{ fontSize: 15, color: months > 24 ? GXB_ORANGE : '#10B981', fontWeight: '900', textAlign: 'center' }}>
+              {months > 24 ? `⚠️ Slow Progress: Clearing in ${months} months` : `✨ Fast Track: Clearing in ${months} months`}
+          </Text>
+        </View>
 
+        {/* Slider Controls */}
         <View style={styles.sliderValueContainer}>
-            <Text style={{ fontSize: 13, color: colors.secondary, fontWeight: '600' }}>You choose to pay:</Text>
-            <Text style={[styles.sliderHeroText, { color: colors.primary }]}>
-                RM {Math.floor(monthlyPayment)} <Text style={{fontSize: 16, color: colors.text, fontWeight: '600'}}>/ month</Text>
+            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '700', marginBottom: 4 }}>MONTHLY REPAYMENT AMOUNT</Text>
+            <Text style={[styles.sliderHeroText, { color: GXB_BAR_PURPLE }]}>
+                RM {Math.floor(monthlyPayment).toLocaleString()}<Text style={{fontSize: 16, color: GXB_WHITE}}> / month</Text>
             </Text>
         </View>
 
@@ -246,38 +248,37 @@ export default function FlexiCreditScreen() {
           maximumValue={maxPayment}
           step={10}
           value={monthlyPayment}
-          onValueChange={(val) => {
-            setMonthlyPayment(val);
-            setHasInteracted(true); 
-            setShowBreakdown(false); 
-          }}
-          minimumTrackTintColor={colors.primary}
-          maximumTrackTintColor={colors.border}
-          thumbTintColor={colors.primary}
+          onValueChange={(val) => { setMonthlyPayment(val); setHasInteracted(true); }}
+          minimumTrackTintColor={GXB_BAR_PURPLE}
+          maximumTrackTintColor="rgba(255,255,255,0.2)"
+          thumbTintColor={GXB_BAR_PURPLE}
         />
-        <View style={{flexDirection: 'row', justifyContent: 'space-between', marginTop: -5, marginBottom: 10}}>
-            <Text style={{fontSize: 12, color: colors.secondary}}>Min: RM{minPayment}</Text>
-            <Text style={{fontSize: 12, color: colors.secondary}}>Max: RM{parsedAmount}</Text>
+
+        {/* Breakdown Section - Moved below slider */}
+        <View style={[styles.breakdownContainer, { backgroundColor: GXB_PURPLE, marginTop: 20 }]}>
+          <Text style={[styles.breakdownTitle, { color: 'rgba(255,255,255,0.5)' }]}>REPAYMENT SPLIT</Text>
+          
+          <View style={styles.breakdownRow}>
+            <View style={styles.breakdownLeft}>
+              <View style={[styles.indicatorDot, { backgroundColor: GXB_BAR_PURPLE }]} />
+              <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Amount Paid</Text>
+            </View>
+            <Text style={[styles.breakdownValue, { color: GXB_BAR_PURPLE }]}>RM {actualPrincipalPortion.toFixed(2)}</Text>
+          </View>
+
+          <View style={[styles.breakdownRow, { marginBottom: 0 }]}>
+            <View style={styles.breakdownLeft}>
+              <View style={[styles.indicatorDot, { backgroundColor: GXB_ORANGE }]} />
+              <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Interest Charge</Text>
+            </View>
+            <Text style={[styles.breakdownValue, { color: GXB_BAR_PURPLE }]}>RM {actualInterestPortion.toFixed(2)}</Text>
+          </View>
         </View>
       </View>
 
       <View style={styles.section}>
-        {!hasInteracted && (
-            <Text style={{fontSize: 12, color: '#f97316', textAlign: 'center', marginBottom: 12, fontStyle: 'italic'}}>
-                *Adjust the repayment slider above to see the impact before applying.
-            </Text>
-        )}
-        <TouchableOpacity
-          style={[
-            styles.applyButton,
-            { backgroundColor: hasInteracted ? colors.primary : 'transparent', borderColor: hasInteracted ? colors.primary : colors.border }
-          ]}
-          onPress={handleApplyNow}
-          disabled={!hasInteracted}
-        >
-          <Text style={[styles.applyButtonText, { color: hasInteracted ? '#fff' : colors.secondary }]}>
-            I Understand, Apply Now
-          </Text>
+        <TouchableOpacity style={[styles.applyButton, { backgroundColor: GXB_BAR_PURPLE }]}>
+          <Text style={[styles.applyButtonText, { color: GXB_WHITE }]}>Review & Apply Now</Text>
         </TouchableOpacity>
       </View>
       <View style={{ height: 40 }} />
@@ -287,149 +288,35 @@ export default function FlexiCreditScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerRow: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  section: { paddingHorizontal: 16, marginVertical: 16 },
-  
+  headerRow: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center' },
+  backButton: { width: 40, height: 40, justifyContent: 'center' },
+  title: { fontSize: 22, fontWeight: '800' },
+  section: { paddingHorizontal: 16, marginVertical: 8 },
   inputRow: { flexDirection: 'row', gap: 12 },
   inputHalf: { flex: 1 },
-  inputLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
-  currencyPrefix: { fontSize: 16, fontWeight: '600', marginRight: 8 },
-  amountInput: { flex: 1, fontSize: 16 },
-  
-  chartContainer: { marginHorizontal: 16, marginVertical: 16, borderRadius: 12, padding: 16, borderWidth: 1 },
+  inputLabel: { fontSize: 14, fontWeight: '700', marginBottom: 8 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12 },
+  currencyPrefix: { fontSize: 16, fontWeight: '700', marginRight: 4 },
+  amountInput: { flex: 1, fontSize: 16, fontWeight: '600' },
+  chartContainer: { marginHorizontal: 16, marginVertical: 12, borderRadius: 24, padding: 20, borderWidth: 1.5 },
+  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   chartTitle: { fontSize: 18, fontWeight: '800' },
-  applyButton: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', borderWidth: 1 },
-  applyButtonText: { fontSize: 14, fontWeight: '600' },
-  
-  graphWrapper: { alignItems: 'center', marginBottom: 16 },
+  graphWrapper: { alignItems: 'center', marginBottom: 24 },
   barGroup: { alignItems: 'center' }, 
-  barTrack: { borderRadius: 8, justifyContent: 'flex-end', marginVertical: 8 },
-  barFill: { width: '100%', borderRadius: 8 },
+  barTrack: { borderRadius: 10, justifyContent: 'flex-end', marginVertical: 8 },
+  barFill: { width: '100%', borderRadius: 10 },
   barLabelTop: { fontSize: 14, fontWeight: '800' },
-  barLabelBottom: { fontSize: 12, fontWeight: '600' },
-
-  tooltipOverlay: {
-    position: 'absolute',
-    top: 50,
-    left: 45,
-    padding: 10,
-    borderRadius: 8,
-    width: 140,
-    elevation: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  tooltipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  tooltipDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  tooltipText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  tooltipArrow: {
-    position: 'absolute',
-    left: -6,
-    top: 15,
-    width: 0,
-    height: 0,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
-    borderTopWidth: 6,
-    borderBottomWidth: 6,
-    borderRightWidth: 6,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderRightColor: '#fff', 
-  },
-
-  sliderValueContainer: {
-    alignItems: 'center',
-    marginBottom: 8,
-    backgroundColor: 'rgba(0,0,0,0.02)', 
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  sliderHeroText: {
-    fontSize: 28,
-    fontWeight: '900',
-    marginTop: 4,
-  },
-  /* Success View Styles */
-  centerContent: { 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 24 
-  },
-  successWrapper: { 
-    width: '100%', 
-    alignItems: 'center' 
-  },
-  successIcon: { 
-    width: 140, 
-    height: 140, 
-    borderRadius: 70, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    marginBottom: 32 
-  },
-  successTitle: { 
-    fontSize: 28, 
-    fontWeight: '900', 
-    marginBottom: 24, 
-    textAlign: 'center',
-    fontFamily: 'sans-serif-rounded',
-  },
-  summaryCard: {
-    width: '100%',
-    padding: 24,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    marginBottom: 32,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  successSubtitle: { 
-    fontSize: 15, 
-    textAlign: 'center', 
-    lineHeight: 22, 
-    fontWeight: '500',
-    paddingHorizontal: 20,
-  },
+  barLabelBottom: { fontSize: 12, fontWeight: '700' },
+  breakdownContainer: { borderRadius: 18, padding: 18, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
+  breakdownTitle: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginBottom: 14 },
+  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  breakdownLeft: { flexDirection: 'row', alignItems: 'center' },
+  indicatorDot: { width: 8, height: 8, borderRadius: 4, marginRight: 10 },
+  breakdownLabel: { fontSize: 14, fontWeight: '600' },
+  breakdownValue: { fontSize: 15, fontWeight: '800' },
+  statusBadge: { paddingVertical: 12, borderRadius: 16, marginBottom: 24 },
+  sliderValueContainer: { alignItems: 'center', marginBottom: 12 },
+  sliderHeroText: { fontSize: 32, fontWeight: '900' },
+  applyButton: { paddingVertical: 18, borderRadius: 16, alignItems: 'center' },
+  applyButtonText: { fontSize: 16, fontWeight: '900' },
 });
