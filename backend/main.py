@@ -1,65 +1,63 @@
 # main.py
 from fastapi import FastAPI
 from pydantic import BaseModel
-
-# Import Layer 1 & 2 (Math & ML)
-from service_module.check_for_anomaly import check_for_anomaly
-from service_module.burn_rate_math import predict_deficit_risk
-from service_module.tax_exemption import tag_tax_exemptions_smart
-import pandas as pd
-
-# Import Layer 3 (GenAI)
-from AI.ai_brain import generate_anomaly_interception, generate_momentum_warning
+from typing import Dict
+from service_module.onboarding_math import calculate_cold_start_budget
+from AI.onboarding_AI import reality_check_budget
 
 app = FastAPI()
 
-# Data validation model for the frontend request
-class TransactionRequest(BaseModel):
-    user_income: float
-    user_avg_category_spend: float
-    amount: float
-    merchant: str
-    category: str
-    variable_balance: float
-    days_left: int
-    daily_spend_avg: float
+class OnboardingRequest(BaseModel):
+    monthly_income: float
+    fixed_expenses: Dict[str, float]
+    savings_mode: str
 
-@app.post("/api/transaction")
-def process_transaction(req: TransactionRequest):
-    """
-    This endpoint runs every time the user buys something.
-    It chains the ML models and GenAI seamlessly.
-    """
-    response_payload = {
-        "status": "success",
-        "tax_eligible": False,
-        "ai_alert": None,
-        "action_required": None
-    }
-
-    # 1. TAX CHECK (Layer 1 - Hybrid NLP)
-    df_tx = pd.DataFrame([{'merchant': req.merchant, 'amount': req.amount}])
-    tagged_tx = tag_tax_exemptions_smart(df_tx)
-    if tagged_tx['tax_category'].iloc[0] != 'None':
-        response_payload["tax_eligible"] = True
-
-    # 2. ANOMALY CHECK (Layer 2 - ML)
-    is_anomaly = check_for_anomaly(req.amount, req.user_income, req.user_avg_category_spend)
-    if is_anomaly:
-        response_payload["action_required"] = "USER_CONSENT_NEEDED"
-        # Layer 3 - GenAI creates the human message
-        response_payload["ai_alert"] = generate_anomaly_interception(req.amount, req.merchant)
-        return response_payload # Halt the process, ask user!
-
-    # 3. DEFICIT RISK CHECK (Layer 2 - ML)
-    # We add the new transaction to their daily avg to check momentum
-    new_daily_avg = req.daily_spend_avg + req.amount 
-    is_at_risk, shortfall, prob = predict_deficit_risk(
-        req.user_income, req.variable_balance, req.days_left, new_daily_avg
+@app.post("/api/onboarding")
+def process_onboarding(req: OnboardingRequest):
+    # 1. LAYER 1: The Math Engine Baseline
+    math_plan = calculate_cold_start_budget(
+        req.monthly_income, 
+        req.fixed_expenses, 
+        req.savings_mode
     )
     
-    if is_at_risk and prob > 80.0:
-        # Layer 3 - GenAI creates the warning
-        response_payload["ai_alert"] = generate_momentum_warning(req.category, 3, shortfall)
+    if "error" in math_plan:
+        return {"status": "failed", "message": math_plan["error"]}
+        
+    # 2. LAYER 3: The AI Reality Check
+    ai_adjusted_pockets = reality_check_budget(
+        income=req.monthly_income,
+        fixed_total=math_plan["total_fixed_expenses"],
+        disposable=math_plan["disposable_income"],
+        mode=req.savings_mode,
+        math_baseline=math_plan["variable_pockets"]
+    )
+    
+    # 3. LAYER 1: The Absolute Math Enforcement (Never trust LLM math blindly!)
+    # We force the AI's numbers to scale exactly to the disposable income.
+    ai_total = sum(ai_adjusted_pockets.values())
+    final_pockets = {}
+    
+    # Use categories from math_baseline to ensure we have all required keys
+    expected_categories = math_plan["variable_pockets"].keys()
+    
+    for category in expected_categories:
+        # If AI missed a category, fall back to 0 for scaling
+        amount = ai_adjusted_pockets.get(category, 0)
+        proportion = amount / ai_total if ai_total > 0 else 0
+        final_pockets[category] = round(math_plan["disposable_income"] * proportion, 2)
+    
+    # Handle rounding cents to ensure perfect zero-sum
+    final_total = sum(final_pockets.values())
+    diff = round(math_plan["disposable_income"] - final_total, 2)
+    if diff != 0:
+        # Default to 0 if Savings is somehow missing, though it should be in expected_categories
+        final_pockets["Savings"] = round(final_pockets.get("Savings", 0) + diff, 2)
 
-    return response_payload
+    return {
+        "status": "success",
+        "database_payload": {
+            "fixed_pockets": req.fixed_expenses,
+            "variable_pockets": final_pockets
+        }
+    }
