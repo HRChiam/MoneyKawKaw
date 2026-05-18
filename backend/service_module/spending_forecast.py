@@ -71,11 +71,11 @@ def allocate_monthly_budget(user_income, savings_mode, target_month, fixed_expen
 # --- Let's Test It! ---
 # Alex earns RM 3500. He pays RM 1000 in rent/loans. 
 # He has three pockets. Notice the "Concert" pocket is brand new!
-alex_pockets = [
-    {'pocket_id': 'p1_food', 'parent_category': 'Food', 'created_at': '2025-01-01', 'previous_limit': 800},
-    {'pocket_id': 'p2_transport', 'parent_category': 'Transport', 'created_at': '2025-01-01', 'previous_limit': 300},
-    {'pocket_id': 'p3_concert', 'parent_category': 'Entertainment', 'created_at': '2026-05-15', 'previous_limit': 150} # Just created 2 days ago!
-]
+# alex_pockets = [
+#     {'pocket_id': 'p1_food', 'parent_category': 'Food', 'created_at': '2025-01-01', 'previous_limit': 800},
+#     {'pocket_id': 'p2_transport', 'parent_category': 'Transport', 'created_at': '2025-01-01', 'previous_limit': 300},
+#     {'pocket_id': 'p3_concert', 'parent_category': 'Entertainment', 'created_at': '2026-05-15', 'previous_limit': 150} # Just created 2 days ago!
+# ]
 
-final_budget = allocate_monthly_budget(3500, 'Aggressive', 6, 1000, alex_pockets)
-print(final_budget)
+# final_budget = allocate_monthly_budget(3500, 'Aggressive', 6, 1000, alex_pockets)
+# print(final_budget)

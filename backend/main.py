@@ -1,10 +1,19 @@
 # main.py
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Dict
+from typing import Dict, List
 from service_module.onboarding_math import calculate_cold_start_budget
 from AI.onboarding_AI import reality_check_budget
 from service_module.daily_limit_calculation import calculate_daily_limit
+from service_module.spending_forecast import allocate_monthly_budget
+from service_module.burn_rate_math import predict_deficit_risk
+from service_module.check_for_anomaly import check_for_anomaly
+from AI.salary_router_AI import explain_monthly_allocation
+from AI.risk_predictor_AI import generate_momentum_warning
+from AI.anomaly_detection_AI import generate_anomaly_interception
+from AI.debt_routing_AI import generate_debt_advice
+from AI.consent_rebalancing_AI import generate_rebalancing_proposal
+from AI.tax_exemption_AI import get_tax_category
 
 app = FastAPI()
 
@@ -12,6 +21,40 @@ class OnboardingRequest(BaseModel):
     monthly_income: float
     fixed_expenses: Dict[str, float]
     savings_mode: str
+
+class SalaryRouterRequest(BaseModel):
+    monthly_income: float
+    savings_mode: str
+    target_month: int
+    fixed_expenses_total: float
+    user_pockets_data: List[Dict]
+    past_spending_summary: Dict # Summary for AI explanation
+
+class RiskPredictorRequest(BaseModel):
+    monthly_income: float
+    variable_balance: float
+    days_left: int
+    daily_spend_avg: float
+    category: str # To generate personalized message
+
+class TransactionRequest(BaseModel):
+    amount: float
+    merchant: str
+    monthly_income: float
+    avg_category_spend: float
+
+class DebtRoutingRequest(BaseModel):
+    surplus: float
+    liabilities: List[Dict]
+
+class RebalancingRequest(BaseModel):
+    overspent_category: str
+    amount_needed: float
+    source_category: str
+    source_balance: float
+
+class TaxExemptionRequest(BaseModel):
+    transactions: List[Dict] # List of {merchant, amount}
 
 @app.post("/api/onboarding")
 def process_onboarding(req: OnboardingRequest):
@@ -66,4 +109,127 @@ def process_onboarding(req: OnboardingRequest):
             "fixed_pockets": req.fixed_expenses,
             "variable_pockets": final_pockets
         }
+    }
+
+@app.post("/api/salary-router")
+def route_salary(req: SalaryRouterRequest):
+    # 1. LAYER 1: The Math Engine (ML + Normalization)
+    math_allocations = allocate_monthly_budget(
+        req.monthly_income,
+        req.savings_mode,
+        req.target_month,
+        req.fixed_expenses_total,
+        req.user_pockets_data
+    )
+
+    if isinstance(math_allocations, str):
+        return {"status": "failed", "message": math_allocations}
+
+    # 2. LAYER 3: The AI Explanation
+    ai_explanation = explain_monthly_allocation(
+        req.monthly_income,
+        req.past_spending_summary,
+        math_allocations["pocket_allocations"]
+    )
+
+    return {
+        "status": "success",
+        "ai_explanation": ai_explanation,
+        "allocations": math_allocations
+    }
+
+@app.post("/api/predict-risk")
+def check_risk(req: RiskPredictorRequest):
+    # 1. LAYER 1: The Math Engine (Classification + Shortfall Calculation)
+    is_at_risk, shortfall, probability = predict_deficit_risk(
+        req.monthly_income,
+        req.variable_balance,
+        req.days_left,
+        req.daily_spend_avg
+    )
+
+    # 2. LAYER 3: The AI Momentum Warning (Only if at risk)
+    ai_warning = None
+    if is_at_risk:
+        ai_warning = generate_momentum_warning(
+            req.category,
+            days_over=3, # Mocked for now, would come from DB
+            predicted_shortfall=shortfall
+        )
+
+    return {
+        "status": "success",
+        "is_at_risk": is_at_risk,
+        "shortfall": shortfall,
+        "risk_probability": probability,
+        "ai_warning": ai_warning
+    }
+
+@app.post("/api/check-anomaly")
+def check_transaction_anomaly(req: TransactionRequest):
+    # 1. LAYER 1: The Math Engine (Outlier Detection)
+    is_anomaly = check_for_anomaly(
+        req.amount,
+        req.monthly_income,
+        req.avg_category_spend
+    )
+
+    # 2. LAYER 3: The AI Interception Message (Only if anomaly)
+    ai_interception = None
+    if is_anomaly:
+        ai_interception = generate_anomaly_interception(
+            req.amount,
+            req.merchant
+        )
+
+    return {
+        "status": "success",
+        "is_anomaly": is_anomaly,
+        "ai_interception": ai_interception
+    }
+
+@app.post("/api/debt-routing")
+def get_debt_routing_advice(req: DebtRoutingRequest):
+    # LAYER 3: The AI Debt Strategist
+    ai_advice = generate_debt_advice(
+        req.surplus,
+        req.liabilities
+    )
+
+    return {
+        "status": "success",
+        "ai_advice": ai_advice
+    }
+
+@app.post("/api/consent-rebalancing")
+def propose_rebalancing(req: RebalancingRequest):
+    # LAYER 3: The AI Consensus AI
+    ai_proposal = generate_rebalancing_proposal(
+        req.overspent_category,
+        req.amount_needed,
+        req.source_category,
+        req.source_balance
+    )
+
+    return {
+        "status": "success",
+        "ai_proposal": ai_proposal
+    }
+
+@app.post("/api/check-tax")
+def check_tax_eligibility(req: TaxExemptionRequest):
+    # LAYER 3: The AI Tax Expert
+    results = []
+    for tx in req.transactions:
+        category = get_tax_category(tx["merchant"], tx["amount"])
+        results.append({
+            "merchant": tx["merchant"],
+            "amount": tx["amount"],
+            "tax_category": category,
+            "is_tax_claimable": category != "N/A"
+        })
+
+    return {
+        "status": "success",
+        "results": results
     }
