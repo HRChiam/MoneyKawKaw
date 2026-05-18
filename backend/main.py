@@ -1,20 +1,64 @@
 # main.py
-from fastapi import FastAPI
+# API routes to fetch and read data from db and call AI/ML service
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import pandas as pd
+
+# Import Database module
+from database import (
+    get_db,
+    get_user_profile,
+    UserProfileResponse
+)
 
 # Import Layer 1 & 2 (Math & ML)
 from service_module.check_for_anomaly import check_for_anomaly
 from service_module.burn_rate_math import predict_deficit_risk
 from service_module.tax_exemption import tag_tax_exemptions_smart
-import pandas as pd
 
 # Import Layer 3 (GenAI)
 from AI.ai_brain import generate_anomaly_interception, generate_momentum_warning
 
-app = FastAPI()
+app = FastAPI(title="MoneyKawKaw API", version="1.0.0")
 
-# Data validation model for the frontend request
-class TransactionRequest(BaseModel):
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# EXAMPLE: Fetch user profile from database
+@app.get("/api/user/{user_id}", response_model=UserProfileResponse)
+async def get_user(user_id: str, db = Depends(get_db)):
+    """
+    Fetch user profile information from database
+    
+    Example flow:
+    1. Frontend sends: GET /api/user/123e4567-e89b-12d3-a456-426614174000
+    2. FastAPI provides db session via Depends(get_db)
+    3. get_user_profile() queries users table using the session
+    4. Returns user data to frontend
+    """
+    try:
+        # Reuse FastAPI's db session
+        user_profile = get_user_profile(user_id, db=db)
+        
+        if not user_profile:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return user_profile
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# EXISTING: Process transaction with ML/AI
+class TransactionRequestOld(BaseModel):
     user_income: float
     user_avg_category_spend: float
     amount: float
@@ -24,8 +68,9 @@ class TransactionRequest(BaseModel):
     days_left: int
     daily_spend_avg: float
 
+
 @app.post("/api/transaction")
-def process_transaction(req: TransactionRequest):
+def process_transaction(req: TransactionRequestOld):
     """
     This endpoint runs every time the user buys something.
     It chains the ML models and GenAI seamlessly.
@@ -63,3 +108,10 @@ def process_transaction(req: TransactionRequest):
         response_payload["ai_alert"] = generate_momentum_warning(req.category, 3, shortfall)
 
     return response_payload
+
+
+# Health check
+@app.get("/health")
+async def health():
+    """Health check endpoint"""
+    return {"status": "ok"}

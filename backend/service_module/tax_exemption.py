@@ -62,6 +62,6 @@ data = {
 }
 df_mock = pd.DataFrame(data)
 
-df_tagged = tag_tax_exemptions_smart(df_mock)
-print("\n--- Final Hybrid Categorizer Results ---")
-print(df_tagged[['merchant', 'amount', 'tax_category']])
+# df_tagged = tag_tax_exemptions_smart(df_mock)
+# print("\n--- Final Hybrid Categorizer Results ---")
+# print(df_tagged[['merchant', 'amount', 'tax_category']])
