@@ -1,27 +1,34 @@
+# core/daily_limit_calculation.py
 from datetime import datetime
 import calendar
 
-def calculate_daily_limit(total_discretionary, spent_so_far):
+def calculate_daily_limit(variable_pockets_balance: float, mock_today: datetime = None):
     """
-    Calculates the 'Safe to Spend' daily limit based on the remaining budget and days left in the month.
+    Calculates the 'Safe to Spend' daily limit.
+    Core Logic: Remaining Variable Money ÷ Remaining Days in Month.
+    
+    Args:
+        variable_pockets_balance (float): The SUM of current_balance for all VARIABLE pockets.
+        mock_today (datetime): Optional. Used to force a specific date during hackathon testing.
     """
-    # FIXED: Using May 12, 2026 as today for all features
-    today = datetime(2026, 5, 12)
-    # Get the total number of days in the current month
+    # 1. Determine "Today" (Use mock_today for testing, otherwise real system time)
+    today = mock_today if mock_today else datetime.now()
+    
+    # 2. Get the total number of days in the current month
     _, total_days_in_month = calendar.monthrange(today.year, today.month)
     
+    # 3. Calculate Days Left (including today)
     days_passed = today.day
-    days_left = total_days_in_month - days_passed + 1 # +1 to include today
+    days_left = total_days_in_month - days_passed + 1 
     
-    remaining_budget = total_discretionary - spent_so_far
+    # 4. Handle Edge Cases
+    if days_left <= 0:
+        days_left = 1 # Prevent division by zero on the absolute last day
+        
+    if variable_pockets_balance <= 0:
+        return 0.00 # User is completely broke in their discretionary funds!
+        
+    # 5. The Math Engine (The Compass)
+    daily_limit = variable_pockets_balance / days_left
     
-    if remaining_budget <= 0:
-        return 0.00
-    
-    daily_limit = remaining_budget / days_left
     return round(daily_limit, 2)
-
-# --- Test the Logic ---
-# Suppose Alex had RM 2000 total discretionary, and spent RM 500 so far. Today is the 10th.
-limit = calculate_daily_limit(total_discretionary=2000, spent_so_far=500)
-print(f"Alex's Safe to Spend limit for today is: RM {limit}")

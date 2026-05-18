@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Dict
 from service_module.onboarding_math import calculate_cold_start_budget
 from AI.onboarding_AI import reality_check_budget
+from service_module.daily_limit_calculation import calculate_daily_limit
 
 app = FastAPI()
 
@@ -54,8 +55,13 @@ def process_onboarding(req: OnboardingRequest):
         # Default to 0 if Savings is somehow missing, though it should be in expected_categories
         final_pockets["Savings"] = round(final_pockets.get("Savings", 0) + diff, 2)
 
+    # 4. Calculate Initial Daily Limit (Spendable balance = All variable pockets except Savings)
+    spendable_balance = sum(v for k, v in final_pockets.items() if k != "Savings")
+    initial_daily_limit = calculate_daily_limit(spendable_balance)
+
     return {
         "status": "success",
+        "daily_limit": initial_daily_limit,
         "database_payload": {
             "fixed_pockets": req.fixed_expenses,
             "variable_pockets": final_pockets
