@@ -1,8 +1,9 @@
-supabase
-fastapi 
-uvicorn 
-python-dotenv
-pandas
-joblib
-scikit-learn
-langchain_google_genai
+supabase==2.30.0
+fastapi==0.136.1
+uvicorn==0.47.0
+python-dotenv==1.2.2
+pandas==3.0.3
+joblib==1.5.3
+# scikit-learn==1.8.0
+scikit-learn==1.7.2
+langchain_google_genai==4.2.2

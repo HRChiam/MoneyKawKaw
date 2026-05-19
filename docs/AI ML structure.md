@@ -233,39 +233,6 @@ Frontend receives response → Transaction processed! ✅
 
 ---
 
-## 🚀 How to Use
-
-### 1. Setup
-```bash
-cd backend
-python -m venv venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 2. Run the Server
-```bash
-uvicorn main:app --reload
-```
-
-### 3. Test the API
-```bash
-curl -X POST http://localhost:8000/api/transaction \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_income": 3500,
-    "user_avg_category_spend": 15,
-    "amount": 25,
-    "merchant": "KOPITIAM KL",
-    "category": "Food",
-    "variable_balance": 450,
-    "days_left": 8,
-    "daily_spend_avg": 35
-  }'
-```
-
----
-
 ## 📌 Key Design Patterns
 
 1. **Layered Architecture:** Tax → ML → AI (simple to complex)

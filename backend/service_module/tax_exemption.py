@@ -54,14 +54,15 @@ def tag_tax_exemptions_smart(df_transactions):
                 
     return df_transactions
 
-# --- Test the Hybrid Logic ---
-data = {
-    'date': ['2026-05-01', '2026-05-05', '2026-05-08', '2026-05-10'],
-    'merchant': ['Mamak Ali', 'Machines KLCC', 'Kedai Basikal Ah Chong', 'Klinik Pergigian Dr. Lee'],
-    'amount': [15.00, 4200.00, 850.00, 350.00]
-}
-df_mock = pd.DataFrame(data)
+if __name__ == "__main__":
+    # --- Test the Hybrid Logic ---
+    data = {
+        'date': ['2026-05-01', '2026-05-05', '2026-05-08', '2026-05-10'],
+        'merchant': ['Mamak Ali', 'Machines KLCC', 'Kedai Basikal Ah Chong', 'Klinik Pergigian Dr. Lee'],
+        'amount': [15.00, 4200.00, 850.00, 350.00]
+    }
+    df_mock = pd.DataFrame(data)
 
-# df_tagged = tag_tax_exemptions_smart(df_mock)
-# print("\n--- Final Hybrid Categorizer Results ---")
-# print(df_tagged[['merchant', 'amount', 'tax_category']])
+    df_tagged = tag_tax_exemptions_smart(df_mock)
+    print("\n--- Final Hybrid Categorizer Results ---")
+    print(df_tagged[['merchant', 'amount', 'tax_category']])

@@ -40,12 +40,13 @@ def predict_deficit_risk(income, variable_balance, days_left, daily_spend_avg):
         
     return (prediction == 1), projected_shortfall, round(risk_probability * 100, 1)
 
-# --- Test It! ---
-# Alex earns RM3500. He has RM300 left in Variable pockets. There are 10 days left.
-# His Safe Limit is RM30/day. But he is currently spending RM45/day!
-# is_risk, shortfall, prob = predict_deficit_risk(3500, 300, 10, 45)
+if __name__ == "__main__":
+    # --- Test It! ---
+    # Alex earns RM3500. He has RM300 left in Variable pockets. There are 10 days left.
+    # His Safe Limit is RM30/day. But he is currently spending RM45/day!
+    is_risk, shortfall, prob = predict_deficit_risk(3500, 300, 10, 45)
 
-# print(f"At Risk? {is_risk}") 
-# print(f"Probability of Deficit: {prob}%")
-# print(f"Projected Shortfall: RM {shortfall}")
-# Output: At Risk? True | Prob: 94.2% | Shortfall: RM 150.0
+    print(f"At Risk? {is_risk}") 
+    print(f"Probability of Deficit: {prob}%")
+    print(f"Projected Shortfall: RM {shortfall}")
+    # Output: At Risk? True | Prob: 94.2% | Shortfall: RM 150.0

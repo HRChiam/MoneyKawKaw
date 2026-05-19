@@ -1,18 +1,90 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, MaterialCommunityIcons} from '@expo/vector-icons';
 import Animated, { FadeInDown} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useState } from 'react';
+
+interface UserProfile {
+  user_id: string;
+  username: string;
+  email?: string;
+  savings_mode: string;
+  monthly_income: number;
+  payday: number;
+  main_balance: number;
+  current_streak: number;
+  reward_points: number;
+  created_at?: string;
+}
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function ProfileScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // TODO: Replace with actual user_id from auth context/storage
+  const USER_ID = 'de458832-a0c0-45a6-a9b3-471db31a2f7e';
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/api/user/${USER_ID}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch user profile: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setUserProfile(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        console.error('Failed to fetch user profile:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const gxPurple = '#771fff'; // GX Violet
   const gxPink = '#f8326d';
+
+  // Show loading state
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={gxPurple} />
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error || !userProfile) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Error loading profile</Text>
+        <Text style={{ color: colors.secondary, marginTop: 12 }}>{error || 'User profile not found'}</Text>
+      </View>
+    );
+  }
+
+  // Format the username initials for avatar
+  const getInitials = (username: string) => {
+    return username
+      .split(' ')
+      .map((word) => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const menuSections = [
     {
@@ -74,7 +146,7 @@ export default function ProfileScreen() {
             <View style={styles.heroContent}>
               <View style={styles.avatarWrapper}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>XW</Text>
+                  <Text style={styles.avatarText}>{getInitials(userProfile.username)}</Text>
                 </View>
                 <TouchableOpacity style={styles.editAvatarBtn}>
                   <Feather name="camera" size={14} color="#fff" />
@@ -82,11 +154,11 @@ export default function ProfileScreen() {
               </View>
               
               <View style={styles.heroText}>
-                <Text style={styles.userName}>Xuan Wei</Text>
-                <Text style={styles.userEmail}>xw@example.com</Text>
+                <Text style={styles.userName}>{userProfile.username}</Text>
+                <Text style={styles.userEmail}>{userProfile.email || 'No email'}</Text>
                 <View style={styles.tierBadge}>
-                  <MaterialCommunityIcons name="crown" size={12} color="#fff" />
-                  <Text style={styles.tierText}>Premium Member</Text>
+                  <MaterialCommunityIcons name="fire" size={12} color="#fff" />
+                  <Text style={styles.tierText}>{userProfile.current_streak} day streak</Text>
                 </View>
               </View>
             </View>
@@ -95,12 +167,12 @@ export default function ProfileScreen() {
           {/* Quick Stats */}
           <View style={styles.statsRow}>
             <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: '#ffffff' }]}>1,357</Text>
+              <Text style={[styles.statValue, { color: '#ffffff' }]}>{userProfile.reward_points.toLocaleString()}</Text>
               <Text style={[styles.statLabel, { color: colors.secondary }]}>GX Points</Text>
             </View>
             <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: '#ffffff' }]}>5.2k</Text>
-              <Text style={[styles.statLabel, { color: colors.secondary }]}>Total Saved</Text>
+              <Text style={[styles.statValue, { color: '#ffffff' }]}>₱{userProfile.main_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text style={[styles.statLabel, { color: colors.secondary }]}>Balance</Text>
             </View>
           </View>
 
