@@ -38,11 +38,12 @@ def check_for_anomaly(transaction_amount, user_monthly_income, user_avg_category
     
     return is_anomaly
 
-# Scenario A: Alex earns RM 3000. He usually spends RM 15 on lunch. 
-# He buys lunch for RM 18.
-# print("Test A (Lunch):", check_for_anomaly(18, 3000, 15)) 
-# # Output: False (Normal)
+if __name__ == "__main__":
+    # Scenario A: Alex earns RM 3000. He usually spends RM 15 on lunch. 
+    # He buys lunch for RM 18.
+    print("Test A (Lunch):", check_for_anomaly(18, 3000, 15)) 
+    # Output: False (Normal)
 
-# # Scenario B: Alex suddenly gets charged RM 1200 at a fancy restaurant!
-# print("Test B (Massive Dinner):", check_for_anomaly(1200, 3000, 15)) 
-# # Output: True (🚨 ANOMALY DETECTED!)
+    # Scenario B: Alex suddenly gets charged RM 1200 at a fancy restaurant!
+    print("Test B (Massive Dinner):", check_for_anomaly(1200, 3000, 15)) 
+    # Output: True (🚨 ANOMALY DETECTED!)

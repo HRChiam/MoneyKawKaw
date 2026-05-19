@@ -1,6 +1,16 @@
 # main.py
-from fastapi import FastAPI
+# API routes to fetch and read data from db and call AI/ML service
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import pandas as pd
+
+# Import Database module
+from database import (
+    get_db,
+    get_user_profile,
+    UserProfileResponse
+)
 from typing import Dict, List
 from service_module.onboarding_math import calculate_cold_start_budget
 from AI.onboarding_AI import reality_check_budget
@@ -15,7 +25,17 @@ from AI.debt_routing_AI import generate_debt_advice
 from AI.consent_rebalancing_AI import generate_rebalancing_proposal
 from AI.tax_exemption_AI import get_tax_category
 
-app = FastAPI()
+app = FastAPI(title="MoneyKawKaw API", version="1.0.0")
+
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 class OnboardingRequest(BaseModel):
     monthly_income: float
@@ -35,7 +55,6 @@ class RiskPredictorRequest(BaseModel):
     variable_balance: float
     days_left: int
     daily_spend_avg: float
-    category: str # To generate personalized message
 
 class TransactionRequest(BaseModel):
     amount: float
@@ -56,6 +75,29 @@ class RebalancingRequest(BaseModel):
 class TaxExemptionRequest(BaseModel):
     transactions: List[Dict] # List of {merchant, amount}
 
+@app.get("/api/user/{user_id}", response_model=UserProfileResponse)
+async def get_user(user_id: str, db = Depends(get_db)):
+    """
+    Fetch user profile information from database
+    
+    Example flow:
+    1. Frontend sends: GET /api/user/123e4567-e89b-12d3-a456-426614174000
+    2. FastAPI provides db session via Depends(get_db)
+    3. get_user_profile() queries users table using the session
+    4. Returns user data to frontend
+    """
+    try:
+        # Reuse FastAPI's db session
+        user_profile = get_user_profile(user_id, db=db)
+        
+        if not user_profile:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        return user_profile
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @app.post("/api/onboarding")
 def process_onboarding(req: OnboardingRequest):
     # 1. LAYER 1: The Math Engine Baseline
@@ -233,3 +275,11 @@ def check_tax_eligibility(req: TaxExemptionRequest):
         "status": "success",
         "results": results
     }
+
+
+
+# Health check
+@app.get("/health")
+async def health():
+    """Health check endpoint"""
+    return {"status": "ok"}

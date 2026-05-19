@@ -55,7 +55,39 @@ MoneyKawKaw is targeted primarily at **students** relying on allowances or PTPTN
 Unlike traditional apps that require heavy self-discipline and manual budgeting, MoneyKawKaw steps in daily with automated guidance and friction. This builds proactive habits, making users statistically less likely to fail at repaying loans.
 
 ## Run the project
-1. Navigate to the app directory:
+
+### Backend Setup
+1. Navigate to the backend directory:
+```bash
+cd backend
+```
+
+2. Create and activate a Python virtual environment:
+
+   **Windows:**
+   ```bash
+   python -m venv .venv
+   .venv\Scripts\activate
+   ```
+
+   **macOS / Linux:**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. Install the required dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Start the backend server (runs on http://localhost:8000):
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Frontend Setup
+1. In a **new terminal**, navigate to the app directory:
 ```bash
 cd app
 ```
