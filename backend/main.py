@@ -10,8 +10,10 @@ from database import (
     get_db,
     get_user_profile,
     get_user_notifications,
+    get_user_claims,
     UserProfileResponse,
-    NotificationResponse
+    NotificationResponse,
+    ClaimResponse
 )
 from typing import Dict, List
 from service_module.onboarding_math import calculate_cold_start_budget
@@ -290,3 +292,8 @@ async def health():
 async def get_notifications(user_id: str, db = Depends(get_db)):
     notifications = get_user_notifications(user_id, db=db)
     return notifications
+
+@app.get("/api/claims/{user_id}", response_model=List[ClaimResponse])
+async def get_claims(user_id: str, db = Depends(get_db)):
+    claims = get_user_claims(user_id, db=db)
+    return claims

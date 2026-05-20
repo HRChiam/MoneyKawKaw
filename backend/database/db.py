@@ -194,7 +194,7 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
 def get_user_notifications(user_id: str, db=None):
     try:
         supabase = db if db is not None else _get_supabase_client()
-        
+
         response = (
             supabase.table("notifications")
             .select("*")
@@ -205,4 +205,33 @@ def get_user_notifications(user_id: str, db=None):
         return response.data or []
     except Exception as e:
         print(f"Error fetching notifications: {e}")
+        return []
+
+def get_user_claims(user_id: str, db=None):
+    try:
+        supabase = db or _get_supabase_client()
+        response = (
+            supabase.table("lhdn_claims")
+            .select("*")
+            .eq("user_id", str(user_id))
+            .order("receipt_date", desc=True)
+            .execute()
+        )
+
+        claims = response.data or []
+        return [
+            {
+                "claim_id": c.get("claim_id"),
+                "user_id": c.get("user_id"),
+                "transaction_id": c.get("transaction_id"),
+                "receipt_image_url": c.get("receipt_image_url"),
+                "receipt_date": c.get("receipt_date"),
+                "amount": c.get("amount", 0),
+                "tax_category": c.get("tax_category", "Unknown"),
+            }
+            for c in claims
+        ]
+
+    except Exception as e:
+        print(f"Error fetching claims: {e}")
         return []

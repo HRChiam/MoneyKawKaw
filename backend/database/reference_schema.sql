@@ -21,6 +21,8 @@ CREATE TABLE public.lhdn_claims (
   receipt_date date NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  amount numeric(12, 2) NOT NULL DEFAULT 0.00,
+  tax_category text NOT NULL DEFAULT 'uncategorized',
   CONSTRAINT lhdn_claims_pkey PRIMARY KEY (claim_id),
   CONSTRAINT fk_claims_user FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT fk_claims_transaction FOREIGN KEY (transaction_id) REFERENCES public.transactions(transaction_id)

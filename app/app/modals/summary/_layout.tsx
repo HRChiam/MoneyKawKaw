@@ -23,15 +23,40 @@ export default function SummaryScreen() {
   const [isGenerating, setIsGenerating] = useState<'idle' | 'loading' | 'success'>('idle');
   const [activePoint, setActivePoint] = useState<number | null>(null); 
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
-  const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number } | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number; receipt_url?: string } | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
 
-  const taxExemptions = [
-    { name: 'Tech / Lifestyle', amount: 1200, date: '12 May 2026' }, 
-    { name: 'Medical', amount: 150, date: '05 May 2026' }, 
-    { name: 'Education', amount: 200, date: '28 Apr 2026' }
-  ];
+  const [taxExemptions, setTaxExemptions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchClaims = async () => {
+      try {
+        const hardcodedUserId = "de458832-a0c0-45a6-a9b3-471db31a2f7e";
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.16:8000"; // Fallback for Android Emulator
+        
+        console.log(`Fetching claims from: ${apiUrl}/api/claims/${hardcodedUserId}`);
+        
+        const response = await fetch(`${apiUrl}/api/claims/${hardcodedUserId}`);
+        if (!response.ok) throw new Error("Failed to fetch claims");
+        const data = await response.json();
+        
+        // Map API data to UI format
+        const formattedClaims = data.map((c: any) => ({
+          name: c.tax_category || 'Uncategorized',
+          amount: c.amount || 0,
+          date: new Date(c.receipt_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          receipt_url: c.receipt_image_url
+        }));
+        
+        setTaxExemptions(formattedClaims);
+      } catch (error) {
+        console.error("Error fetching claims:", error);
+      }
+    };
+
+    fetchClaims();
+  }, []);
 
   const taxCategories = ['All Categories', 'Tech / Lifestyle', 'Medical', 'Education'];
 
@@ -557,7 +582,7 @@ export default function SummaryScreen() {
 
             <View style={[styles.receiptImageContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Image 
-                source={require('@/assets/images/receipt.png')} 
+                source={viewingReceipt?.receipt_url ? { uri: viewingReceipt.receipt_url } : require('@/assets/images/receipt.png')} 
                 style={styles.receiptImage}
                 resizeMode="contain"
               />
