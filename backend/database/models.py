@@ -34,6 +34,11 @@ class TransactionResponse(BaseModel):
     transaction_type: str
     tax_relief_detected: bool
     tax_category: Optional[str]
+    reference: Optional[str] = None
+    status: Optional[str] = None
+    is_warning_triggered: bool = False
+    signed_amount: Optional[float] = None
+    transaction_time: Optional[str] = None
     created_at: Optional[str]
 
 

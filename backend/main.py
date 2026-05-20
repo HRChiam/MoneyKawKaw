@@ -1,6 +1,6 @@
 # main.py
 # API routes to fetch and read data from db and call AI/ML service
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
@@ -9,10 +9,12 @@ import pandas as pd
 from database import (
     get_db,
     get_user_profile,
+    get_user_transactions,
     get_user_notifications,
     get_user_claims,
     UserProfileResponse,
-    NotificationResponse,
+    TransactionListResponse,
+    NotificationResponse, 
     ClaimResponse
 )
 from typing import Dict, List
@@ -98,7 +100,27 @@ async def get_user(user_id: str, db = Depends(get_db)):
             raise HTTPException(status_code=404, detail="User not found")
         
         return user_profile
-    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/user/{user_id}/transactions", response_model=TransactionListResponse)
+async def get_transaction_history(user_id: str, limit: int = Query(30, ge=1, le=100), db = Depends(get_db)):
+    """Fetch recent transaction history for a user."""
+    try:
+        user_profile = get_user_profile(user_id, db=db)
+        if not user_profile:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        transactions = get_user_transactions(user_id, limit=limit, db=db)
+        return {
+            "transactions": transactions,
+            "count": len(transactions),
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     

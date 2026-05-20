@@ -26,6 +26,27 @@ def get_db():
     yield _get_supabase_client()
 
 
+def _is_inflow_transaction(transaction_type: str | None) -> bool:
+    """Best-effort direction detection for signed amounts."""
+    if not transaction_type:
+        return False
+
+    normalized = transaction_type.strip().lower()
+    inflow_markers = (
+        "income",
+        "credit",
+        "deposit",
+        "refund",
+        "salary",
+        "bonus",
+        "topup",
+        "top_up",
+        "received",
+        "receive",
+    )
+    return any(marker in normalized for marker in inflow_markers)
+
+
 # ===== QUERY FUNCTIONS =====
 def get_user_profile(user_id: str, db=None):
     """
@@ -84,10 +105,11 @@ def get_user_transactions(user_id: str, limit: int = 30, db=None):
             supabase.table("transactions")
             .select(
                 "transaction_id, amount, counterparty_name, transaction_type, "
-                "is_tax_relief_detected, tax_relief_category, created_at"
+                "reference, status, is_tax_relief_detected, tax_relief_category, "
+                "triggers_warning, transaction_time, created_at"
             )
             .eq("user_id", str(user_id))
-            .order("created_at", desc=True)
+            .order("transaction_time", desc=True)
             .limit(limit)
             .execute()
         )
@@ -96,12 +118,17 @@ def get_user_transactions(user_id: str, limit: int = 30, db=None):
         return [
             {
                 "transaction_id": tx.get("transaction_id"),
-                "amount": tx.get("amount"),
+                "amount": float(tx.get("amount") or 0),
                 "counterparty_name": tx.get("counterparty_name"),
                 "transaction_type": tx.get("transaction_type"),
                 "tax_relief_detected": tx.get("is_tax_relief_detected"),
                 "tax_category": tx.get("tax_relief_category"),
-                "created_at": tx.get("created_at"),
+                "reference": tx.get("reference"),
+                "status": tx.get("status"),
+                "is_warning_triggered": tx.get("triggers_warning", False),
+                "signed_amount": float(tx.get("amount") or 0) if _is_inflow_transaction(tx.get("transaction_type")) else -float(tx.get("amount") or 0),
+                "transaction_time": tx.get("transaction_time"),
+                "created_at": tx.get("created_at") or tx.get("transaction_time"),
             }
             for tx in transactions
         ]
