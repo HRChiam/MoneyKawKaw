@@ -1,14 +1,111 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
-import { useState, useMemo } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-type Category = 'All' | 'Food' | 'Transport' | 'Shopping' | 'Income' | 'Utilities';
 type SortOrder = 'Latest' | 'Oldest' | 'Highest' | 'Lowest';
 type Period = 'All Time' | 'Today' | 'Last 7 Days' | 'This Month';
+
+interface TransactionApiItem {
+  transaction_id: string;
+  amount: number;
+  counterparty_name: string;
+  transaction_type: string;
+  tax_relief_detected: boolean;
+  tax_category?: string | null;
+  reference?: string | null;
+  status?: string | null;
+  is_warning_triggered?: boolean;
+  signed_amount?: number | null;
+  transaction_time?: string | null;
+  created_at?: string | null;
+}
+
+interface TransactionViewItem {
+  id: string;
+  amount: number;
+  signedAmount: number;
+  description: string;
+  category: string;
+  time: string;
+  date: string;
+  dateLabel: string;
+  status: string;
+  taxReliefDetected: boolean;
+  taxCategory: string | null;
+  warningTriggered: boolean;
+}
+
+interface TransactionGroup {
+  date: string;
+  items: TransactionViewItem[];
+  total: number;
+}
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+const USER_ID = 'de458832-a0c0-45a6-a9b3-471db31a2f7e';
+
+const formatDisplayType = (value: string) => {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+};
+
+const inferSignedAmount = (amount: number, transactionType: string) => {
+  const normalizedType = transactionType.toLowerCase();
+  const inflowMarkers = ['income', 'credit', 'deposit', 'refund', 'salary', 'bonus', 'received', 'receive', 'top up', 'topup', 'top_up'];
+  const outflowMarkers = ['expense', 'debit', 'payment', 'purchase', 'withdraw', 'transfer out', 'transfer_out', 'repayment', 'bill', 'loan'];
+
+  if (inflowMarkers.some((marker) => normalizedType.includes(marker))) {
+    return Math.abs(amount);
+  }
+
+  if (outflowMarkers.some((marker) => normalizedType.includes(marker))) {
+    return -Math.abs(amount);
+  }
+
+  return amount >= 0 ? -Math.abs(amount) : amount;
+};
+
+const formatTimestamp = (timestamp: string) => {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+const formatDateLabel = (timestamp: string) => {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown date';
+  }
+
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const startOfTransactionDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((startOfToday.getTime() - startOfTransactionDay.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return `Today, ${date.getDate()} ${date.toLocaleString('en-US', { month: 'short' })}`;
+  }
+
+  if (diffDays === 1) {
+    return `Yesterday, ${date.getDate()} ${date.toLocaleString('en-US', { month: 'short' })}`;
+  }
+
+  return `${date.getDate()} ${date.toLocaleString('en-US', { month: 'short' })} ${date.getFullYear()}`;
+};
 
 export default function TransactionHistoryScreen() {
   const router = useRouter();
@@ -16,102 +113,161 @@ export default function TransactionHistoryScreen() {
   const colors = Colors[colorScheme ?? 'light'];
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category>('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('All Time');
   const [sortOrder, setSortOrder] = useState<SortOrder>('Latest');
   const [activeDropdown, setActiveDropdown] = useState<'period' | 'sort' | null>(null);
+  const [transactions, setTransactions] = useState<TransactionViewItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const categories: Category[] = ['All', 'Food', 'Transport', 'Shopping', 'Income', 'Utilities'];
   const periods: Period[] = ['All Time', 'Today', 'Last 7 Days', 'This Month'];
   const sortOptions: SortOrder[] = ['Latest', 'Oldest', 'Highest', 'Lowest'];
 
-  // Helper to parse "12:45 PM" into "12:45" (24h)
-  const parseTime = (timeStr: string) => {
-    const [time, modifier] = timeStr.split(' ');
-    let [hours, minutes] = time.split(':');
-    let h = parseInt(hours, 10);
-    if (h === 12) h = 0;
-    if (modifier === 'PM') h += 12;
-    return `${h.toString().padStart(2, '0')}:${minutes}:00`;
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(`${API_BASE_URL}/api/user/${USER_ID}/transactions?limit=50`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch transactions: ${response.statusText}`);
+        }
+
+        const data: { transactions: TransactionApiItem[] } = await response.json();
+        const mappedTransactions = (data.transactions || []).map((transaction) => {
+          const timestamp = transaction.transaction_time || transaction.created_at || new Date().toISOString();
+          const signedAmount = typeof transaction.signed_amount === 'number'
+            ? transaction.signed_amount
+            : inferSignedAmount(transaction.amount, transaction.transaction_type);
+
+          return {
+            id: transaction.transaction_id,
+            amount: transaction.amount,
+            signedAmount,
+            description: transaction.counterparty_name || transaction.reference || 'Transaction',
+            category: formatDisplayType(transaction.transaction_type || 'Unknown'),
+            time: formatTimestamp(timestamp),
+            date: timestamp,
+            dateLabel: formatDateLabel(timestamp),
+            status: transaction.status || 'completed',
+            taxReliefDetected: Boolean(transaction.tax_relief_detected),
+            taxCategory: transaction.tax_category || null,
+            warningTriggered: Boolean(transaction.is_warning_triggered),
+          };
+        });
+
+        setTransactions(mappedTransactions);
+      } catch (fetchError) {
+        setError(fetchError instanceof Error ? fetchError.message : 'Unknown error');
+        console.error('Failed to fetch transactions:', fetchError);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
+
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from(new Set(transactions.map((transaction) => transaction.category)));
+    return ['All', ...uniqueCategories];
+  }, [transactions]);
+
+  useEffect(() => {
+    if (selectedCategory !== 'All' && !categories.includes(selectedCategory)) {
+      setSelectedCategory('All');
+    }
+  }, [categories, selectedCategory]);
+
+  const parseDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return Number.isNaN(date.getTime()) ? null : date;
   };
 
-  // Flattened transaction data for easier processing
-  const rawTransactions = useMemo(() => [
-    { id: '1', amount: -12.50, description: 'Mamak Ali Restoran', category: 'Food', time: '12:45 PM', date: '2026-05-12', dateLabel: 'Today, 12 May' },
-    { id: '2', amount: -8.00, description: 'GrabRide - Home to Office', category: 'Transport', time: '08:30 AM', date: '2026-05-12', dateLabel: 'Today, 12 May' },
-    { id: '3', amount: -1000.00, description: 'FlexiCredit Repayment', category: 'Loan', time: '11:20 PM', date: '2026-05-11', dateLabel: 'Yesterday, 11 May' },
-    { id: '4', amount: 5000.00, description: 'Salary Credit', category: 'Income', time: '10:00 AM', date: '2026-05-11', dateLabel: 'Yesterday, 11 May' },
-    { id: '5', amount: -45.20, description: 'Village Grocer', category: 'Food', time: '09:15 AM', date: '2026-05-11', dateLabel: 'Yesterday, 11 May' },
-    { id: '6', amount: -120.00, description: 'TNB - Electricity Bill', category: 'Utilities', time: '02:00 PM', date: '2026-05-10', dateLabel: '10 May 2026' },
-    { id: '7', amount: -15.50, description: 'Starbucks Coffee', category: 'Food', time: '10:30 AM', date: '2026-05-10', dateLabel: '10 May 2026' },
-  ], []);
-
-  // Filter and Sort logic
   const processedTransactions = useMemo(() => {
-    let filtered = rawTransactions.filter(item => {
+    const now = new Date();
+
+    const filtered = transactions.filter((item) => {
       const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-      const matchesSearch = item.description.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            item.category.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Period filtering logic
-      const transDate = new Date(item.date);
-      const now = new Date('2026-05-12'); // Reference date FIXED
-      const diffDays = (now.getTime() - transDate.getTime()) / (1000 * 3600 * 24);
-      
+      const matchesSearch = item.description.toLowerCase().includes(searchQuery.toLowerCase())
+        || item.category.toLowerCase().includes(searchQuery.toLowerCase())
+        || item.status.toLowerCase().includes(searchQuery.toLowerCase())
+        || (item.taxCategory ? item.taxCategory.toLowerCase().includes(searchQuery.toLowerCase()) : false);
+
+      const transactionDate = parseDate(item.date);
+      if (!transactionDate) {
+        return matchesCategory && matchesSearch;
+      }
+
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfTransactionDay = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate());
+      const diffDays = Math.round((startOfToday.getTime() - startOfTransactionDay.getTime()) / (1000 * 60 * 60 * 24));
+
       let matchesPeriod = true;
       if (selectedPeriod === 'Today') matchesPeriod = diffDays === 0;
-      else if (selectedPeriod === 'Last 7 Days') matchesPeriod = diffDays <= 7;
-      else if (selectedPeriod === 'This Month') matchesPeriod = transDate.getMonth() === now.getMonth();
+      else if (selectedPeriod === 'Last 7 Days') matchesPeriod = diffDays >= 0 && diffDays <= 7;
+      else if (selectedPeriod === 'This Month') {
+        matchesPeriod = transactionDate.getMonth() === now.getMonth() && transactionDate.getFullYear() === now.getFullYear();
+      }
 
       return matchesCategory && matchesSearch && matchesPeriod;
     });
 
-    // Advanced Sort (Date + Time)
     return filtered.sort((a, b) => {
-      const timeA = `${a.date}T${parseTime(a.time)}`;
-      const timeB = `${b.date}T${parseTime(b.time)}`;
-      
+      const timeA = a.date;
+      const timeB = b.date;
+
       if (sortOrder === 'Latest') return timeB.localeCompare(timeA);
       if (sortOrder === 'Oldest') return timeA.localeCompare(timeB);
-      if (sortOrder === 'Highest') return b.amount - a.amount;
-      if (sortOrder === 'Lowest') return a.amount - b.amount;
+      if (sortOrder === 'Highest') return b.signedAmount - a.signedAmount;
+      if (sortOrder === 'Lowest') return a.signedAmount - b.signedAmount;
       return 0;
     });
-  }, [rawTransactions, selectedCategory, selectedPeriod, searchQuery, sortOrder]);
+  }, [transactions, selectedCategory, selectedPeriod, searchQuery, sortOrder]);
 
-  // Regroup by date for UI if sorting by date, otherwise show flat list
-  const groupedTransactions = useMemo(() => {
+  const groupedTransactions = useMemo<TransactionGroup[]>(() => {
     if (sortOrder === 'Highest' || sortOrder === 'Lowest') {
-      const total = processedTransactions.reduce((acc, curr) => acc + curr.amount, 0);
+      const total = processedTransactions.reduce((accumulator, transaction) => accumulator + transaction.signedAmount, 0);
       return [{ date: 'Sorted by Amount', items: processedTransactions, total }];
     }
 
-    const groups: { date: string, items: typeof rawTransactions, total: number }[] = [];
-    processedTransactions.forEach(item => {
-      const group = groups.find(g => g.date === item.dateLabel);
+    const groups: TransactionGroup[] = [];
+    processedTransactions.forEach((transaction) => {
+      const group = groups.find((entry) => entry.date === transaction.dateLabel);
       if (group) {
-        group.items.push(item);
-        group.total += item.amount;
+        group.items.push(transaction);
+        group.total += transaction.signedAmount;
       } else {
-        groups.push({ date: item.dateLabel, items: [item], total: item.amount });
+        groups.push({ date: transaction.dateLabel, items: [transaction], total: transaction.signedAmount });
       }
     });
+
     return groups;
   }, [processedTransactions, sortOrder]);
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'Food': return <MaterialCommunityIcons name="food" size={20} color={colors.primary} />;
-      case 'Transport': return <MaterialCommunityIcons name="car" size={20} color={colors.primary} />;
-      case 'Shopping': return <Feather name="shopping-bag" size={18} color={colors.primary} />;
-      case 'Income': return <Ionicons name="wallet-outline" size={20} color={colors.success} />;
-      case 'Utilities': return <Feather name="zap" size={18} color={colors.primary} />;
-      default: return <Feather name="list" size={18} color={colors.primary} />;
+    const normalized = category.toLowerCase();
+    if (normalized.includes('income') || normalized.includes('credit') || normalized.includes('deposit') || normalized.includes('refund')) {
+      return <Ionicons name="wallet-outline" size={20} color={colors.success} />;
     }
+    if (normalized.includes('transfer')) {
+      return <MaterialCommunityIcons name="swap-horizontal" size={20} color={colors.primary} />;
+    }
+    if (normalized.includes('tax')) {
+      return <MaterialCommunityIcons name="receipt-text-outline" size={20} color={colors.warning} />;
+    }
+    if (normalized.includes('expense') || normalized.includes('debit') || normalized.includes('payment') || normalized.includes('purchase') || normalized.includes('bill')) {
+      return <Feather name="arrow-up-right" size={18} color={colors.primary} />;
+    }
+    return <Feather name="list" size={18} color={colors.primary} />;
   };
 
-  const getIconBackground = (category: string) => {
-    if (category === 'Income') return colors.success + '15';
+  const getIconBackground = (category: string, amount: number) => {
+    const normalized = category.toLowerCase();
+    if (normalized.includes('income') || amount > 0) return colors.success + '15';
+    if (normalized.includes('tax')) return colors.warning + '18';
     return colors.primary + '10';
   };
 
@@ -119,9 +275,87 @@ export default function TransactionHistoryScreen() {
     setActiveDropdown(activeDropdown === type ? null : type);
   };
 
+  const renderLoadingState = () => (
+    <View style={styles.stateContainer}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={[styles.stateTitle, { color: colors.text }]}>Loading transaction history</Text>
+      <Text style={[styles.stateSubtitle, { color: colors.secondary }]}>Fetching the latest entries from the backend.</Text>
+    </View>
+  );
+
+  const renderErrorState = () => (
+    <View style={styles.stateContainer}>
+      <MaterialCommunityIcons name="database-off" size={48} color={colors.secondary + '60'} />
+      <Text style={[styles.stateTitle, { color: colors.text }]}>Unable to load transactions</Text>
+      <Text style={[styles.stateSubtitle, { color: colors.secondary }]}>{error || 'Please try again.'}</Text>
+      <TouchableOpacity
+        style={[styles.retryButton, { backgroundColor: colors.primary }]}
+        onPress={() => {
+          setLoading(true);
+          setError(null);
+          fetch(`${API_BASE_URL}/api/user/${USER_ID}/transactions?limit=50`)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`Failed to fetch transactions: ${response.statusText}`);
+              }
+              return response.json();
+            })
+            .then((data: { transactions: TransactionApiItem[] }) => {
+              const mappedTransactions = (data.transactions || []).map((transaction) => {
+                const timestamp = transaction.transaction_time || transaction.created_at || new Date().toISOString();
+                const signedAmount = typeof transaction.signed_amount === 'number'
+                  ? transaction.signed_amount
+                  : inferSignedAmount(transaction.amount, transaction.transaction_type);
+
+                return {
+                  id: transaction.transaction_id,
+                  amount: transaction.amount,
+                  signedAmount,
+                  description: transaction.counterparty_name || transaction.reference || 'Transaction',
+                  category: formatDisplayType(transaction.transaction_type || 'Unknown'),
+                  time: formatTimestamp(timestamp),
+                  date: timestamp,
+                  dateLabel: formatDateLabel(timestamp),
+                  status: transaction.status || 'completed',
+                  taxReliefDetected: Boolean(transaction.tax_relief_detected),
+                  taxCategory: transaction.tax_category || null,
+                  warningTriggered: Boolean(transaction.is_warning_triggered),
+                };
+              });
+
+              setTransactions(mappedTransactions);
+            })
+            .catch((retryError) => {
+              setError(retryError instanceof Error ? retryError.message : 'Unknown error');
+            })
+            .finally(() => {
+              setLoading(false);
+            });
+        }}
+      >
+        <Text style={styles.retryButtonText}>Retry</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {renderLoadingState()}
+      </View>
+    );
+  }
+
+  if (error && transactions.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {renderErrorState()}
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color={colors.text} />
@@ -130,20 +364,19 @@ export default function TransactionHistoryScreen() {
       </View>
 
       <View style={{ flex: 1 }}>
-        <ScrollView 
+        <ScrollView
           showsVerticalScrollIndicator={false}
           stickyHeaderIndices={[1]}
           contentContainerStyle={{ paddingBottom: 40 }}
           onScroll={() => setActiveDropdown(null)}
           scrollEventThrottle={16}
         >
-          {/* Search Bar */}
           <View style={styles.searchSection}>
             <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Feather name="search" size={20} color={colors.secondary} style={{ marginRight: 12 }} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search merchants or categories"
+                placeholder="Search merchants, types, or notes"
                 placeholderTextColor={colors.secondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -151,43 +384,38 @@ export default function TransactionHistoryScreen() {
             </View>
           </View>
 
-          {/* Categories Filter (Sticky Header Index 1) */}
           <View style={[styles.filterSection, { backgroundColor: colors.background }]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-              {categories.map((cat) => (
+              {categories.map((category) => (
                 <TouchableOpacity
-                  key={cat}
-                  onPress={() => setSelectedCategory(cat)}
+                  key={category}
+                  onPress={() => setSelectedCategory(category)}
                   style={[
                     styles.filterChip,
-                    { 
-                      backgroundColor: selectedCategory === cat ? colors.primary : colors.card,
-                      borderColor: selectedCategory === cat ? colors.primary : colors.border
-                    }
+                    {
+                      backgroundColor: selectedCategory === category ? colors.primary : colors.card,
+                      borderColor: selectedCategory === category ? colors.primary : colors.border,
+                    },
                   ]}
                 >
-                  <Text style={[
-                    styles.filterChipText, 
-                    { color: selectedCategory === cat ? '#fff' : colors.text }
-                  ]}>
-                    {cat}
+                  <Text style={[styles.filterChipText, { color: selectedCategory === category ? '#fff' : colors.text }]}>
+                    {category}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
 
-          {/* Dropdown Control Row */}
           <View style={styles.dropdownRow}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.dropdownButton, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => toggleDropdown('period')}
             >
               <Text style={[styles.dropdownButtonText, { color: colors.text }]}>{selectedPeriod}</Text>
-              <Feather name={activeDropdown === 'period' ? "chevron-up" : "chevron-down"} size={16} color={colors.secondary} />
+              <Feather name={activeDropdown === 'period' ? 'chevron-up' : 'chevron-down'} size={16} color={colors.secondary} />
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.dropdownButton, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => toggleDropdown('sort')}
             >
@@ -195,33 +423,32 @@ export default function TransactionHistoryScreen() {
                 <Feather name="list" size={14} color={colors.primary} />
                 <Text style={[styles.dropdownButtonText, { color: colors.text }]}>{sortOrder}</Text>
               </View>
-              <Feather name={activeDropdown === 'sort' ? "chevron-up" : "chevron-down"} size={16} color={colors.secondary} />
+              <Feather name={activeDropdown === 'sort' ? 'chevron-up' : 'chevron-down'} size={16} color={colors.secondary} />
             </TouchableOpacity>
           </View>
 
-          {/* Transaction Groups */}
           <View style={styles.listContainer}>
             {groupedTransactions.length > 0 ? (
               groupedTransactions.map((dayGroup, groupIndex) => (
-                <View key={groupIndex} style={styles.dayGroup}>
+                <View key={`${dayGroup.date}-${groupIndex}`} style={styles.dayGroup}>
                   <View style={styles.dateHeaderRow}>
                     <Text style={[styles.dateHeader, { color: colors.secondary }]}>{dayGroup.date}</Text>
                     <Text style={[styles.dateTotal, { color: dayGroup.total > 0 ? colors.success : colors.text }]}>
                       {dayGroup.total > 0 ? '+' : ''}RM {Math.abs(dayGroup.total).toFixed(2)}
                     </Text>
                   </View>
-                  
+
                   <View style={[styles.groupCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     {dayGroup.items.map((item, itemIndex) => (
                       <Animated.View key={item.id} entering={FadeInDown.delay(itemIndex * 50)}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={[
-                            styles.transactionItem, 
-                            itemIndex < dayGroup.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                            styles.transactionItem,
+                            itemIndex < dayGroup.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                           ]}
                         >
                           <View style={styles.itemLeft}>
-                            <View style={[styles.iconWrapper, { backgroundColor: getIconBackground(item.category) }]}>
+                            <View style={[styles.iconWrapper, { backgroundColor: getIconBackground(item.category, item.signedAmount) }]}>
                               {getCategoryIcon(item.category)}
                             </View>
                             <View style={styles.textGroup}>
@@ -230,16 +457,14 @@ export default function TransactionHistoryScreen() {
                               </Text>
                               <Text style={[styles.metaText, { color: colors.secondary }]}>
                                 {item.time} • {item.category}
+                                {item.taxCategory ? ` • ${item.taxCategory}` : ''}
                               </Text>
                             </View>
                           </View>
-                          
+
                           <View style={styles.itemRight}>
-                            <Text style={[
-                              styles.amountText, 
-                              { color: item.amount > 0 ? colors.success : colors.text }
-                            ]}>
-                              {item.amount > 0 ? '+' : ''}RM {Math.abs(item.amount).toFixed(2)}
+                            <Text style={[styles.amountText, { color: item.signedAmount > 0 ? colors.success : colors.text }]}>
+                              {item.signedAmount > 0 ? '+' : ''}RM {Math.abs(item.signedAmount).toFixed(2)}
                             </Text>
                             <Feather name="chevron-right" size={16} color={colors.border} style={{ marginLeft: 4 }} />
                           </View>
@@ -258,53 +483,51 @@ export default function TransactionHistoryScreen() {
           </View>
         </ScrollView>
 
-        {/* Dropdown Menus (Absolute Overlay) */}
         {activeDropdown === 'period' && (
-          <View style={[styles.dropdownMenu, { backgroundColor: colors.card, left: 20, top: 185 }]}>
-            {periods.map((p) => (
-              <TouchableOpacity 
-                key={p} 
+          <View style={[styles.dropdownMenu, { backgroundColor: colors.card, left: 20, top: 185 }]}> 
+            {periods.map((period) => (
+              <TouchableOpacity
+                key={period}
                 style={styles.dropdownItem}
                 onPress={() => {
-                  setSelectedPeriod(p);
+                  setSelectedPeriod(period);
                   setActiveDropdown(null);
                 }}
               >
-                <Text style={[styles.dropdownItemText, { color: selectedPeriod === p ? colors.primary : colors.text }]}>
-                  {p}
+                <Text style={[styles.dropdownItemText, { color: selectedPeriod === period ? colors.primary : colors.text }]}>
+                  {period}
                 </Text>
-                {selectedPeriod === p && <Feather name="check" size={16} color={colors.primary} />}
+                {selectedPeriod === period && <Feather name="check" size={16} color={colors.primary} />}
               </TouchableOpacity>
             ))}
           </View>
         )}
 
         {activeDropdown === 'sort' && (
-          <View style={[styles.dropdownMenu, { backgroundColor: colors.card, right: 20, top: 185 }]}>
-            {sortOptions.map((o) => (
-              <TouchableOpacity 
-                key={o} 
+          <View style={[styles.dropdownMenu, { backgroundColor: colors.card, right: 20, top: 185 }]}> 
+            {sortOptions.map((option) => (
+              <TouchableOpacity
+                key={option}
                 style={styles.dropdownItem}
                 onPress={() => {
-                  setSortOrder(o);
+                  setSortOrder(option);
                   setActiveDropdown(null);
                 }}
               >
-                <Text style={[styles.dropdownItemText, { color: sortOrder === o ? colors.primary : colors.text }]}>
-                  {o}
+                <Text style={[styles.dropdownItemText, { color: sortOrder === option ? colors.primary : colors.text }]}>
+                  {option}
                 </Text>
-                {sortOrder === o && <Feather name="check" size={16} color={colors.primary} />}
+                {sortOrder === option && <Feather name="check" size={16} color={colors.primary} />}
               </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* Backdrop for closing dropdown */}
         {activeDropdown && (
-          <TouchableOpacity 
-            style={styles.backdrop} 
-            activeOpacity={1} 
-            onPress={() => setActiveDropdown(null)} 
+          <TouchableOpacity
+            style={styles.backdrop}
+            activeOpacity={1}
+            onPress={() => setActiveDropdown(null)}
           />
         )}
       </View>
@@ -367,29 +590,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  sortSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  sortLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginRight: 12,
-  },
-  sortScroll: {
-    gap: 8,
-  },
-  sortChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  sortChipText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
   listContainer: {
     paddingHorizontal: 20,
     marginTop: 8,
@@ -397,12 +597,21 @@ const styles = StyleSheet.create({
   dayGroup: {
     marginBottom: 24,
   },
+  dateHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   dateHeader: {
     fontSize: 13,
     fontWeight: '700',
-    marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  dateTotal: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   groupCard: {
     borderRadius: 24,
@@ -516,15 +725,33 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 900,
   },
-  dateHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  stateContainer: {
+    flex: 1,
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 12,
   },
-  dateTotal: {
+  stateTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  stateSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
     fontSize: 14,
     fontWeight: '800',
-    fontFamily: 'sans-serif-rounded',
   },
 });
