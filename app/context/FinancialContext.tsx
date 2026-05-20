@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
 
 export interface Pocket {
-  id: number;
+  id: string;
   name: string;
   balance: number;
   icon: string;
@@ -17,9 +17,18 @@ interface FinancialContextType {
   pockets: Pocket[];
   setPockets: Dispatch<SetStateAction<Pocket[]>>;
   syncPocketsWithExpenses: () => void;
+  loading: boolean;
+  refreshPockets: () => Promise<void>;
+  addNewPocket: (name: string, isFixed: boolean) => Promise<boolean>;
+  renameUserPocket: (id: string, name: string) => Promise<boolean>;
+  deleteUserPocket: (id: string) => Promise<boolean>;
+  transferFunds: (sourceId: string, destId: string, amount: number) => Promise<boolean>;
 }
 
 const FinancialContext = createContext<FinancialContextType | undefined>(undefined);
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000';
+export const MOCK_USER_ID = 'de458832-a0c0-45a6-a9b3-471db31a2f7e';
 
 const defaultExpenses = {
   'Loan': 1000,
@@ -55,40 +64,137 @@ const pocketIcons: Record<string, string> = {
 
 export const FinancialProvider = ({ children }: { children: ReactNode }) => {
   const [income, setIncome] = useState(5000);
-  const [expenses, setExpenses] = useState<Record<string, number>>(defaultExpenses);
-  const [pockets, setPockets] = useState<Pocket[]>([
-    { id: 1, name: 'Saving', balance: 1200, icon: 'safe', color: '#15fabd', isFixed: true },
-    { id: 2, name: 'F&B', balance: 800, icon: 'food-fork-drink', color: '#FB7185', isFixed: false },
-    { id: 3, name: 'Transport', balance: 400, icon: 'car-side', color: '#60A5FA', isFixed: false },
-    { id: 4, name: 'Loan', balance: 1000, icon: 'bank-outline', color: '#FBBF24', isFixed: true },
-    { id: 5, name: 'Groceries', balance: 800, icon: 'cart-outline', color: '#34D399', isFixed: false },
-    { id: 6, name: 'Entertainment', balance: 800, icon: 'controller-classic-outline', color: '#F472B6', isFixed: false },
-    { id: 7, name: 'Insurance', balance: 600, icon: 'shield-check-outline', color: '#3b82f6', isFixed: true },
-  ]);
+  const [expenses, setExpenses] = useState<Record<string, number>>({});
+  const [pockets, setPockets] = useState<Pocket[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // GET: Fetch context payload
+  const refreshPockets = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/api/users/${MOCK_USER_ID}/pockets`);
+      const data = await res.json();
+
+      if (data.pockets) {
+        const transformed: Pocket[] = data.pockets.map((p: any) => {
+          // 1. Defensively look for balance across all field naming variants
+          const rawBalance =
+            p.current_balance !== undefined ? p.current_balance :
+              p.current_pocket_balance !== undefined ? p.current_pocket_balance :
+                p.balance !== undefined ? p.balance : 0;
+
+          // 2. Parse cleanly, fallback to 0 if parsing evaluates to NaN
+          const parsedBalance = typeof rawBalance === 'string' ? parseFloat(rawBalance) : rawBalance;
+          const typeString = (p.pocket_type || p.type || '').toLowerCase();
+
+          return {
+            id: p.pocket_id || p.id,
+            name: p.pocket_name || p.name || 'Unnamed Pocket',
+            balance: isNaN(parsedBalance) ? 0 : parsedBalance,
+            isFixed: typeString === 'fixed',
+            icon: pocketIcons[p.pocket_name || p.name] || 'folder-outline',
+            color: pocketColors[p.pocket_name || p.name] || '#771FFF'
+          };
+        });
+        setPockets(transformed);
+      }
+    } catch (e) {
+      console.error("Error synchronizing tracking store states: ", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { refreshPockets(); }, []);
+
+  // Backwards compatibility layer for older code blocks
   const syncPocketsWithExpenses = () => {
-    const newPockets: Pocket[] = Object.entries(expenses).map(([name, amount], index) => ({
-      id: index + 100, // Offset to avoid collisions with manual pockets
-      name,
-      balance: amount,
-      icon: pocketIcons[name] || 'folder-outline',
-      color: pocketColors[name] || '#771FFF',
-      isFixed: fixedPocketNames.includes(name),
-    }));
+    console.log("Pockets are directly backed by the Supabase engine now.");
+  };
 
-    // Keep the 'Saving' pocket if it exists
-    const savingPocket = pockets.find(p => p.name === 'Saving');
-    const finalPockets = savingPocket ? [savingPocket, ...newPockets] : newPockets;
-    
-    setPockets(finalPockets);
+  // POST: Add new item resource
+  const addNewPocket = async (name: string, isFixed: boolean) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/${MOCK_USER_ID}/pockets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pocket_name: name,
+          pocket_type: isFixed ? 'FIXED' : 'VARIABLE' 
+        })
+      });
+      if (res.ok) {
+        await refreshPockets();
+        return true;
+      }
+    } catch (e) { console.error("Error creating new pocket structural node:", e); }
+    return false;
+  };
+
+  // PUT: Mutation logic transformation handler
+  const renameUserPocket = async (id: string, name: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/pockets/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pocket_name: name })
+      });
+      if (res.ok) {
+        await refreshPockets();
+        return true;
+      }
+    } catch (e) { console.error(e); }
+    return false;
+  };
+
+  // DELETE: Removal tracking handler configuration
+  const deleteUserPocket = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/pockets/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        await refreshPockets();
+        return true;
+      }
+    } catch (e) { console.error(e); }
+    return false;
+  };
+
+  // POST: Funds routing executor operation mapping
+  const transferFunds = async (sourceId: string, destId: string, amount: number) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/pocket-transfers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: MOCK_USER_ID,
+          source_pocket_id: sourceId,
+          destination_pocket_id: destId,
+          amount
+        })
+      });
+      if (res.ok) {
+        await refreshPockets();
+        return true;
+      }
+    } catch (e) { console.error(e); }
+    return false;
   };
 
   return (
     <FinancialContext.Provider value={{
-      income, setIncome,
-      expenses, setExpenses,
-      pockets, setPockets,
-      syncPocketsWithExpenses
+      income,
+      setIncome,
+      expenses,
+      setExpenses,
+      pockets,
+      setPockets,                 // Securely exported context token property
+      syncPocketsWithExpenses,    // Securely exported context token property
+      loading,
+      refreshPockets,
+      addNewPocket,
+      renameUserPocket,
+      deleteUserPocket,
+      transferFunds
     }}>
       {children}
     </FinancialContext.Provider>
@@ -97,8 +203,6 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
 
 export const useFinancial = () => {
   const context = useContext(FinancialContext);
-  if (!context) {
-    throw new Error('useFinancial must be used within a FinancialProvider');
-  }
+  if (!context) throw new Error('useFinancial must be configured inside structured boundaries');
   return context;
 };
