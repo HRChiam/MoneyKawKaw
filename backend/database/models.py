@@ -70,3 +70,18 @@ class TransactionRequest(BaseModel):
     tax_detected: bool = False
     tax_category: Optional[str] = None
     warning_triggered: bool = False
+
+class NotificationResponse(BaseModel):
+    notification_id: str
+    user_id: str
+    title: str
+    message: str
+    notification_type: str
+    is_read: bool
+    created_at: str 
+
+    class Config:
+        from_attributes = True
+
+
+        

@@ -190,3 +190,19 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
     except Exception as e:
         print(f"Error saving transaction: {e}")
         return None
+
+def get_user_notifications(user_id: str, db=None):
+    try:
+        supabase = db if db is not None else _get_supabase_client()
+        
+        response = (
+            supabase.table("notifications")
+            .select("*")
+            .eq("user_id", str(user_id))
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return response.data or []
+    except Exception as e:
+        print(f"Error fetching notifications: {e}")
+        return []

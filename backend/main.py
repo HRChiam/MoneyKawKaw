@@ -9,7 +9,9 @@ import pandas as pd
 from database import (
     get_db,
     get_user_profile,
-    UserProfileResponse
+    get_user_notifications,
+    UserProfileResponse,
+    NotificationResponse
 )
 from typing import Dict, List
 from service_module.onboarding_math import calculate_cold_start_budget
@@ -283,3 +285,8 @@ def check_tax_eligibility(req: TaxExemptionRequest):
 async def health():
     """Health check endpoint"""
     return {"status": "ok"}
+
+@app.get("/api/notifications/{user_id}", response_model=List[NotificationResponse])
+async def get_notifications(user_id: str, db = Depends(get_db)):
+    notifications = get_user_notifications(user_id, db=db)
+    return notifications
