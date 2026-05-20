@@ -1,11 +1,11 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Image, Modal } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, Image, Modal } from 'react-native';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut,} from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
 
