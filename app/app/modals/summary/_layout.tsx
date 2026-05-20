@@ -20,7 +20,6 @@ export default function SummaryScreen() {
   const [activePicker, setActivePicker] = useState<'month' | 'year' | null>(null);
   const [taxCategoryFilter, setTaxCategoryFilter] = useState<string>('All Categories');
   const [taxPickerVisible, setTaxPickerVisible] = useState(false);
-  const [isGenerating, setIsGenerating] = useState<'idle' | 'loading' | 'success'>('idle');
   const [activePoint, setActivePoint] = useState<number | null>(null); 
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
   const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number } | null>(null);
@@ -39,16 +38,6 @@ export default function SummaryScreen() {
     if (taxCategoryFilter === 'All Categories') return taxExemptions;
     return taxExemptions.filter(item => item.name === taxCategoryFilter);
   }, [taxCategoryFilter]);
-
-  const handleGenerateReport = () => {
-    setIsGenerating('loading');
-    // Simulate generation delay
-    setTimeout(() => {
-      setIsGenerating('success');
-      // Reset back to idle after a while
-      setTimeout(() => setIsGenerating('idle'), 2500);
-    }, 2000);
-  };
 
   const monthLabels: Record<string, string> = {
     month: "May 2026 (Current)",
@@ -413,14 +402,6 @@ export default function SummaryScreen() {
           <Text style={[styles.totalLabel, { color: colors.secondary }]}>Potential Tax Relief (LHDN)</Text>
           <Text style={[styles.totalAmount, { color: colors.primary }]}>RM 1,550</Text>
         </View>
-        <TouchableOpacity 
-          style={[styles.generateReportBtn, { backgroundColor: colors.primary }]} 
-          onPress={handleGenerateReport}
-          disabled={isGenerating !== 'idle'}
-        >
-            <Feather name="file-text" size={18} color="#fff" />
-            <Text style={{color: '#fff', fontSize: 16, fontWeight: '700', marginLeft: 8}}>Generate LHDN Report</Text>
-        </TouchableOpacity>
         <View style={[styles.listSection, { backgroundColor: colors.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border, zIndex: 1000 }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, zIndex: 1100 }}>
             <View>
@@ -508,26 +489,6 @@ export default function SummaryScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {isGenerating !== 'idle' && (
-        <Animated.View entering={FadeIn} exiting={FadeOut} style={[styles.notiOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
-          <Animated.View entering={FadeIn} style={[styles.notiCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {isGenerating === 'loading' ? (
-              <>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={[styles.notiText, { color: colors.text }]}>Generating Report...</Text>
-                <Text style={[styles.notiSubText, { color: colors.secondary }]}>This will just take a few seconds</Text>
-              </>
-            ) : (
-              <>
-                <View style={[styles.notiIconWrapper, { backgroundColor: '#15fabd20' }]}><Ionicons name="checkmark-circle" size={60} color="#15fabd" /></View>
-                <Text style={[styles.notiText, { color: colors.text }]}>Report Ready!</Text>
-                <Text style={[styles.notiSubText, { color: colors.secondary }]}>The LHDN PDF has been saved to your downloads.</Text>
-              </>
-            )}
-          </Animated.View>
-        </Animated.View>
-      )}
-
       <Modal
         visible={!!viewingReceipt}
         transparent
@@ -612,17 +573,11 @@ const styles = StyleSheet.create({
   totalCard: { borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, alignItems: 'center' },
   totalLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   totalAmount: { fontSize: 32, fontWeight: '800' },
-  generateReportBtn: { flexDirection: 'row', paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   taxItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1 },
   taxItemLeft: { flex: 1 },
   taxItemName: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
   taxItemAmount: { fontSize: 14, fontWeight: '700' },
   viewButton: { fontSize: 13, fontWeight: '700' },
-  notiOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 2000 },
-  notiCard: { width: width * 0.8, padding: 32, borderRadius: 32, borderWidth: 1.5, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.4, shadowRadius: 30, elevation: 20 },
-  notiIconWrapper: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  notiText: { fontSize: 20, fontWeight: '900', marginTop: 16, marginBottom: 8, fontFamily: 'sans-serif-rounded' },
-  notiSubText: { fontSize: 14, fontWeight: '500', textAlign: 'center', lineHeight: 20 },
   receiptModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   receiptModalContent: { width: '100%', borderRadius: 32, padding: 24 },
   receiptModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
