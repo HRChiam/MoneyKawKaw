@@ -13,7 +13,14 @@ export default function PocketsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { pockets, setPockets } = useFinancial();
+  const {
+    pockets,
+    loading,
+    addNewPocket,
+    renameUserPocket,
+    deleteUserPocket,
+    transferFunds
+  } = useFinancial();
   const [isBalanceVisible] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<'fixed' | 'variable' | null>(null);
@@ -38,66 +45,84 @@ export default function PocketsScreen() {
 
   // Rename Pocket State
   const [renameModal, setRenameModal] = useState(false);
-  const [renameTarget, setRenameTarget] = useState<number | null>(null);
+  const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
   // Move Money State
   const [moveModal, setMoveModal] = useState(false);
-  const [moveSource, setMoveSource] = useState<number | null>(null);
-  const [moveTarget, setMoveTarget] = useState<number | null>(null);
+  const [moveSource, setMoveSource] = useState<string | null>(null);
+  const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [moveAmount, setMoveAmount] = useState('');
 
   // Delete Confirmation State
   const [deleteModal, setDeleteModal] = useState(false);
-  const [pocketToDelete, setPocketToDelete] = useState<{id: number, name: string, balance: number} | null>(null);
+  const [pocketToDelete, setPocketToDelete] = useState<{ id: string, name: string, balance: number } | null>(null);
 
   const totalBalance = pockets.reduce((acc, curr) => acc + curr.balance, 0);
 
-  const addPocket = () => {
-    if (!newName) return;
-    const id = Math.max(0, ...pockets.map(p => p.id)) + 1;
-    setPockets([...pockets, {
-      id, 
-      name: newName, 
-      balance: 0,
-      icon: 'folder-outline',
-      color: primaryBrand,
-      isFixed: selectedGroup === 'fixed'
-    }]);
-    setShowAdd(false);
-    setNewName('');
+  const handleCreatePocket = async () => {
+    if (!newName || !newName.trim()) return;
+
+    // Checks if you are currently viewing the fixed group screen area
+    const isFixed = selectedGroup === 'fixed';
+
+    const success = await addNewPocket(newName.trim(), isFixed);
+    if (success) {
+      setShowAdd(false);
+      setNewName('');
+    } else {
+      alert("Failed to synchronize new created pocket with database repository.");
+    }
   };
 
-  const applyRename = () => {
-    if (renameTarget == null || !renameValue) return;
-    setPockets(pockets.map(p => p.id === renameTarget ? { ...p, name: renameValue } : p));
-    setRenameModal(false);
+  
+
+  const applyRename = async () => {
+    if (!renameTarget || !renameValue) return;
+
+    // 1. Invoke your backend API query route mutation
+    const success = await renameUserPocket(renameTarget, renameValue);
+
+    if (success) {
+      setRenameModal(false);
+      setRenameTarget(null);
+      setRenameValue('');
+    } else {
+      alert("Could not update pocket name on server database configuration asset store.");
+    }
   };
 
-  const startMove = (id: number) => {
+  const startMove = (id: string) => {
     setMoveSource(id);
     setMoveTarget(null);
     setMoveAmount('');
     setMoveModal(true);
   };
 
-  const applyMove = () => {
+  const applyMove = async () => {
     const amount = parseFloat(moveAmount);
     if (!moveSource || !moveTarget || isNaN(amount) || amount <= 0) return;
 
-    setPockets(pockets.map(p => {
-      if (p.id === moveSource) return { ...p, balance: p.balance - amount };
-      if (p.id === moveTarget) return { ...p, balance: p.balance + amount };
-      return p;
-    }));
-    setMoveModal(false);
+    // 🚀 Change from local array mapping to your real transfer API function:
+    const success = await transferFunds(moveSource, moveTarget, amount);
+    if (success) {
+      setMoveModal(false);
+    } else {
+      alert("Internal fund movement failed to save to server.");
+    }
   };
 
-  const applyDelete = () => {
-    if (pocketToDelete) {
-      setPockets(pockets.filter(p => p.id !== pocketToDelete.id));
+  const applyDelete = async () => {
+    if (!pocketToDelete) return;
+
+    // 2. Invoke your backend API delete route
+    const success = await deleteUserPocket(pocketToDelete.id);
+
+    if (success) {
       setDeleteModal(false);
       setPocketToDelete(null);
+    } else {
+      alert("Could not remove tracking container element row from backend engine.");
     }
   };
 
@@ -136,9 +161,24 @@ export default function PocketsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Total Balance Hero */}
         <Animated.View entering={FadeInUp.duration(600)} style={styles.heroSection}>
-          <Text style={[styles.heroLabel, { color: colors.secondary }]}>TOTAL POCKETS BALANCE</Text>
+          <Text style={[styles.heroLabel, { color: colors.secondary }]}>
+            {selectedGroup === 'fixed'
+              ? 'TOTAL FIXED BALANCE'
+              : selectedGroup === 'variable'
+                ? 'TOTAL VARIABLE BALANCE'
+                : 'TOTAL POCKETS BALANCE'}
+          </Text>
+
           <Text style={[styles.heroAmount, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>
-            <Text style={styles.heroCurrency}>RM</Text> {formatBalance(totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 }))}
+            <Text style={styles.heroCurrency}>RM</Text>{' '}
+            {formatBalance(
+              (selectedGroup === 'fixed'
+                ? totalFixedBalance
+                : selectedGroup === 'variable'
+                  ? totalVariableBalance
+                  : totalBalance
+              ).toLocaleString(undefined, { minimumFractionDigits: 2 })
+            )}
           </Text>
         </Animated.View>
 
@@ -406,7 +446,7 @@ export default function PocketsScreen() {
                 />
               </View>
               
-              <TouchableOpacity onPress={addPocket} style={styles.primaryBtnWrapper}>
+              <TouchableOpacity onPress={handleCreatePocket} style={styles.primaryBtnWrapper}>
                 <LinearGradient
                   colors={['#771FFF', '#F8326D']}
                   start={{ x: 0, y: 0 }}

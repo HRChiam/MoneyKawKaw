@@ -27,26 +27,59 @@ The MoneyKawKaw backend is a **three-layer intelligence system** that processes 
 
 ### 📊 `AI/` Directory
 
-#### `ai_brain.py`
-**Purpose:** The generative AI layer that creates human-friendly messages for users.
-- Uses **Google Gemini 2.5 Flash** (via LangChain) to generate contextual financial advice
-- Bridges the gap between cold ML predictions and warm, conversational guidance
+The AI layer is organized into modular, focused modules that use **Google Gemini 2.5 Flash** (via LangChain) to generate contextual financial advice. Each module handles a specific use case.
 
-**Key Functions:**
+#### `onboarding_AI.py`
+**Purpose:** Provides reality checks on the user's initial budget allocations.
+**Key Function:**
+- **`reality_check_budget(user_income, allocated_budget)`**
+  - Validates budget sanity for new users
+  - Returns: Feedback message on budget feasibility
 
-1. **`explain_monthly_allocation()`** (Feature 6 & 8: Smart Monthly Router)
-   - Called after `spending_forecast.py` calculates monthly budget allocations
-   - Takes the user's income, past spending patterns, and new allocations
-   - Returns: A personalized explanation of why money was distributed to specific pockets (with Malaysian slang like "steady, boss")
+#### `salary_router_AI.py`
+- just notification, no allocation action
+**Purpose:** Generates personalized explanations for monthly budget allocations (Feature 6 & 8: Smart Monthly Router).
+**Key Function:**
+- **`explain_monthly_allocation(income_amount, past_spending_summary, new_allocations)`**
+  - Called after `spending_forecast.py` calculates monthly budget allocations
+  - Takes the user's income, past spending patterns, and new allocations
+  - Returns: A personalized explanation of why money was distributed to specific pockets (with Malaysian slang like "steady, boss")
 
-2. **`generate_momentum_warning()`** (Feature 7: Momentum Warning)
-   - Called after `burn_rate_math.py` predicts a potential deficit
-   - Takes category, consecutive days over limit, and projected shortfall
-   - Returns: A 2-sentence reality check that's direct but empathetic
+#### `risk_predictor_AI.py`
+- ai insight notification, monthly notification
+**Purpose:** Generates momentum warnings for spend-rate risks (Feature 7: Momentum Warning).
+**Key Function:**
+- **`generate_momentum_warning(category, days_over, predicted_shortfall)`**
+  - Called after `burn_rate_math.py` predicts a potential deficit
+  - Takes category, consecutive days over limit, and projected shortfall
+  - Returns: A 2-sentence reality check that's direct but empathetic
 
-3. **`generate_anomaly_interception()`** (Feature 2: Real-Time Anomaly Alerts)
-   - Called when `check_for_anomaly.py` detects an unusual transaction
-   - Returns: A personalized message asking for user consent before processing
+#### `anomaly_detection_AI.py`
+- upon transaction, notification 
+**Purpose:** Generates user-friendly messages for anomalous transactions (Feature 2: Real-Time Anomaly Alerts).
+**Key Function:**
+- **`generate_anomaly_interception(transaction_amount, merchant)`**
+  - Called when `check_for_anomaly.py` detects an unusual transaction
+  - Returns: A personalized message asking for user consent before processing
+
+#### `tax_exemption_AI.py`
+- upon transaction, notification -> if user press accept, then take receipt action required
+**Purpose:** Classifies transactions into Malaysian LHDN tax relief categories.
+**Key Function:**
+- **`get_tax_category(merchant_name, amount)`**
+  - Matches merchant to tax relief category using knowledge base + Gemini AI
+  - Supports: Medical, Disability Equipment, Education, Sports, Child Care, EV Charging, etc.
+  - Returns: Tax category name or "N/A" if not eligible
+  - Example: "APPLE STORE" → "Mobile / Computer Devices", "DECATHLON KL" → "Sports"
+
+#### `debt_routing_AI.py`
+- ai insight notification, monthly notification
+**Purpose:** Generates debt repayment advice based on user liabilities.
+**Key Function:**
+- **`generate_debt_advice(surplus, liabilities)`**
+  - Creates prioritized debt repayment recommendations
+  - Takes surplus amount and list of outstanding debts
+  - Returns: Strategic advice on which debt to pay first
 
 ---
 
@@ -93,6 +126,14 @@ The MoneyKawKaw backend is a **three-layer intelligence system** that processes 
 
 ---
 
+#### `onboarding_math.py`
+**Purpose:** Calculates cold-start budget allocations for new users with no transaction history.
+**Key Function:**
+- **`calculate_cold_start_budget(monthly_income, fixed_expenses, savings_mode)`**
+  - Generates initial budget recommendations for onboarding users
+  - Applies savings mode logic (conservative, balanced, aggressive)
+  - Returns: Dictionary of initial pocket allocations
+
 #### `spending_forecast.py`
 **Purpose:** Forecasts optimal monthly budget allocations for each user "pocket" (spending category).
 - Uses **Random Forest regressor** trained on historical user behavior, income, savings mode, and season
@@ -108,34 +149,6 @@ The MoneyKawKaw backend is a **three-layer intelligence system** that processes 
     - Uses trained model to predict optimal spend limit
   - Returns: Adjusted allocations that sum to discretionary budget
   - Loads models from `Notebook/spending_forecaster_v2.pkl`, `Notebook/encoder_savings_mode.pkl`, `Notebook/encoder_parent_category.pkl`
-
----
-
-#### `streak_calculation.py`
-**Purpose:** Checks if the user qualifies for a "No-Spend Streak" reward.
-- Rewards users who don't spend on discretionary categories for a full day
-- Gamification element to encourage smart spending
-
-**Key Function:**
-- **`check_no_spend_streak(df_transactions)`**
-  - Filters transactions to yesterday only
-  - Checks if total discretionary spending (Food, Entertainment, Shopping) = 0
-  - Returns: `(streak_earned: bool, message: str)`
-  - Example: If user had no discretionary purchases yesterday = 🎉 Streak earned!
-
----
-
-#### `tax_exemption.py`
-**Purpose:** Identifies tax-deductible purchases and tags them for later tax filing.
-- **Two-tier system:** Fast dictionary lookup first, then AI fallback for unknowns
-- Supports Malaysian LHDN tax relief categories (Tech Relief, Sports Relief, Medical Relief, Childcare Relief)
-
-**Key Function:**
-- **`tag_tax_exemptions_smart(df_transactions)`**
-  - **Step 1 (Fast):** Dictionary matching against keywords (APPLE, SAMSUNG, DECATHLON, etc.)
-  - **Step 2 (AI):** For unknown purchases >RM100, sends to Gemini to categorize
-  - Returns: DataFrame with new `tax_category` column
-  - Example: "APPLE STORE" → Tech_Relief, "DECATHLON KL" → Sports_Relief
 
 ---
 
@@ -165,14 +178,16 @@ The MoneyKawKaw backend is a **three-layer intelligence system** that processes 
 
 #### `requirements.txt`
 Lists all Python dependencies for the backend:
-- **FastAPI** — Web framework for building the REST API
-- **Pydantic** — Data validation for API requests
-- **pandas** — Data manipulation (for ML features)
-- **scikit-learn** — ML library (Random Forest, IsolationForest)
-- **joblib** — Model serialization (load .pkl files)
+- **FastAPI** (0.136.1) — Web framework for building the REST API
+- **uvicorn** (0.47.0) — ASGI server for running FastAPI
+- **Supabase** (2.30.0) — Database and authentication backend
+- **pydantic** — Data validation for API requests
+- **pandas** (3.0.3) — Data manipulation (for ML features)
+- **scikit-learn** (1.7.2) — ML library (Random Forest, IsolationForest)
+- **joblib** (1.5.3) — Model serialization (load .pkl files)
 - **LangChain** — Framework for chaining LLM operations
-- **langchain-google-genai** — Google Gemini integration
-- **python-dotenv** — Load environment variables (GEMINI_API_KEY)
+- **langchain-google-genai** (4.2.2) — Google Gemini 2.5 Flash integration
+- **python-dotenv** (1.2.2) — Load environment variables (GEMINI_API_KEY)
 
 ---
 
@@ -192,7 +207,7 @@ Frontend → POST /api/transaction
    └─ daily_spend_avg: 35
 
 main.py receives request
-   ├─ Layer 1 (Tax): tag_tax_exemptions_smart() → "None" (no relief)
+   ├─ Layer 1 (Tax): get_tax_category("KOPITIAM KL", 25) → "N/A" (no relief)
    │
    ├─ Layer 2 (Anomaly): check_for_anomaly(25, 3500, 15) → False (normal)
    │
@@ -204,7 +219,8 @@ main.py receives request
    └─ Response to Frontend:
       {
          "status": "success",
-         "tax_eligible": false,
+         "tax_category": "N/A",
+         "is_anomaly": false,
          "ai_alert": null,
          "action_required": null
       }
@@ -216,20 +232,23 @@ Frontend receives response → Transaction processed! ✅
 
 ## 🎯 Three-Layer Architecture Explained
 
-### Layer 1: Tax Logic (`tax_exemption.py`)
+### Layer 1: Tax Logic (`tax_exemption_AI.py`)
 - **Input:** Transaction merchant name and amount
-- **Output:** Tax relief category
-- **Purpose:** Help users track tax-deductible purchases
+- **Output:** Tax relief category (or "N/A" if not eligible)
+- **Purpose:** Help users track tax-deductible purchases; supports Malaysian LHDN reliefs
+- **Execution:** Fast dictionary lookup + Gemini AI fallback for unknowns
 
 ### Layer 2: ML Detection (`check_for_anomaly.py` + `burn_rate_math.py`)
 - **Input:** Transaction amount + user's income & spending history
 - **Output:** Anomaly flag + burn-rate risk assessment
 - **Purpose:** Catch unusual behavior and predict month-end deficits
+- **Execution:** IsolationForest (anomaly) + Random Forest (risk prediction)
 
-### Layer 3: Generative AI (`ai_brain.py`)
+### Layer 3: Generative AI (Modular AI Modules)
 - **Input:** ML predictions + contextual user data
 - **Output:** Human-friendly messages with Malaysian slang
 - **Purpose:** Explain the "why" behind ML decisions in an empathetic way
+- **Modules:** `anomaly_detection_AI.py`, `risk_predictor_AI.py`, `salary_router_AI.py`, `consent_rebalancing_AI.py`, `debt_routing_AI.py`
 
 ---
 
@@ -256,9 +275,11 @@ GEMINI_API_KEY=sk-xxxxx...  # Google AI Studio API key
 - The hardcoded date in `daily_limit_calculation.py` (May 12, 2026) should be updated to use real `datetime.now()`
 - ML models must be retrained periodically as user behavior evolves
 - Anomaly detection thresholds can be tuned in `check_for_anomaly.py`
-- Tax keywords dictionary in `tax_exemption.py` should expand as new use cases emerge
+- Tax knowledge base in `tax_exemption_AI.py` should expand as new Malaysian LHDN reliefs emerge
+- All AI modules use Gemini 2.5 Flash with temperature=0.0 for deterministic responses
+- Supabase is used for user authentication and transaction data persistence
 
 ---
 
-**Last Updated:** May 2026  
-**Stack:** FastAPI + scikit-learn + LangChain + Google Gemini
+**Last Updated:** May 20, 2026  
+**Stack:** FastAPI + Supabase + scikit-learn + LangChain + Google Gemini 2.5 Flash

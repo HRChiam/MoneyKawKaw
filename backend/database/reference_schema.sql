@@ -75,7 +75,6 @@ CREATE TABLE public.pockets (
   user_id uuid NOT NULL,
   pocket_name character varying NOT NULL,
   pocket_type USER-DEFINED NOT NULL,
-  monthly_limit numeric NOT NULL CHECK (monthly_limit >= 0::numeric),
   current_pocket_balance numeric NOT NULL CHECK (current_pocket_balance >= 0::numeric),
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
