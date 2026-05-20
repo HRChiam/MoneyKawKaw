@@ -413,14 +413,6 @@ export default function SummaryScreen() {
           <Text style={[styles.totalLabel, { color: colors.secondary }]}>Potential Tax Relief (LHDN)</Text>
           <Text style={[styles.totalAmount, { color: colors.primary }]}>RM 1,550</Text>
         </View>
-        <TouchableOpacity 
-          style={[styles.generateReportBtn, { backgroundColor: colors.primary }]} 
-          onPress={handleGenerateReport}
-          disabled={isGenerating !== 'idle'}
-        >
-            <Feather name="file-text" size={18} color="#fff" />
-            <Text style={{color: '#fff', fontSize: 16, fontWeight: '700', marginLeft: 8}}>Generate LHDN Report</Text>
-        </TouchableOpacity>
         <View style={[styles.listSection, { backgroundColor: colors.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border, zIndex: 1000 }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, zIndex: 1100 }}>
             <View>
@@ -507,26 +499,6 @@ export default function SummaryScreen() {
         <View style={styles.tabContent}>{activeTab === 'summary' ? renderSummaryTab() : renderTaxTab()}</View>
         <View style={{ height: 40 }} />
       </ScrollView>
-
-      {isGenerating !== 'idle' && (
-        <Animated.View entering={FadeIn} exiting={FadeOut} style={[styles.notiOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
-          <Animated.View entering={FadeIn} style={[styles.notiCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {isGenerating === 'loading' ? (
-              <>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={[styles.notiText, { color: colors.text }]}>Generating Report...</Text>
-                <Text style={[styles.notiSubText, { color: colors.secondary }]}>This will just take a few seconds</Text>
-              </>
-            ) : (
-              <>
-                <View style={[styles.notiIconWrapper, { backgroundColor: '#15fabd20' }]}><Ionicons name="checkmark-circle" size={60} color="#15fabd" /></View>
-                <Text style={[styles.notiText, { color: colors.text }]}>Report Ready!</Text>
-                <Text style={[styles.notiSubText, { color: colors.secondary }]}>The LHDN PDF has been saved to your downloads.</Text>
-              </>
-            )}
-          </Animated.View>
-        </Animated.View>
-      )}
 
       <Modal
         visible={!!viewingReceipt}
