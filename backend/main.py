@@ -76,8 +76,13 @@ class RebalancingRequest(BaseModel):
     source_category: str
     source_balance: float
 
+class Transaction(BaseModel):
+    merchant: str
+    amount: float
+    reference: str | None = None
+
 class TaxExemptionRequest(BaseModel):
-    transactions: List[Dict] # List of {merchant, amount}
+    transactions: List[Transaction]
 
 @app.get("/api/user/{user_id}", response_model=UserProfileResponse)
 async def get_user(user_id: str, db = Depends(get_db)):
@@ -287,10 +292,12 @@ def check_tax_eligibility(req: TaxExemptionRequest):
     # LAYER 3: The AI Tax Expert
     results = []
     for tx in req.transactions:
-        category = get_tax_category(tx["merchant"], tx["amount"])
+        reference = tx.reference
+        category = get_tax_category(tx.merchant, tx.amount, reference)
         results.append({
-            "merchant": tx["merchant"],
-            "amount": tx["amount"],
+            "merchant": tx.merchant,
+            "amount": tx.amount,
+            "reference": reference,
             "tax_category": category,
             "is_tax_claimable": category != "N/A"
         })

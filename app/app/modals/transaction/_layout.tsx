@@ -23,6 +23,7 @@ export default function TransactionScreen() {
   const [toBank, setToBank] = useState((params.toBank as string) || 'GXBank');
   const [amount, setAmount] = useState((params.amount as string) || '');
   const [reference, setReference] = useState((params.reference as string) || '');
+  const [merchantName, setMerchantName] = useState((params.merchantName as string) || '');
   const [selectedSource, setSelectedSource] = useState<TransferSource | null>((params.selectedSource as TransferSource) || null);
   const [isLoading, setIsLoading] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(params.isConfirmed === 'true');
@@ -198,7 +199,26 @@ export default function TransactionScreen() {
                 />
               </View>
             </View>
-          </View>
+
+              {/* Merchant Name Section */}
+            <View style={styles.glassSection}>
+              <View style={styles.glassInputWrapper}>
+                <View style={[styles.itemIconCircle, { backgroundColor: '#EC4899' + '20' }]}>
+                  <MaterialCommunityIcons name="store" size={18} color="#EC4899" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Merchant Name (Optional)</Text>
+                  <TextInput
+                    style={[styles.glassInput, { color: colors.text }]}
+                    placeholder="Enter merchant name"
+                    placeholderTextColor="rgba(255,255,255,0.5)"
+                    value={merchantName}
+                    onChangeText={setMerchantName}
+                  />
+                </View>
+              </View>
+            </View>
+          </View>         
 
           {/* Source Account Selection */}
           <View style={styles.glassSection}>
@@ -332,6 +352,8 @@ export default function TransactionScreen() {
               </View>
             </View>
           </View>
+
+          
 
         </Animated.View>
         <View style={{ height: 140 }} />
