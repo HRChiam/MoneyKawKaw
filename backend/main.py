@@ -26,7 +26,6 @@ from AI.salary_router_AI import explain_monthly_allocation
 from AI.risk_predictor_AI import generate_momentum_warning
 from AI.anomaly_detection_AI import generate_anomaly_interception
 from AI.debt_routing_AI import generate_debt_advice
-from AI.consent_rebalancing_AI import generate_rebalancing_proposal
 from AI.tax_exemption_AI import get_tax_category
 
 app = FastAPI(title="MoneyKawKaw API", version="1.0.0")
@@ -265,21 +264,6 @@ def get_debt_routing_advice(req: DebtRoutingRequest):
     return {
         "status": "success",
         "ai_advice": ai_advice
-    }
-
-@app.post("/api/consent-rebalancing")
-def propose_rebalancing(req: RebalancingRequest):
-    # LAYER 3: The AI Consensus AI
-    ai_proposal = generate_rebalancing_proposal(
-        req.overspent_category,
-        req.amount_needed,
-        req.source_category,
-        req.source_balance
-    )
-
-    return {
-        "status": "success",
-        "ai_proposal": ai_proposal
     }
 
 @app.post("/api/check-tax")
