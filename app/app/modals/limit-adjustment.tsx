@@ -12,7 +12,7 @@ export default function LimitAdjustmentScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { income: ctxIncome, setIncome, expenses: ctxExpenses, setExpenses, syncPocketsWithExpenses } = useFinancial();
+  const { income: ctxIncome, setIncome, expenses: ctxExpenses, setExpenses, syncPocketsWithExpenses, updateSalary } = useFinancial();
 
   const [income, setLocalIncome] = useState(ctxIncome.toString());
   const [expenseAmounts, setLocalExpenseAmounts] = useState<Record<string, string>>(
@@ -28,28 +28,31 @@ export default function LimitAdjustmentScreen() {
     setLocalExpenseAmounts(prev => ({ ...prev, [expense]: amount }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
     
-    // Update Context
-    setIncome(Number(income));
-    const newExpenses = Object.entries(expenseAmounts).reduce(
-      (acc, [k, v]) => ({ ...acc, [k]: Number(v) }), 
-      {} as Record<string, number>
-    );
-    setExpenses(newExpenses);
-    
-    // Simulate API call
-    setTimeout(() => {
-      syncPocketsWithExpenses();
-      setIsSaving(false);
-      setIsSuccess(true);
+    try {
+      // 1. Update salary in DB
+      const salarySuccess = await updateSalary(Number(income));
       
-      // Auto-back after showing success
-      setTimeout(() => {
-        router.back();
-      }, 1500);
-    }, 1000);
+      // 2. Update Context for expenses (local simulation for now as requested)
+      const newExpenses = Object.entries(expenseAmounts).reduce(
+        (acc, [k, v]) => ({ ...acc, [k]: Number(v) }), 
+        {} as Record<string, number>
+      );
+      setExpenses(newExpenses);
+      
+      if (salarySuccess) {
+        setIsSuccess(true);
+        setTimeout(() => {
+          router.back();
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Failed to update financial constraints:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isSuccess) {

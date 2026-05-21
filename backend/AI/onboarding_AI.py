@@ -35,12 +35,12 @@ def reality_check_budget(income: float, fixed_total: float, disposable: float, m
     
     YOUR MISSION:
     Review the baseline for realism. 
-    1. If their Fixed Expenses take up a massive chunk of their income (e.g., > 60%), they are in survival mode. You MUST heavily reduce 'Entertainment' and 'Shopping' to ensure 'Food' and 'Transport' have enough raw RM to survive the month, regardless of their chosen persona.
+    1. If their Fixed Expenses take up a massive chunk of their income (e.g., > 60%), they are in survival mode. You MUST heavily reduce 'Entertainment' to ensure 'Food' and 'Transport' have enough raw RM to survive the month, regardless of their chosen persona.
     2. If they have plenty of disposable income, respect their chosen persona (Conservative/Balanced/Aggressive).
     3. The sum of all categories MUST exactly equal their Disposable Income (RM{disposable}). Do not invent money.
     
     OUTPUT INSTRUCTIONS:
-    Return ONLY a valid JSON object with the adjusted amounts. Use these exact keys: "Savings", "Food", "Transport", "Entertainment", "Shopping". Do not wrap it in markdown block quotes.
+    Return ONLY a valid JSON object with the adjusted amounts. Use these exact keys: "Savings", "Food", "Drinks", "Transport", "Entertainment". Do not wrap it in markdown block quotes.
     """
     
     prompt = PromptTemplate(

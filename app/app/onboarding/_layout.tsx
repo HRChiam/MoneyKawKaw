@@ -7,6 +7,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { GradientText } from '@/components/gradient-text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MOCK_USER_ID, useFinancial } from '@/context/FinancialContext';
 
 type OnboardingStep = 'logo' | 'income-expenses' | 'persona' | 'loading';
 
@@ -63,15 +64,6 @@ export default function OnboardingScreen() {
     }
   }, [currentStep, logoOpacity]);
 
-  useEffect(() => {
-    if (currentStep === 'loading') {
-      const timer = setTimeout(() => {
-        router.replace('../(tabs)/01-home');
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [currentStep, router]);
-
   const toggleExpense = (expense: string) => {
     setSelectedExpenses(prev => {
       if (prev.includes(expense)) {
@@ -101,11 +93,10 @@ export default function OnboardingScreen() {
     setCurrentStep('persona');
   };
 
+  const { refreshAllData } = useFinancial();
+
   const handlePersonaNext = async () => {
-    if (!selectedPersona) {
-      alert('Please select a Saving Style.');
-      return;
-    }
+    if (!selectedPersona) return;
 
     try {
       setCurrentStep('loading');
@@ -116,6 +107,7 @@ export default function OnboardingScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          user_id: MOCK_USER_ID,
           monthly_income: parseFloat(income),
           fixed_expenses: expenseAmounts,
           savings_mode: selectedPersona.toLowerCase() // Sends conservative, balanced, or aggressive mapping keys
@@ -123,6 +115,7 @@ export default function OnboardingScreen() {
       });
 
       if (res.ok) {
+        await refreshAllData();
         router.replace('../(tabs)/01-home');
       } else {
         setCurrentStep('persona');

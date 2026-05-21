@@ -76,6 +76,10 @@ class TransactionRequest(BaseModel):
     tax_category: Optional[str] = None
     warning_triggered: bool = False
 
+class SalaryUpdateRequest(BaseModel):
+    """Update user salary request"""
+    monthly_income: float
+
 class NotificationResponse(BaseModel):
     notification_id: str
     user_id: str
