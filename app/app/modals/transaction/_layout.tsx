@@ -13,11 +13,14 @@ import { useFinancial } from '@/context/FinancialContext';
 type TransferSource = 'Saving' | 'F&B' | 'Transport' | 'Loan' | 'Groceries' | 'Entertainment';
 
 export default function TransactionScreen() {
-  const { pockets } = useFinancial();
+  const { pockets, refreshAllData } = useFinancial();
   const router = useRouter();
   const params = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+
+  const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000';
+  const MOCK_USER_ID = 'de458832-a0c0-45a6-a9b3-471db31a2f7e';
 
   const [toAccount, setToAccount] = useState((params.toAccount as string) || '');
   const [toBank, setToBank] = useState((params.toBank as string) || 'GXBank');
@@ -65,19 +68,45 @@ export default function TransactionScreen() {
       return;
     }
 
+    const selectedPocket = pockets.find(p => p.name === selectedSource);
+    if (!selectedPocket) {
+      alert('Selected pocket not found');
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      // mock failed transaction (insufficient funds)
-      if (amount === '1000') {
-        router.push({
-          pathname: './insufficient-funds',
-          params: { toAccount, toBank, amount, reference, selectedSource }
-        });
-      } else {
-        setIsConfirmed(true);
+    try {
+      // 1. Save transaction to backend
+      const response = await fetch(`${API_BASE_URL}/api/transaction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: MOCK_USER_ID,
+          pocket_id: selectedPocket.id,
+          amount: parseFloat(amount),
+          transaction_type: 'EXPENSE',
+          counterparty_name: merchantName || toBank,
+          tax_detected: false,
+          tax_category: null,
+          warning_triggered: false
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to save transaction');
       }
-    }, 2000);
+
+      // 2. Refresh financial data to show updated balances
+      await refreshAllData();
+      
+      setIsConfirmed(true);
+    } catch (error: any) {
+      console.error('Transaction failed:', error);
+      alert(`Transaction failed: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDone = () => {

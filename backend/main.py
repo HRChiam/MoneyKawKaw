@@ -12,10 +12,14 @@ from database import (
     get_user_notifications,
     get_user_claims,
     UserProfileResponse,
+    TransactionResponse,
     TransactionListResponse,
+    TransactionRequest,
     NotificationResponse, 
     ClaimResponse, 
     get_user_pockets,
+    save_transaction,
+    deduct_from_pocket,
     create_user_pocket,
     update_user_pocket,
     delete_user_pocket,
@@ -73,7 +77,7 @@ class RiskPredictorRequest(BaseModel):
     days_left: int
     daily_spend_avg: float
 
-class TransactionRequest(BaseModel):
+class AnomalyCheckRequest(BaseModel):
     amount: float
     merchant: str
     monthly_income: float
@@ -117,6 +121,44 @@ class TransferFundsRequest(BaseModel):
     destination_pocket_id: str
     amount: float
     
+@app.post("/api/transaction")
+async def create_transaction(req: TransactionRequest, db = Depends(get_db)):
+    """
+    Process and save a new transaction.
+    Runs AI layers for anomaly detection and tax eligibility before saving.
+    """
+    try:
+        # Save to Database
+        tx_id = save_transaction(
+            user_id=req.user_id,
+            pocket_id=req.pocket_id,
+            amount=req.amount,
+            transaction_type=req.transaction_type,
+            counterparty_name=req.counterparty_name,
+            tax_detected=req.tax_detected,
+            tax_category=req.tax_category,
+            warning_triggered=req.warning_triggered,
+            db=db
+        )
+        
+        if not tx_id:
+            raise HTTPException(status_code=500, detail="Failed to save transaction record")
+            
+        # Deduct from pocket balance
+        balance_updated = deduct_from_pocket(
+            pocket_id=req.pocket_id,
+            amount=req.amount,
+            db=db
+        )
+        
+        return {
+            "status": "success",
+            "transaction_id": tx_id,
+            "balance_updated": balance_updated
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/user/{user_id}", response_model=UserProfileResponse)
 async def get_user(user_id: str, db = Depends(get_db)):
     """
@@ -289,7 +331,7 @@ def check_risk(req: RiskPredictorRequest):
     }
 
 @app.post("/api/check-anomaly")
-def check_transaction_anomaly(req: TransactionRequest):
+def check_transaction_anomaly(req: AnomalyCheckRequest):
     # 1. LAYER 1: The Math Engine (Outlier Detection)
     is_anomaly = check_for_anomaly(
         req.amount,

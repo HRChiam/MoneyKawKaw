@@ -45,7 +45,7 @@ interface TransactionGroup {
   total: number;
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000';
 const USER_ID = 'de458832-a0c0-45a6-a9b3-471db31a2f7e';
 
 const formatDisplayType = (value: string) => {
