@@ -76,7 +76,6 @@ export default function TransactionScreen() {
 
     setIsLoading(true);
     try {
-      // 1. Save transaction to backend
       const response = await fetch(`${API_BASE_URL}/api/transaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,6 +93,13 @@ export default function TransactionScreen() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        if (response.status === 400 && errorData.detail.toLowerCase().includes('insufficient funds')) {
+          router.push({
+            pathname: './insufficient-funds',
+            params: { toAccount, toBank, amount, reference, selectedSource }
+          });
+          return;
+        }
         throw new Error(errorData.detail || 'Failed to save transaction');
       }
 

@@ -216,6 +216,39 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
     raise Exception(f"Supabase insert failed: {response}")
 
 def deduct_from_pocket(pocket_id: str, amount: float, db=None) -> bool:
+    """
+    Deducts an amount from a pocket's balance safely.
+    Returns True if successful, False if pocket not found or insufficient funds.
+    """
+    try:
+        supabase = db or _get_supabase_client()
+        
+        # 1. Fetch current balance
+        res = supabase.table("pockets").select("current_pocket_balance").eq("pocket_id", str(pocket_id)).execute()
+        if not res.data:
+            print(f"Deduct failed: Pocket {pocket_id} not found")
+            return False
+            
+        current_bal = float(res.data[0].get("current_pocket_balance") or 0.0)
+        
+        # 2. Check for sufficient funds
+        if current_bal < amount:
+            print(f"Deduct failed: Insufficient funds in pocket {pocket_id}. Available: {current_bal}, Required: {amount}")
+            return False
+        
+        # 3. Update balance
+        new_bal = current_bal - amount
+        
+        upd_res = supabase.table("pockets").update({"current_pocket_balance": new_bal}).eq("pocket_id", str(pocket_id)).execute()
+        return len(upd_res.data) > 0
+    except Exception as e:
+        print(f"Error deducting from pocket: {e}")
+        return False
+
+def add_to_pocket(pocket_id: str, amount: float, db=None) -> bool:
+    """
+    Adds an amount to a pocket's balance safely.
+    """
     try:
         supabase = db or _get_supabase_client()
         
@@ -226,14 +259,13 @@ def deduct_from_pocket(pocket_id: str, amount: float, db=None) -> bool:
             
         current_bal = float(res.data[0].get("current_pocket_balance") or 0.0)
         
-        # 2. Update balance (allow negative for now or check? better to check if we want strictness)
-        # For simplicity, we just update it.
-        new_bal = current_bal - amount
+        # 2. Update balance
+        new_bal = current_bal + amount
         
         upd_res = supabase.table("pockets").update({"current_pocket_balance": new_bal}).eq("pocket_id", str(pocket_id)).execute()
         return len(upd_res.data) > 0
     except Exception as e:
-        print(f"Error deducting from pocket: {e}")
+        print(f"Error adding to pocket: {e}")
         return False
 
 def update_user_salary(user_id: str, monthly_income: float, db=None) -> bool:

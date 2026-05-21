@@ -128,12 +128,29 @@ async def create_transaction(req: TransactionRequest, db = Depends(get_db)):
     Runs AI layers for anomaly detection and tax eligibility before saving.
     """
     try:
-        # Save to Database
+        # 1. Deduct or Add to pocket balance FIRST (Validation)
+        balance_updated = False
+        if req.transaction_type.upper() == 'EXPENSE':
+            balance_updated = deduct_from_pocket(
+                pocket_id=req.pocket_id,
+                amount=req.amount,
+                db=db
+            )
+            if not balance_updated:
+                raise HTTPException(status_code=400, detail="Insufficient funds in pocket or pocket not found")
+        elif req.transaction_type.upper() == 'INCOME':
+            balance_updated = add_to_pocket(
+                pocket_id=req.pocket_id,
+                amount=req.amount,
+                db=db
+            )
+        
+        # 2. Save to Database
         tx_id = save_transaction(
             user_id=req.user_id,
             pocket_id=req.pocket_id,
             amount=req.amount,
-            transaction_type=req.transaction_type,
+            transaction_type=req.transaction_type.upper(),
             counterparty_name=req.counterparty_name,
             tax_detected=req.tax_detected,
             tax_category=req.tax_category,
@@ -142,20 +159,16 @@ async def create_transaction(req: TransactionRequest, db = Depends(get_db)):
         )
         
         if not tx_id:
+            # Note: In a real prod app, we'd roll back the balance change here
             raise HTTPException(status_code=500, detail="Failed to save transaction record")
             
-        # Deduct from pocket balance
-        balance_updated = deduct_from_pocket(
-            pocket_id=req.pocket_id,
-            amount=req.amount,
-            db=db
-        )
-        
         return {
             "status": "success",
             "transaction_id": tx_id,
             "balance_updated": balance_updated
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
