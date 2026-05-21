@@ -87,6 +87,16 @@ class NotificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-
         
+class ClaimResponse(BaseModel):
+    claim_id: str
+    user_id: str
+    transaction_id: str
+    receipt_image_url: Optional[str] = None
+    receipt_date: str
+    amount: float
+    tax_relief_category: str
+    tax_category: Optional[str] = None
+
+    class Config:
+        from_attributes = True

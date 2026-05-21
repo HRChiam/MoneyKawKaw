@@ -8,7 +8,8 @@ from .db import (
     get_user_transactions,
     get_user_notifications,
     get_user_pockets,
-    save_transaction,
+    get_user_claims,
+    save_transaction, 
     create_user_pocket,
     update_user_pocket,
     delete_user_pocket,
@@ -22,7 +23,8 @@ from .models import (
     PocketResponse,
     PocketListResponse,
     TransactionRequest,
-    NotificationResponse
+    NotificationResponse,
+    ClaimResponse
 )
 
 __all__ = [
@@ -31,6 +33,7 @@ __all__ = [
     'get_user_transactions',
     'get_user_notifications',
     'get_user_pockets',
+    'get_user_claims',
     'save_transaction',
     'UserProfileResponse',
     'TransactionResponse',
@@ -38,5 +41,6 @@ __all__ = [
     'PocketResponse',
     'PocketListResponse',
     'TransactionRequest',
-    'NotificationResponse'
+    'NotificationResponse',
+    'ClaimResponse'
 ]
