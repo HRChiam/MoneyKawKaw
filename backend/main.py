@@ -10,9 +10,11 @@ from database import (
     get_user_profile,
     get_user_transactions,
     get_user_notifications,
+    get_user_claims,
     UserProfileResponse,
     TransactionListResponse,
-    NotificationResponse,
+    NotificationResponse, 
+    ClaimResponse, 
     get_user_pockets,
     create_user_pocket,
     update_user_pocket,
@@ -348,6 +350,13 @@ def check_tax_eligibility(req: TaxExemptionRequest):
 async def get_notifications(user_id: str, db = Depends(get_db)):
     notifications = get_user_notifications(user_id, db=db)
     return notifications
+
+@app.get("/api/claims/{user_id}", response_model=List[ClaimResponse])
+async def get_claims(user_id: str, db = Depends(get_db)):
+    print(f"DEBUG: Received request for claims of user: {user_id}")
+    claims = get_user_claims(user_id, db=db)
+    print(f"DEBUG: Returning {len(claims)} claims")
+    return claims
 
 @app.get("/api/users/{user_id}/pockets")
 def list_pockets(user_id: str, db = Depends(get_db)):
