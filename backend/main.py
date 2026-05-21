@@ -31,7 +31,6 @@ from AI.salary_router_AI import explain_monthly_allocation
 from AI.risk_predictor_AI import generate_momentum_warning
 from AI.anomaly_detection_AI import generate_anomaly_interception
 from AI.debt_routing_AI import generate_debt_advice
-from AI.consent_rebalancing_AI import generate_rebalancing_proposal
 from AI.tax_exemption_AI import get_tax_category
 from datetime import date
 import pandas as pd
