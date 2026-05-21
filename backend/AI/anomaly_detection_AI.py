@@ -15,7 +15,7 @@ def generate_anomaly_interception(transaction_amount, merchant):
     The user just spent an abnormal RM{amount} at {merchant}.
     
     YOUR TASK:
-    Ask them if this was a planned purchase (draw from savings), potential fraud, or if they want to convert it to a GX FlexiCredit installment. 
+    Ask them if this was a planned purchase (draw from savings) or potential fraud. 
     Keep it under 3 sentences. Be helpful but alert.
     """
     prompt = PromptTemplate.from_template(template)
@@ -25,4 +25,4 @@ def generate_anomaly_interception(transaction_amount, merchant):
         response = chain.invoke({"amount": transaction_amount, "merchant": merchant})
         return response.content
     except Exception as e:
-        return f"Wait! We detected an unusual RM{transaction_amount} transaction at {merchant}. Was this you? If yes, you might want to check your budget or use FlexiCredit."
+        return f"Wait! We detected an unusual RM{transaction_amount} transaction at {merchant}. Was this you? If yes, you might want to check your budget."
