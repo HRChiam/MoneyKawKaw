@@ -34,7 +34,7 @@ def check_for_anomaly(transaction_amount, user_monthly_income, user_avg_category
     # IsolationForest returns 1 for NORMAL, and -1 for ANOMALY
     prediction = anomaly_model.predict(input_data)[0]
     
-    is_anomaly = (prediction == -1)
+    is_anomaly = bool(prediction == -1)
     
     return is_anomaly
 

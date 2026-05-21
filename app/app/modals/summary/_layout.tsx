@@ -22,22 +22,63 @@ export default function SummaryScreen() {
   const [taxPickerVisible, setTaxPickerVisible] = useState(false);
   const [activePoint, setActivePoint] = useState<number | null>(null); 
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
-  const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number } | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number; receipt_url?: string } | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
 
-  const taxExemptions = [
-    { name: 'Tech / Lifestyle', amount: 1200, date: '12 May 2026' }, 
-    { name: 'Medical', amount: 150, date: '05 May 2026' }, 
-    { name: 'Education', amount: 200, date: '28 Apr 2026' }
-  ];
+  const [taxExemptions, setTaxExemptions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchClaims = async () => {
+      try {
+        const hardcodedUserId = "de458832-a0c0-45a6-a9b3-471db31a2f7e";
+        
+        let apiUrl = process.env.EXPO_PUBLIC_API_URL;
+        if (!apiUrl) {
+          if (typeof window !== 'undefined' && (window as any).location) {
+             apiUrl = "http://localhost:8000";
+          } else {
+             apiUrl = "http://10.0.2.16:8000"; 
+          }
+        }
+        
+        console.log(`[DEBUG] Fetching claims from: ${apiUrl}/api/claims/${hardcodedUserId}`);
+        
+        const response = await fetch(`${apiUrl}/api/claims/${hardcodedUserId}`);
+        console.log(`[DEBUG] Response status: ${response.status}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[DEBUG] Fetch failed: ${response.status} ${errorText}`);
+          throw new Error(`Failed to fetch claims: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`[DEBUG] Received data:`, JSON.stringify(data, null, 2));
+        
+        const formattedClaims = data.map((c: any) => ({
+          name: c.tax_relief_category || 'Uncategorized',
+          amount: c.amount || 0,
+          date: new Date(c.receipt_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          receipt_url: c.receipt_image_url
+        }));
+        
+        console.log(`[DEBUG] Formatted claims:`, JSON.stringify(formattedClaims, null, 2));
+        setTaxExemptions(formattedClaims);
+      } catch (error) {
+        console.error("[DEBUG] Error in fetchClaims:", error);
+      }
+    };
+
+    fetchClaims();
+  }, []);
 
   const taxCategories = ['All Categories', 'Tech / Lifestyle', 'Medical', 'Education'];
 
   const filteredExemptions = useMemo(() => {
     if (taxCategoryFilter === 'All Categories') return taxExemptions;
     return taxExemptions.filter(item => item.name === taxCategoryFilter);
-  }, [taxCategoryFilter]);
+  }, [taxCategoryFilter, taxExemptions]);
 
   const monthLabels: Record<string, string> = {
     month: "May 2026 (Current)",
@@ -518,7 +559,7 @@ export default function SummaryScreen() {
 
             <View style={[styles.receiptImageContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Image 
-                source={require('@/assets/images/receipt.png')} 
+                source={viewingReceipt?.receipt_url ? { uri: viewingReceipt.receipt_url } : require('@/assets/images/receipt.png')} 
                 style={styles.receiptImage}
                 resizeMode="contain"
               />

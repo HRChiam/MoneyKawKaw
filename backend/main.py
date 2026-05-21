@@ -10,14 +10,20 @@ from database import (
     get_user_profile,
     get_user_transactions,
     get_user_notifications,
+    get_user_claims,
     UserProfileResponse,
     TransactionListResponse,
-    NotificationResponse,
+    NotificationResponse, 
+    ClaimResponse, 
     get_user_pockets,
     create_user_pocket,
     update_user_pocket,
     delete_user_pocket,
-    execute_pocket_transfer
+    execute_pocket_transfer,
+    update_user_salary,
+    SalaryUpdateRequest,
+    update_user_onboarding_data,
+    initialize_user_pockets
 )
 from typing import Dict, List, Optional
 from service_module.onboarding_math import calculate_cold_start_budget
@@ -48,6 +54,7 @@ app.add_middleware(
 
 
 class OnboardingRequest(BaseModel):
+    user_id: str
     monthly_income: float
     fixed_expenses: Dict[str, float]
     savings_mode: str
@@ -154,7 +161,17 @@ async def get_transaction_history(user_id: str, limit: int = Query(30, ge=1, le=
         raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/api/onboarding")
-def process_onboarding(req: OnboardingRequest):
+def process_onboarding(req: OnboardingRequest, db = Depends(get_db)):
+    print(f"DEBUG: Onboarding request received: {req.dict()}")
+    # 0. Update User Profile in Database
+    db_update_success = update_user_onboarding_data(
+        req.user_id,
+        req.monthly_income,
+        req.savings_mode,
+        db=db
+    )
+    print(f"DEBUG: Database update success: {db_update_success}")
+
     # 1. LAYER 1: The Math Engine Baseline
     math_plan = calculate_cold_start_budget(
         req.monthly_income, 
@@ -198,6 +215,15 @@ def process_onboarding(req: OnboardingRequest):
     # 4. Calculate Initial Daily Limit (Spendable balance = All variable pockets except Savings)
     spendable_balance = sum(v for k, v in final_pockets.items() if k != "Savings")
     initial_daily_limit = calculate_daily_limit(spendable_balance)
+
+    # 5. Initialize Pockets in Database
+    pocket_init_success = initialize_user_pockets(
+        req.user_id,
+        req.fixed_expenses,
+        final_pockets,
+        db=db
+    )
+    print(f"DEBUG: Pockets initialization success: {pocket_init_success}")
 
     return {
         "status": "success",
@@ -298,21 +324,6 @@ def get_debt_routing_advice(req: DebtRoutingRequest):
         "ai_advice": ai_advice
     }
 
-@app.post("/api/consent-rebalancing")
-def propose_rebalancing(req: RebalancingRequest):
-    # LAYER 3: The AI Consensus AI
-    ai_proposal = generate_rebalancing_proposal(
-        req.overspent_category,
-        req.amount_needed,
-        req.source_category,
-        req.source_balance
-    )
-
-    return {
-        "status": "success",
-        "ai_proposal": ai_proposal
-    }
-
 @app.post("/api/check-tax")
 def check_tax_eligibility(req: TaxExemptionRequest, db = Depends(get_db)):
     supabase = db
@@ -350,16 +361,17 @@ def check_tax_eligibility(req: TaxExemptionRequest, db = Depends(get_db)):
 
 
 
-# Health check
-@app.get("/health")
-async def health():
-    """Health check endpoint"""
-    return {"status": "ok"}
-
 @app.get("/api/notifications/{user_id}", response_model=List[NotificationResponse])
 async def get_notifications(user_id: str, db = Depends(get_db)):
     notifications = get_user_notifications(user_id, db=db)
     return notifications
+
+@app.get("/api/claims/{user_id}", response_model=List[ClaimResponse])
+async def get_claims(user_id: str, db = Depends(get_db)):
+    print(f"DEBUG: Received request for claims of user: {user_id}")
+    claims = get_user_claims(user_id, db=db)
+    print(f"DEBUG: Returning {len(claims)} claims")
+    return claims
 
 @app.get("/api/users/{user_id}/pockets")
 def list_pockets(user_id: str, db = Depends(get_db)):
@@ -477,3 +489,16 @@ def get_daily_spending_summary(user_id: str, db = Depends(get_db)):
         "today_spent": today_spent,
         "current_streak": int(user_profile.get("streak") or user_profile.get("current_streak") or 0)
     }
+
+@app.put("/api/user/{user_id}/salary")
+async def update_salary(user_id: str, req: SalaryUpdateRequest, db = Depends(get_db)):
+    """Update user's monthly income."""
+    try:
+        success = update_user_salary(user_id, req.monthly_income, db=db)
+        if not success:
+            raise HTTPException(status_code=404, detail="User not found or update failed")
+        return {"status": "success", "message": "Salary updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
