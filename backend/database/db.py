@@ -218,10 +218,125 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
         print(f"Error saving transaction: {e}")
         return None
 
+def update_user_salary(user_id: str, monthly_income: float, db=None) -> bool:
+    """
+    Updates the monthly_income for a user in the database.
+    """
+    try:
+        supabase = db or _get_supabase_client()
+        response = (
+            supabase.table("users")
+            .update({"monthly_income": monthly_income})
+            .eq("user_id", str(user_id))
+            .select("user_id, monthly_income")
+            .execute()
+        )
+        return len(response.data) > 0
+    except Exception as e:
+        print(f"Error updating user salary: {e}")
+        return False
+
+
+def update_user_onboarding_data(user_id: str, monthly_income: float, savings_mode: str, db=None) -> bool:
+    """
+    Updates the monthly_income and savings_mode for a user in the database during onboarding.
+    """
+    try:
+        supabase = db or _get_supabase_client()
+        # Enums in Postgres are often lowercase
+        formatted_mode = savings_mode.lower() if savings_mode else "balanced"
+        
+        print(f"DEBUG: Attempting to update user {user_id} with income={monthly_income}, mode={formatted_mode}")
+        
+        # Try updating monthly_income and savings_mode
+        response = (
+            supabase.table("users")
+            .update({
+                "monthly_income": monthly_income,
+                "savings_mode": formatted_mode
+            })
+            .eq("user_id", str(user_id))
+            .select()
+            .execute()
+        )
+        
+        if response.data:
+            print(f"DEBUG: Update successful. New data: {response.data}")
+            return True
+        else:
+            print(f"DEBUG: Update failed - no rows matched user_id {user_id}")
+            # Diagnostic: check if the user exists at all
+            check_res = supabase.table("users").select("user_id").eq("user_id", str(user_id)).execute()
+            if not check_res.data:
+                print(f"DEBUG: CRITICAL - User {user_id} does not exist in the database.")
+            return False
+            
+    except Exception as e:
+        print(f"DEBUG: Exception during update: {str(e)}")
+        # Try updating ONLY monthly_income as a fallback if it's an enum issue
+        try:
+            print("DEBUG: Retrying update with only monthly_income...")
+            response = (
+                supabase.table("users")
+                .update({"monthly_income": monthly_income})
+                .eq("user_id", str(user_id))
+                .select()
+                .execute()
+            )
+            return len(response.data) > 0
+        except Exception as e2:
+            print(f"DEBUG: Fallback update also failed: {str(e2)}")
+            return False
+
+
+def initialize_user_pockets(user_id: str, fixed_pockets: dict, variable_pockets: dict, db=None) -> bool:
+    """
+    Initializes user pockets in the database during onboarding.
+    Deletes existing pockets for the user to ensure a clean start.
+    """
+    try:
+        supabase = db or _get_supabase_client()
+        
+        # 1. Clean up existing pockets for this user
+        supabase.table("pockets").delete().eq("user_id", str(user_id)).execute()
+        
+        pocket_payloads = []
+        
+        # 2. Prepare Fixed Pockets
+        for name, amount in fixed_pockets.items():
+            pocket_payloads.append({
+                "user_id": str(user_id),
+                "pocket_name": name,
+                "pocket_type": "FIXED",
+                "current_pocket_balance": float(amount)
+                # Removed monthly_limit as it doesn't exist in the current schema
+            })
+            
+        # 3. Prepare Variable Pockets
+        for name, amount in variable_pockets.items():
+            pocket_payloads.append({
+                "user_id": str(user_id),
+                "pocket_name": name,
+                "pocket_type": "VARIABLE",
+                "current_pocket_balance": float(amount)
+                # Removed monthly_limit as it doesn't exist in the current schema
+            })
+            
+        # 4. Batch insert all pockets
+        if pocket_payloads:
+            response = supabase.table("pockets").insert(pocket_payloads).execute()
+            return len(response.data) > 0
+        
+        return True
+    except Exception as e:
+        print(f"Error initializing user pockets: {e}")
+        return False
+
+
 def get_user_notifications(user_id: str, db=None):
     try:
         supabase = db if db is not None else _get_supabase_client()
-        
+
         response = (
             supabase.table("notifications")
             .select("*")
@@ -233,6 +348,58 @@ def get_user_notifications(user_id: str, db=None):
     except Exception as e:
         print(f"Error fetching notifications: {e}")
         return []
+
+def get_user_claims(user_id: str, db=None):
+    results = []
+    try:
+        supabase = db or _get_supabase_client()
+        response = (
+            supabase.table("lhdn_claims")
+            .select("*, transactions(amount, tax_relief_category)")
+            .eq("user_id", str(user_id))
+            .order("receipt_date", desc=True)
+            .execute()
+        )
+        claims = response.data or []
+        
+        print(f"DEBUG: Found {len(claims)} raw claim records in DB")
+
+        for c in claims:
+            tx = c.get("transactions")
+            
+            if tx is None:
+                print(f"DEBUG: Claim {c.get('claim_id')} has NO joined transaction data (null)")
+            else:
+                print(f"DEBUG: Claim {c.get('claim_id')} join found: {tx}")
+
+            amount = 0.0
+            category = "Unknown"
+            
+            if isinstance(tx, dict):
+                amount = float(tx.get("amount", 0) or 0)
+                category = tx.get("tax_relief_category") or "Unknown"
+            elif isinstance(tx, list) and len(tx) > 0:
+                # Handle cases where Supabase might return a list for a 1-to-1 join
+                tx_obj = tx[0]
+                amount = float(tx_obj.get("amount", 0) or 0)
+                category = tx_obj.get("tax_relief_category") or "Unknown"
+                print(f"DEBUG: Joined data was a list, using first element.")
+
+            results.append({
+                "claim_id": c.get("claim_id"),
+                "user_id": c.get("user_id"),
+                "transaction_id": c.get("transaction_id"),
+                "receipt_image_url": c.get("receipt_image_url"),
+                "receipt_date": c.get("receipt_date"),
+                "amount": amount,
+                "tax_relief_category": category,
+                "tax_category": category,
+            })
+
+    except Exception as e:
+        print(f"Error fetching claims: {e}")
+    
+    return results
     
 
 def create_user_pocket(user_id: str, pocket_name: str, pocket_type: str, monthly_limit: float = 0.0, db=None) -> dict | None:
