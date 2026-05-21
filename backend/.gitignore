@@ -1,1 +1,10 @@
-__pycache__/**
+shin_docs/**
+.env
+**/__pycache__/**
+
+.venv/
+venv/
+ENV/
+env/
+node_modules/
+.expo/
