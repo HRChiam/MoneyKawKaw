@@ -48,6 +48,63 @@ interface TransactionGroup {
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000';
 const USER_ID = 'de458832-a0c0-45a6-a9b3-471db31a2f7e';
 
+const getMockCategory = (merchant: string) => {
+  const m = merchant.toLowerCase();
+  if (m.includes('mcdonald') || m.includes('kfc') || m.includes('nasi kandar') || m.includes('mamak') || m.includes('starbucks') || m.includes('tealive') || m.includes('coffee')) return 'F&B';
+  if (m.includes('netflix') || m.includes('spotify') || m.includes('tgv')) return 'Entertainment';
+  if (m.includes('rapidkl') || m.includes('grab') || m.includes('petronas') || m.includes('shell')) return 'Transport';
+  if (m.includes('uniqlo')) return 'Shopping';
+  if (m.includes('village grocer')) return 'Groceries';
+  if (m.includes('salary')) return 'Income';
+  if (m.includes('loan') || m.includes('credit card')) return 'Loan';
+  return 'Other';
+};
+
+const PRESENTATION_MOCKS = [
+  { amount: 21.69, type: 'EXPENSE', name: 'McDonalds', date: '2026-05-01T09:18:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 44.9, type: 'EXPENSE', name: 'Netflix', date: '2026-05-02T16:03:00+08:00', tax: true, taxCat: 'Lifestyle', warning: false },
+  { amount: 15.9, type: 'EXPENSE', name: 'Spotify', date: '2026-05-03T10:09:00+08:00', tax: true, taxCat: 'Lifestyle', warning: false },
+  { amount: 23.65, type: 'EXPENSE', name: 'Nasi Kandar Pelita', date: '2026-05-03T08:04:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 21.42, type: 'EXPENSE', name: 'McDonalds', date: '2026-05-04T18:32:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 20.26, type: 'EXPENSE', name: 'KFC', date: '2026-05-04T08:42:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 18.14, type: 'EXPENSE', name: 'Nasi Kandar Pelita', date: '2026-05-05T13:09:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 14.77, type: 'EXPENSE', name: 'Mamak', date: '2026-05-05T14:27:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 23.99, type: 'EXPENSE', name: 'Nasi Kandar Pelita', date: '2026-05-06T09:42:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 15.9, type: 'EXPENSE', name: 'Spotify', date: '2026-05-06T10:37:00+08:00', tax: true, taxCat: 'Lifestyle', warning: false },
+  { amount: 12.15, type: 'EXPENSE', name: 'Nasi Kandar Pelita', date: '2026-05-07T08:41:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 25.82, type: 'EXPENSE', name: 'McDonalds', date: '2026-05-07T11:56:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 9.61, type: 'EXPENSE', name: 'RapidKL', date: '2026-05-08T15:09:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 27.7, type: 'EXPENSE', name: 'McDonalds', date: '2026-05-08T19:19:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 20.99, type: 'EXPENSE', name: 'Starbucks', date: '2026-05-09T17:49:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 8.57, type: 'EXPENSE', name: 'Tealive', date: '2026-05-09T20:02:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 25.66, type: 'EXPENSE', name: 'TGV Cinemas', date: '2026-05-10T10:06:00+08:00', tax: true, taxCat: 'Lifestyle', warning: false },
+  { amount: 15.9, type: 'EXPENSE', name: 'Spotify', date: '2026-05-10T20:45:00+08:00', tax: true, taxCat: 'Lifestyle', warning: false },
+  { amount: 30.41, type: 'EXPENSE', name: 'Grab', date: '2026-05-11T17:34:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 64.09, type: 'EXPENSE', name: 'Petronas', date: '2026-05-11T11:25:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 52.67, type: 'EXPENSE', name: 'Petronas', date: '2026-05-12T16:31:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 19.67, type: 'EXPENSE', name: 'McDonalds', date: '2026-05-12T13:49:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 17.71, type: 'EXPENSE', name: 'Gigi Coffee', date: '2026-05-13T15:43:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 17.45, type: 'EXPENSE', name: 'Nasi Kandar Pelita', date: '2026-05-13T18:56:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 5.95, type: 'EXPENSE', name: 'RapidKL', date: '2026-05-14T12:40:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 11.89, type: 'EXPENSE', name: 'ZUS Coffee', date: '2026-05-14T16:52:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 34.8, type: 'EXPENSE', name: 'Grab', date: '2026-05-15T16:11:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 15.97, type: 'EXPENSE', name: 'Nasi Kandar Pelita', date: '2026-05-15T17:36:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 18.67, type: 'EXPENSE', name: 'Nasi Kandar Pelita', date: '2026-05-16T11:32:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 48.75, type: 'EXPENSE', name: 'Netflix', date: '2026-05-16T19:30:00+08:00', tax: true, taxCat: 'Lifestyle', warning: false },
+  { amount: 34.77, type: 'EXPENSE', name: 'McDonalds', date: '2026-05-17T15:09:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 30.47, type: 'EXPENSE', name: 'McDonalds', date: '2026-05-17T08:08:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 64.85, type: 'EXPENSE', name: 'Petronas', date: '2026-05-18T08:08:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 15.21, type: 'EXPENSE', name: 'Starbucks', date: '2026-05-18T17:38:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 24.56, type: 'EXPENSE', name: 'Nasi Kandar Pelita', date: '2026-05-19T08:02:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 24.7, type: 'EXPENSE', name: 'KFC', date: '2026-05-19T08:06:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 31.86, type: 'EXPENSE', name: 'McDonalds', date: '2026-05-20T18:26:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 16.62, type: 'EXPENSE', name: 'Grab', date: '2026-05-20T18:32:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 29.51, type: 'EXPENSE', name: 'KFC', date: '2026-05-21T16:05:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 21.89, type: 'EXPENSE', name: 'KFC', date: '2026-05-21T20:41:00+08:00', tax: false, taxCat: null, warning: false },
+  { amount: 15.9, type: 'EXPENSE', name: 'Spotify', date: '2026-05-22T08:41:00+08:00', tax: true, taxCat: 'Lifestyle', warning: false },
+  { amount: 450, type: 'EXPENSE', name: 'Credit Card/Personal Loan', date: '2026-05-01T10:00:00+08:00', tax: false, taxCat: null, warning: false }
+];
+
 const formatDisplayType = (value: string) => {
   return value
     .replace(/[_-]+/g, ' ')
@@ -158,7 +215,23 @@ export default function TransactionHistoryScreen() {
           };
         });
 
-        setTransactions(mappedTransactions);
+        // Add Presentation Mocks
+        const mappedMocks = PRESENTATION_MOCKS.map((m, i) => ({
+          id: `mock-${i}`,
+          amount: m.amount,
+          signedAmount: m.type === 'EXPENSE' ? -m.amount : m.amount,
+          description: m.name,
+          category: getMockCategory(m.name),
+          time: formatTimestamp(m.date),
+          date: m.date,
+          dateLabel: formatDateLabel(m.date),
+          status: 'success',
+          taxReliefDetected: m.tax,
+          taxCategory: m.taxCat,
+          warningTriggered: m.warning
+        }));
+
+        setTransactions([...mappedTransactions, ...mappedMocks]);
       } catch (fetchError) {
         setError(fetchError instanceof Error ? fetchError.message : 'Unknown error');
         console.error('Failed to fetch transactions:', fetchError);
