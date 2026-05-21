@@ -20,14 +20,26 @@ export default function OnboardingScreen() {
   const [selectedExpenses, setSelectedExpenses] = useState<string[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null);
   const [expenseAmounts, setExpenseAmounts] = useState<Record<string, string>>({});
-  
+
   const logoOpacity = useSharedValue(0);
 
   const expenses = ['Rental/House Loan', 'PTPTN', 'Car Loan', 'Insurance', 'Other Loan'];
   const personas = [
-    { name: 'Conservative', desc: 'Prioritize safety and steady growth', icon: 'shield-check' },
-    { name: 'Balanced', desc: 'Mix of growth and capital protection', icon: 'scale-balance' },
-    { name: 'Aggressive', desc: 'Focus on high returns and fast growth', icon: 'rocket-launch' }
+    {
+      name: 'Conservative',
+      desc: 'Prioritize security and reliable saving for emergencies',
+      icon: 'shield-check'
+    },
+    {
+      name: 'Balanced',
+      desc: 'A steady approach to saving for both needs and future goals',
+      icon: 'scale-balance'
+    },
+    {
+      name: 'Aggressive',
+      desc: 'Maximize your saving potential with high efficiency',
+      icon: 'rocket-launch'
+    }
   ];
 
   const logoAnimatedStyle = useAnimatedStyle(() => {
@@ -43,7 +55,7 @@ export default function OnboardingScreen() {
         duration: 2000,
         easing: Easing.out(Easing.exp),
       });
-      
+
       const timer = setTimeout(() => {
         setCurrentStep('income-expenses');
       }, 3000);
@@ -89,12 +101,37 @@ export default function OnboardingScreen() {
     setCurrentStep('persona');
   };
 
-  const handlePersonaNext = () => {
+  const handlePersonaNext = async () => {
     if (!selectedPersona) {
-      alert('Please select an investment persona.');
+      alert('Please select a Saving Style.');
       return;
     }
-    setCurrentStep('loading');
+
+    try {
+      setCurrentStep('loading');
+
+      const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000';
+
+      const res = await fetch(`${apiBaseUrl}/api/onboarding`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          monthly_income: parseFloat(income),
+          fixed_expenses: expenseAmounts,
+          savings_mode: selectedPersona.toLowerCase() // Sends conservative, balanced, or aggressive mapping keys
+        })
+      });
+
+      if (res.ok) {
+        router.replace('../(tabs)/01-home');
+      } else {
+        setCurrentStep('persona');
+        alert("Failed to build baseline calculation maps on server backend layer asset tracking nodes.");
+      }
+    } catch (err) {
+      console.error(err);
+      setCurrentStep('persona');
+    }
   };
 
   if (currentStep === 'logo') {
@@ -113,9 +150,9 @@ export default function OnboardingScreen() {
       {/* Progress Indicator */}
       <View style={styles.progressBarRow}>
         <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-          <View style={[styles.progressFill, { 
-            backgroundColor: '#771FFF', 
-            width: currentStep === 'income-expenses' ? '50%' : '100%' 
+          <View style={[styles.progressFill, {
+            backgroundColor: '#771FFF',
+            width: currentStep === 'income-expenses' ? '50%' : '100%'
           }]} />
         </View>
       </View>
@@ -200,7 +237,7 @@ export default function OnboardingScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Animated.View entering={FadeInUp.duration(600)}>
             <View style={styles.header}>
-              <Text style={[styles.title, { color: colors.text }]}>Investment Style</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Saving Style</Text>
               <Text style={[styles.subtitle, { color: colors.secondary }]}>Choose how you want to grow</Text>
             </View>
 
@@ -213,7 +250,7 @@ export default function OnboardingScreen() {
                     activeOpacity={0.8}
                     style={[
                       styles.personaCard,
-                      { 
+                      {
                         backgroundColor: isSelected ? 'rgba(119, 31, 255, 0.15)' : 'rgba(255,255,255,0.03)',
                         borderColor: isSelected ? '#771FFF' : 'transparent',
                         borderWidth: isSelected ? 2 : 0
