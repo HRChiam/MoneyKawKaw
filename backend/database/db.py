@@ -189,34 +189,84 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
         tax_category: Tax category if applicable
         warning_triggered: Whether warning was triggered
         db: Optional database session. If None, creates new session.
-    Returns: Transaction ID if successful, None otherwise
+    Returns: Transaction ID if successful
+    """
+    supabase = db or _get_supabase_client()
+    transaction_id = str(uuid_lib.uuid4())
+
+    payload = {
+        "transaction_id": transaction_id,
+        "user_id": str(user_id),
+        "pocket_id": str(pocket_id),
+        "amount": amount,
+        "transaction_type": transaction_type,
+        "counterparty_name": counterparty_name,
+        "status": "SUCCESS",
+        "is_tax_relief_detected": tax_detected,
+        "tax_relief_category": tax_category,
+        "triggers_warning": warning_triggered,
+        "transaction_time": datetime.utcnow().isoformat(),
+    }
+
+    response = supabase.table("transactions").insert(payload).execute()
+    if response.data:
+        return transaction_id
+    
+    # If no data but no exception, it might be a silent failure or empty result
+    raise Exception(f"Supabase insert failed: {response}")
+
+def deduct_from_pocket(pocket_id: str, amount: float, db=None) -> bool:
+    """
+    Deducts an amount from a pocket's balance safely.
+    Returns True if successful, False if pocket not found or insufficient funds.
     """
     try:
         supabase = db or _get_supabase_client()
-        transaction_id = str(uuid_lib.uuid4())
-
-        payload = {
-            "transaction_id": transaction_id,
-            "user_id": str(user_id),
-            "pocket_id": str(pocket_id),
-            "amount": amount,
-            "transaction_type": transaction_type,
-            "counterparty_name": counterparty_name,
-            "status": "completed",
-            "is_tax_relief_detected": tax_detected,
-            "tax_relief_category": tax_category,
-            "triggers_warning": warning_triggered,
-            "transaction_time": datetime.utcnow().isoformat(),
-        }
-
-        response = supabase.table("transactions").insert(payload).execute()
-        if response.data:
-            return transaction_id
-        return None
-
+        
+        # 1. Fetch current balance
+        res = supabase.table("pockets").select("current_pocket_balance").eq("pocket_id", str(pocket_id)).execute()
+        if not res.data:
+            print(f"Deduct failed: Pocket {pocket_id} not found")
+            return False
+            
+        current_bal = float(res.data[0].get("current_pocket_balance") or 0.0)
+        
+        # 2. Check for sufficient funds
+        if current_bal < amount:
+            print(f"Deduct failed: Insufficient funds in pocket {pocket_id}. Available: {current_bal}, Required: {amount}")
+            return False
+        
+        # 3. Update balance
+        new_bal = current_bal - amount
+        
+        upd_res = supabase.table("pockets").update({"current_pocket_balance": new_bal}).eq("pocket_id", str(pocket_id)).execute()
+        return len(upd_res.data) > 0
     except Exception as e:
-        print(f"Error saving transaction: {e}")
-        return None
+        print(f"Error deducting from pocket: {e}")
+        return False
+
+def add_to_pocket(pocket_id: str, amount: float, db=None) -> bool:
+    """
+    Adds an amount to a pocket's balance safely.
+    """
+    try:
+        supabase = db or _get_supabase_client()
+        
+        # 1. Fetch current balance
+        res = supabase.table("pockets").select("current_pocket_balance").eq("pocket_id", str(pocket_id)).execute()
+        if not res.data:
+            return False
+            
+        current_bal = float(res.data[0].get("current_pocket_balance") or 0.0)
+        
+        # 2. Update balance
+        new_bal = current_bal + amount
+        
+        upd_res = supabase.table("pockets").update({"current_pocket_balance": new_bal}).eq("pocket_id", str(pocket_id)).execute()
+        return len(upd_res.data) > 0
+    except Exception as e:
+        print(f"Error adding to pocket: {e}")
+        return False
 
 def update_user_salary(user_id: str, monthly_income: float, db=None) -> bool:
     """
@@ -495,7 +545,7 @@ def execute_pocket_transfer(user_id: str, source_id: str, dest_id: str, amount: 
                 "source_pocket_id": str(source_id),
                 "destination_pocket_id": str(dest_id),
                 "amount": amount,
-                "status": "completed"
+                "status": "SUCCESS"
             }
             log_res = supabase.table("pocket_transfers").insert(transfer_payload).execute()
             
