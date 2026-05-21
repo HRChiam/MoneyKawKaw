@@ -332,18 +332,33 @@ def get_debt_routing_advice(req: DebtRoutingRequest):
     }
 
 @app.post("/api/check-tax")
-def check_tax_eligibility(req: TaxExemptionRequest):
-    # LAYER 3: The AI Tax Expert
+def check_tax_eligibility(req: TaxExemptionRequest, db = Depends(get_db)):
+    supabase = db
     results = []
+    
     for tx in req.transactions:
         reference = tx.reference
         category = get_tax_category(tx.merchant, tx.amount, reference)
+        is_claimable = category != "N/A"
+        
+        if is_claimable:
+            try:
+                supabase.table("transactions") \
+                    .update({
+                        "is_tax_relief_detected": True,
+                        "tax_relief_category": category
+                    }) \
+                    .eq("reference", reference) \
+                    .execute()
+            except Exception as e:
+                print(f"Error updating database for reference {reference}: {e}")
+
         results.append({
             "merchant": tx.merchant,
             "amount": tx.amount,
             "reference": reference,
             "tax_category": category,
-            "is_tax_claimable": category != "N/A"
+            "is_tax_claimable": is_claimable
         })
 
     return {

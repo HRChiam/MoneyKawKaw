@@ -38,7 +38,7 @@ def predict_deficit_risk(income, variable_balance, days_left, daily_spend_avg):
         projected_spend = daily_spend_avg * days_left
         projected_shortfall = round(projected_spend - variable_balance, 2)
         
-    return (prediction == 1), projected_shortfall, round(risk_probability * 100, 1)
+    return bool(prediction == 1), float(projected_shortfall), float(round(risk_probability * 100, 1))
 
 if __name__ == "__main__":
     # --- Test It! ---

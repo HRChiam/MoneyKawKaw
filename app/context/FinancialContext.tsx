@@ -92,8 +92,10 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
         const data = await res.json();
         setUsername(data.username || 'Xuan Wei');
         setMainBalance(data.main_balance || 0.0);
-        setIncome(data.monthly_income || 0);
+        setDailyLimit(data.daily_limit || 250.00);
+        setTodaySpent(data.today_spent || 50.00);
         setStreak(data.current_streak || 0);
+        setIncome(data.monthly_income || 0);
         
         // Also fetch daily summary for limit and spent
         const summaryRes = await fetch(`${API_BASE_URL}/api/users/${MOCK_USER_ID}/daily-summary`);
