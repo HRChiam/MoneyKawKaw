@@ -152,145 +152,165 @@ export default function FlexiCreditScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} scrollEventThrottle={16}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* 🎯 UNIFIED STANDARD ADAPTIVE TOP BAR HEADER */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Feather name="arrow-left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>FlexiCredit</Text>
+        <Text style={[styles.title, { color: colors.text }]}>
+          FlexiCredit
+        </Text>
       </View>
 
-      {/* Input Section */}
-      <View style={styles.section}>
-        <View style={styles.inputRow}>
+      <ScrollView style={{ flex: 1 }} scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
+        {/* Input Parameters Reference Bar */}
+        <View style={styles.section}>
+          <View style={styles.inputRow}>
             <View style={styles.inputHalf}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Credit Amount</Text>
-                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Text style={[styles.currencyPrefix, { color: colors.secondary }]}>RM</Text>
-                    <TextInput
-                        style={[styles.amountInput, { color: colors.text }]}
-                        value={creditAmount}
-                        onChangeText={setCreditAmount}
-                        keyboardType="numeric"
-                    />
-                </View>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Credit Amount</Text>
+              <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.currencyPrefix, { color: colors.secondary }]}>RM</Text>
+                <TextInput
+                  style={[styles.amountInput, { color: colors.text }]}
+                  value={creditAmount}
+                  onChangeText={setCreditAmount}
+                  keyboardType="numeric"
+                />
+              </View>
             </View>
             <View style={styles.inputHalf}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>Interest Rate</Text>
-                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <TextInput 
-                        style={[styles.amountInput, { color: colors.text, textAlign: 'right' }]} 
-                        value={interestRateInput} 
-                        onChangeText={setInterestRateInput}
-                        keyboardType="numeric"
-                    />
-                    <Text style={[styles.currencyPrefix, { color: colors.secondary, marginLeft: 4 }]}>%</Text>
-                </View>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Interest Rate</Text>
+              <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <TextInput
+                  style={[styles.amountInput, { color: colors.text, textAlign: 'right' }]}
+                  value={interestRateInput}
+                  onChangeText={setInterestRateInput}
+                  keyboardType="numeric"
+                />
+                <Text style={[styles.currencyPrefix, { color: colors.secondary, marginLeft: 4 }]}>%</Text>
+              </View>
             </View>
+          </View>
         </View>
-      </View>
 
-      {/* Simulator Card */}
-      <View style={[styles.chartContainer, { backgroundColor: GXB_PURPLE, borderColor: 'rgba(21, 250, 189, 0.2)' }]}>
-        <View style={styles.chartHeader}>
-            <Text style={[styles.chartTitle, { color: GXB_WHITE }]}>Credit Simulator</Text>
+        {/* Visual Graph Dashboard Card Wrapper */}
+        <View style={[styles.chartContainer, { backgroundColor: GXB_PURPLE, borderColor: 'rgba(21, 250, 189, 0.2)' }]}>
+          <View style={styles.chartHeader}>
+            <Text style={[styles.chartTitle, { color: GXB_WHITE }]}>Credit Simulator Engine</Text>
             <IconSymbol size={20} name="sparkles" color={GXB_TEAL} />
-        </View>
+          </View>
 
-        {/* Visual Graph */}
-        <View style={styles.graphWrapper}>
+          {/* Render Vector Graph Output */}
+          <View style={styles.graphWrapper}>
             <View style={{ width: BAR_DISTANCE + BAR_WIDTH, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <View style={[styles.barGroup, { zIndex: 10 }]}>
-                    <Text style={[styles.barLabelTop, {color: GXB_WHITE}]}>RM {monthlyPayment.toFixed(2)}</Text>
-                    <View style={[styles.barTrack, {backgroundColor: 'rgba(255,255,255,0.1)', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH}]}>
-                        <View style={[styles.barFill, { height: `${pPercent}%`, overflow: 'hidden' }]}>
-                            <View style={{ height: `${interestRatio}%`, backgroundColor: GXB_ORANGE, width: '100%' }} />
-                            <View style={{ height: `${principalRatio}%`, backgroundColor: GXB_BAR_PURPLE, width: '100%' }} />
-                        </View>
-                    </View>
-                    <Text style={[styles.barLabelBottom, {color: 'rgba(255,255,255,0.5)'}]}>Pay/Month</Text>
+              <View style={[styles.barGroup, { zIndex: 10 }]}>
+                <Text style={[styles.barLabelTop, { color: GXB_WHITE }]}>RM {monthlyPayment.toFixed(2)}</Text>
+                <View style={[styles.barTrack, { backgroundColor: 'rgba(255,255,255,0.1)', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH }]}>
+                  <View style={[styles.barFill, { height: `${pPercent}%`, overflow: 'hidden' }]}>
+                    <View style={{ height: `${interestRatio}%`, backgroundColor: GXB_ORANGE, width: '100%' }} />
+                    <View style={{ height: `${principalRatio}%`, backgroundColor: GXB_BAR_PURPLE, width: '100%' }} />
+                  </View>
                 </View>
+                <Text style={[styles.barLabelBottom, { color: 'rgba(255,255,255,0.5)' }]}>Pay/Month</Text>
+              </View>
 
-                <View style={{ position: 'absolute', top: 24, left: -OVERHANG, right: -OVERHANG, height: CHART_TRACK_HEIGHT, zIndex: 20 }} pointerEvents="none">
-                    <Svg height="100%" width="100%" viewBox={`0 0 ${totalSvgWidth} ${CHART_TRACK_HEIGHT}`}>
-                        <Path d={curvedLinePath} fill="none" stroke={GXB_BAR_PURPLE} strokeWidth="2" strokeLinecap="round" opacity={0.2} />
-                    </Svg>
-                </View>
+              <View style={{ position: 'absolute', top: 24, left: -OVERHANG, right: -OVERHANG, height: CHART_TRACK_HEIGHT, zIndex: 20 }} pointerEvents="none">
+                <Svg height="100%" width="100%" viewBox={`0 0 ${totalSvgWidth} ${CHART_TRACK_HEIGHT}`}>
+                  <Path d={curvedLinePath} fill="none" stroke={GXB_BAR_PURPLE} strokeWidth="2" strokeLinecap="round" opacity={0.2} />
+                </Svg>
+              </View>
 
-                <View style={[styles.barGroup, { zIndex: 1 }]}>
-                    <Text style={[styles.barLabelTop, {color: GXB_WHITE}]}>RM {interest}</Text>
-                    <View style={[styles.barTrack, {backgroundColor: 'rgba(255,255,255,0.1)', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH}]}>
-                        <View style={[styles.barFill, { height: `${iPercent}%`, backgroundColor: GXB_ORANGE }]} />
-                    </View>
-                    <Text style={[styles.barLabelBottom, {color: 'rgba(255,255,255,0.5)'}]}>Total Interest</Text>
+              <View style={[styles.barGroup, { zIndex: 1 }]}>
+                <Text style={[styles.barLabelTop, { color: GXB_WHITE }]}>RM {interest}</Text>
+                <View style={[styles.barTrack, { backgroundColor: 'rgba(255,255,255,0.1)', height: CHART_TRACK_HEIGHT, width: BAR_WIDTH }]}>
+                  <View style={[styles.barFill, { height: `${iPercent}%`, backgroundColor: GXB_ORANGE }]} />
                 </View>
+                <Text style={[styles.barLabelBottom, { color: 'rgba(255,255,255,0.5)' }]}>Total Interest</Text>
+              </View>
             </View>
-        </View>
+          </View>
 
-        {/* Timeline Status - Made obvious */}
-        <View style={[styles.statusBadge, { backgroundColor: months > 24 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', borderColor: months > 24 ? GXB_ORANGE : '#10B981', borderWidth: 1 }]}>
-          <Text style={{ fontSize: 15, color: months > 24 ? GXB_ORANGE : '#10B981', fontWeight: '900', textAlign: 'center' }}>
-              {months > 24 ? `⚠️ Slow Progress: Clearing in ${months} months` : `✨ Fast Track: Clearing in ${months} months`}
-          </Text>
-        </View>
-
-        {/* Slider Controls */}
-        <View style={styles.sliderValueContainer}>
-            <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: '700', marginBottom: 4 }}>MONTHLY REPAYMENT AMOUNT</Text>
-            <Text style={[styles.sliderHeroText, { color: GXB_BAR_PURPLE }]}>
-                RM {Math.floor(monthlyPayment).toLocaleString()}<Text style={{fontSize: 16, color: GXB_WHITE}}> / month</Text>
+          {/* Timeframe Progress Tracking Banner */}
+          <View style={[styles.statusBadge, { backgroundColor: months > 24 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', borderColor: months > 24 ? GXB_ORANGE : '#10B981', borderWidth: 1 }]}>
+            <Text style={{ fontSize: 15, color: months > 24 ? GXB_ORANGE : '#10B981', fontWeight: '900', textAlign: 'center', fontFamily: 'sans-serif-rounded' }}>
+              {months > 24 ? `⚠️ Slow Velocity: Clearing in ${months} months` : `✨ Fast Track Vector: Clearing in ${months} months`}
             </Text>
-        </View>
-
-        <Slider
-          style={{ width: '100%', height: 40 }}
-          minimumValue={minPayment}
-          maximumValue={maxPayment}
-          step={10}
-          value={monthlyPayment}
-          onValueChange={(val) => { setMonthlyPayment(val); setHasInteracted(true); }}
-          minimumTrackTintColor={GXB_BAR_PURPLE}
-          maximumTrackTintColor="rgba(255,255,255,0.2)"
-          thumbTintColor={GXB_BAR_PURPLE}
-        />
-
-        {/* Breakdown Section - Moved below slider */}
-        <View style={[styles.breakdownContainer, { backgroundColor: GXB_PURPLE, marginTop: 20 }]}>
-          <Text style={[styles.breakdownTitle, { color: 'rgba(255,255,255,0.5)' }]}>REPAYMENT SPLIT</Text>
-          
-          <View style={styles.breakdownRow}>
-            <View style={styles.breakdownLeft}>
-              <View style={[styles.indicatorDot, { backgroundColor: GXB_BAR_PURPLE }]} />
-              <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Amount Paid</Text>
-            </View>
-            <Text style={[styles.breakdownValue, { color: GXB_BAR_PURPLE }]}>RM {actualPrincipalPortion.toFixed(2)}</Text>
           </View>
 
-          <View style={[styles.breakdownRow, { marginBottom: 0 }]}>
-            <View style={styles.breakdownLeft}>
-              <View style={[styles.indicatorDot, { backgroundColor: GXB_ORANGE }]} />
-              <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Interest Charge</Text>
+          {/* Repayment Dynamic Slider Metric Controller */}
+          <View style={styles.sliderValueContainer}>
+            <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: '800', marginBottom: 6, letterSpacing: 1, fontFamily: 'sans-serif-rounded' }}>MONTHLY REPAYMENT AMOUNT</Text>
+            <Text style={[styles.sliderHeroText, { color: GXB_TEAL }]}>
+              RM {Math.floor(monthlyPayment).toLocaleString()}<Text style={{ fontSize: 16, color: GXB_WHITE }}> / month</Text>
+            </Text>
+          </View>
+
+          <Slider
+            style={{ width: '100%', height: 40 }}
+            minimumValue={minPayment}
+            maximumValue={maxPayment}
+            step={10}
+            value={monthlyPayment}
+            onValueChange={(val) => { setMonthlyPayment(val); setHasInteracted(true); }}
+            minimumTrackTintColor={GXB_TEAL}
+            maximumTrackTintColor="rgba(255,255,255,0.2)"
+            thumbTintColor={GXB_TEAL}
+          />
+
+          {/* Sub-Card Breakdown Details Section */}
+          <View style={[styles.breakdownContainer, { backgroundColor: 'rgba(0,0,0,0.3)', marginTop: 24 }]}>
+            <Text style={[styles.breakdownTitle, { color: 'rgba(255,255,255,0.4)' }]}>REPAYMENT VOLUMETRIC SPLIT</Text>
+
+            <View style={styles.breakdownRow}>
+              <View style={styles.breakdownLeft}>
+                <View style={[styles.indicatorDot, { backgroundColor: GXB_BAR_PURPLE }]} />
+                <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Principal Principal portion</Text>
+              </View>
+              <Text style={[styles.breakdownValue, { color: GXB_WHITE }]}>RM {actualPrincipalPortion.toFixed(2)}</Text>
             </View>
-            <Text style={[styles.breakdownValue, { color: GXB_BAR_PURPLE }]}>RM {actualInterestPortion.toFixed(2)}</Text>
+
+            <View style={[styles.breakdownRow, { marginBottom: 0 }]}>
+              <View style={styles.breakdownLeft}>
+                <View style={[styles.indicatorDot, { backgroundColor: GXB_ORANGE }]} />
+                <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Compounded Interest Share</Text>
+              </View>
+              <Text style={[styles.breakdownValue, { color: GXB_ORANGE }]}>RM {actualInterestPortion.toFixed(2)}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <TouchableOpacity style={[styles.applyButton, { backgroundColor: GXB_BAR_PURPLE }]}>
-          <Text style={[styles.applyButtonText, { color: GXB_WHITE }]}>Review & Apply Now</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        <View style={styles.section}>
+          <TouchableOpacity style={[styles.applyButton, { backgroundColor: GXB_BAR_PURPLE }]}>
+            <Text style={[styles.applyButtonText, { color: GXB_WHITE }]}>Review & Submit Application</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  headerRow: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center' },
-  backButton: { width: 40, height: 40, justifyContent: 'center' },
-  title: { fontSize: 22, fontWeight: '800' },
+  container: {
+    flex: 1
+  },
+  headerRow: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 12
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '800',
+    flex: 1,
+    fontFamily: 'sans-serif-rounded',
+  },
   section: { paddingHorizontal: 16, marginVertical: 8 },
   inputRow: { flexDirection: 'row', gap: 12 },
   inputHalf: { flex: 1 },

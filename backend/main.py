@@ -2,8 +2,7 @@
 # API routes to fetch and read data from db and call AI/ML service
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import pandas as pd
+from pydantic import BaseModel, Field
 
 # Import Database module
 from database import (
@@ -13,20 +12,28 @@ from database import (
     get_user_notifications,
     UserProfileResponse,
     TransactionListResponse,
-    NotificationResponse
+    NotificationResponse,
+    get_user_pockets,
+    create_user_pocket,
+    update_user_pocket,
+    delete_user_pocket,
+    execute_pocket_transfer
 )
-from typing import Dict, List
+from typing import Dict, List, Optional
 from service_module.onboarding_math import calculate_cold_start_budget
 from AI.onboarding_AI import reality_check_budget
 from service_module.daily_limit_calculation import calculate_daily_limit
 from service_module.spending_forecast import allocate_monthly_budget
 from service_module.burn_rate_math import predict_deficit_risk
 from service_module.check_for_anomaly import check_for_anomaly
+from service_module.daily_limit_calculation import calculate_daily_limit
 from AI.salary_router_AI import explain_monthly_allocation
 from AI.risk_predictor_AI import generate_momentum_warning
 from AI.anomaly_detection_AI import generate_anomaly_interception
 from AI.debt_routing_AI import generate_debt_advice
 from AI.tax_exemption_AI import get_tax_category
+from datetime import date
+import pandas as pd
 
 app = FastAPI(title="MoneyKawKaw API", version="1.0.0")
 
@@ -75,9 +82,29 @@ class RebalancingRequest(BaseModel):
     source_category: str
     source_balance: float
 
-class TaxExemptionRequest(BaseModel):
-    transactions: List[Dict] # List of {merchant, amount}
+class Transaction(BaseModel):
+    merchant: str
+    amount: float
+    reference: str | None = None
 
+class TaxExemptionRequest(BaseModel):
+    transactions: List[Transaction]
+
+class CreatePocketRequest(BaseModel):
+    pocket_name: str
+    pocket_type: str # "fixed" | "variable"
+    monthly_limit: Optional[float] = 0.0
+
+class UpdatePocketRequest(BaseModel):
+    pocket_name: Optional[str] = None
+    monthly_limit: Optional[float] = None
+
+class TransferFundsRequest(BaseModel):
+    user_id: str
+    source_pocket_id: str
+    destination_pocket_id: str
+    amount: float
+    
 @app.get("/api/user/{user_id}", response_model=UserProfileResponse)
 async def get_user(user_id: str, db = Depends(get_db)):
     """
@@ -271,10 +298,12 @@ def check_tax_eligibility(req: TaxExemptionRequest):
     # LAYER 3: The AI Tax Expert
     results = []
     for tx in req.transactions:
-        category = get_tax_category(tx["merchant"], tx["amount"])
+        reference = tx.reference
+        category = get_tax_category(tx.merchant, tx.amount, reference)
         results.append({
-            "merchant": tx["merchant"],
-            "amount": tx["amount"],
+            "merchant": tx.merchant,
+            "amount": tx.amount,
+            "reference": reference,
             "tax_category": category,
             "is_tax_claimable": category != "N/A"
         })
@@ -296,3 +325,120 @@ async def health():
 async def get_notifications(user_id: str, db = Depends(get_db)):
     notifications = get_user_notifications(user_id, db=db)
     return notifications
+
+@app.get("/api/users/{user_id}/pockets")
+def list_pockets(user_id: str, db = Depends(get_db)):
+    """Retrieves all pockets tied to a user."""
+    pockets = get_user_pockets(user_id, db=db)
+    return {"pockets": pockets, "count": len(pockets)}
+
+@app.post("/api/users/{user_id}/pockets")
+def add_pocket(user_id: str, req: CreatePocketRequest, db = Depends(get_db)):
+    if req.pocket_type not in ["FIXED", "VARIABLE", "fixed", "variable"]:
+        raise HTTPException(status_code=400, detail="Invalid pocket type validation configuration")
+        
+    new_pocket = create_user_pocket(
+        user_id=user_id,
+        pocket_name=req.pocket_name,
+        pocket_type=req.pocket_type.upper(),
+        monthly_limit=req.monthly_limit,
+        db=db
+    )
+    if not new_pocket:
+        raise HTTPException(status_code=500, detail="Failed to instantiate user pocket architecture asset")
+        
+    return {
+        "status": "success",
+        "pocket_id": new_pocket["pocket_id"],
+        "pocket": {
+            "pocket_id": new_pocket["pocket_id"],
+            "pocket_name": new_pocket["pocket_name"],
+            "pocket_type": new_pocket["pocket_type"],
+            "monthly_limit": req.monthly_limit,
+            "current_balance": float(new_pocket["current_pocket_balance"])
+        }
+    }
+
+@app.put("/api/pockets/{pocket_id}")
+def rename_pocket(pocket_id: str, req: UpdatePocketRequest, db = Depends(get_db)):
+    updated = update_user_pocket(pocket_id=pocket_id, pocket_name=req.pocket_name, db=db)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Target tracking pocket structural entity not found")
+        
+    return {
+        "status": "success",
+        "pocket": {
+            "pocket_id": updated["pocket_id"],
+            "pocket_name": updated["pocket_name"],
+            "pocket_type": updated["pocket_type"],
+            "current_balance": float(updated["current_pocket_balance"])
+        }
+    }
+
+@app.delete("/api/pockets/{pocket_id}")
+def remove_pocket(pocket_id: str, db = Depends(get_db)):
+    # Note: Complex implementations handling balance migration logic can route balances 
+    # to main account before removing record here.
+    success = delete_user_pocket(pocket_id=pocket_id, db=db)
+    if not success:
+        raise HTTPException(status_code=404, detail="Target instance identifier invalid for active records")
+    return {"status": "success", "message": "Pocket deleted"}
+
+@app.post("/api/pocket-transfers")
+def handle_pocket_transfer(req: TransferFundsRequest, db = Depends(get_db)):
+    transfer_id = execute_pocket_transfer(
+        user_id=req.user_id,
+        source_id=req.source_pocket_id,
+        dest_id=req.destination_pocket_id,
+        amount=req.amount,
+        db=db
+    )
+    if not transfer_id:
+        raise HTTPException(status_code=400, detail="Transfer operation rejected. Check asset balance constraints.")
+        
+    return {"status": "success", "transfer_id": transfer_id, "message": "Transfer completed"}
+
+@app.get("/api/users/{user_id}/daily-summary")
+def get_daily_spending_summary(user_id: str, db = Depends(get_db)):
+    """
+    Computes a live, database-driven summary profile, pulling active variables
+    and calculating the remaining dynamic daily allowance.
+    """
+    supabase = db or _get_supabase_client()
+    
+    # 1. Fetch strict user properties
+    user_profile = get_user_profile(user_id, db=db)
+    if not user_profile:
+        raise HTTPException(status_code=404, detail="User account signature invalid")
+        
+    # 2. Extract variable pockets matching active user ID
+    pockets_data = get_user_pockets(user_id, db=db)
+    variable_sum = sum(
+        float(p["current_balance"]) 
+        for p in pockets_data 
+        if p["pocket_type"].upper() == "VARIABLE" and p["pocket_name"] != "Savings"
+    )
+    
+    # 3. Calculate dynamic live limit using the math module
+    # Mocking date to match your system core requirements: May 12, 2026
+    target_date = date(2026, 5, 12)
+    computed_limit = calculate_daily_limit(variable_sum, mock_today=target_date)
+    
+    # 4. Pull accumulated today spends safely
+    spend_res = (
+        supabase.table("daily_total_spends")
+        .select("today_total_spend")
+        .eq("user_id", str(user_id))
+        .eq("date", target_date.isoformat())
+        .execute()
+    )
+    
+    today_spent = float(spend_res.data[0]["today_total_spend"]) if spend_res.data else 0.0
+    
+    return {
+        "username": user_profile["username"],
+        "main_balance": float(user_profile["main_balance"]),
+        "daily_limit": computed_limit,
+        "today_spent": today_spent,
+        "current_streak": int(user_profile.get("streak") or user_profile.get("current_streak") or 0)
+    }

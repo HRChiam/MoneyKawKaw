@@ -1,3 +1,5 @@
 shin_docs/**
 .env
 **/__pycache__/**
+.venv/
+venv/
