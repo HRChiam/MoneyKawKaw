@@ -33,25 +33,41 @@ export default function SummaryScreen() {
     const fetchClaims = async () => {
       try {
         const hardcodedUserId = "de458832-a0c0-45a6-a9b3-471db31a2f7e";
-        const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.16:8000"; // Fallback for Android Emulator
         
-        console.log(`Fetching claims from: ${apiUrl}/api/claims/${hardcodedUserId}`);
+        let apiUrl = process.env.EXPO_PUBLIC_API_URL;
+        if (!apiUrl) {
+          if (typeof window !== 'undefined' && (window as any).location) {
+             apiUrl = "http://localhost:8000";
+          } else {
+             apiUrl = "http://10.0.2.16:8000"; 
+          }
+        }
+        
+        console.log(`[DEBUG] Fetching claims from: ${apiUrl}/api/claims/${hardcodedUserId}`);
         
         const response = await fetch(`${apiUrl}/api/claims/${hardcodedUserId}`);
-        if (!response.ok) throw new Error("Failed to fetch claims");
-        const data = await response.json();
+        console.log(`[DEBUG] Response status: ${response.status}`);
         
-        // Map API data to UI format
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[DEBUG] Fetch failed: ${response.status} ${errorText}`);
+          throw new Error(`Failed to fetch claims: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`[DEBUG] Received data:`, JSON.stringify(data, null, 2));
+        
         const formattedClaims = data.map((c: any) => ({
-          name: c.tax_category || 'Uncategorized',
+          name: c.tax_relief_category || 'Uncategorized',
           amount: c.amount || 0,
           date: new Date(c.receipt_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
           receipt_url: c.receipt_image_url
         }));
         
+        console.log(`[DEBUG] Formatted claims:`, JSON.stringify(formattedClaims, null, 2));
         setTaxExemptions(formattedClaims);
       } catch (error) {
-        console.error("Error fetching claims:", error);
+        console.error("[DEBUG] Error in fetchClaims:", error);
       }
     };
 
@@ -63,7 +79,7 @@ export default function SummaryScreen() {
   const filteredExemptions = useMemo(() => {
     if (taxCategoryFilter === 'All Categories') return taxExemptions;
     return taxExemptions.filter(item => item.name === taxCategoryFilter);
-  }, [taxCategoryFilter]);
+  }, [taxCategoryFilter, taxExemptions]);
 
   const handleGenerateReport = () => {
     setIsGenerating('loading');

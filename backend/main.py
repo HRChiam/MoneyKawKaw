@@ -317,5 +317,7 @@ async def get_notifications(user_id: str, db = Depends(get_db)):
 
 @app.get("/api/claims/{user_id}", response_model=List[ClaimResponse])
 async def get_claims(user_id: str, db = Depends(get_db)):
+    print(f"DEBUG: Received request for claims of user: {user_id}")
     claims = get_user_claims(user_id, db=db)
+    print(f"DEBUG: Returning {len(claims)} claims")
     return claims

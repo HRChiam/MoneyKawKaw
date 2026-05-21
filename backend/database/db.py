@@ -235,30 +235,53 @@ def get_user_notifications(user_id: str, db=None):
         return []
 
 def get_user_claims(user_id: str, db=None):
+    results = []
     try:
         supabase = db or _get_supabase_client()
         response = (
             supabase.table("lhdn_claims")
-            .select("*")
+            .select("*, transactions(amount, tax_relief_category)")
             .eq("user_id", str(user_id))
             .order("receipt_date", desc=True)
             .execute()
         )
-
         claims = response.data or []
-        return [
-            {
+        
+        print(f"DEBUG: Found {len(claims)} raw claim records in DB")
+
+        for c in claims:
+            tx = c.get("transactions")
+            
+            if tx is None:
+                print(f"DEBUG: Claim {c.get('claim_id')} has NO joined transaction data (null)")
+            else:
+                print(f"DEBUG: Claim {c.get('claim_id')} join found: {tx}")
+
+            amount = 0.0
+            category = "Unknown"
+            
+            if isinstance(tx, dict):
+                amount = float(tx.get("amount", 0) or 0)
+                category = tx.get("tax_relief_category") or "Unknown"
+            elif isinstance(tx, list) and len(tx) > 0:
+                # Handle cases where Supabase might return a list for a 1-to-1 join
+                tx_obj = tx[0]
+                amount = float(tx_obj.get("amount", 0) or 0)
+                category = tx_obj.get("tax_relief_category") or "Unknown"
+                print(f"DEBUG: Joined data was a list, using first element.")
+
+            results.append({
                 "claim_id": c.get("claim_id"),
                 "user_id": c.get("user_id"),
                 "transaction_id": c.get("transaction_id"),
                 "receipt_image_url": c.get("receipt_image_url"),
                 "receipt_date": c.get("receipt_date"),
-                "amount": c.get("amount", 0),
-                "tax_category": c.get("tax_category", "Unknown"),
-            }
-            for c in claims
-        ]
+                "amount": amount,
+                "tax_relief_category": category,
+                "tax_category": category,
+            })
 
     except Exception as e:
         print(f"Error fetching claims: {e}")
-        return []
+    
+    return results
