@@ -1,13 +1,13 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Image, Modal } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, Image, Modal } from 'react-native';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function SummaryScreen() {
   const router = useRouter();
@@ -20,35 +20,65 @@ export default function SummaryScreen() {
   const [activePicker, setActivePicker] = useState<'month' | 'year' | null>(null);
   const [taxCategoryFilter, setTaxCategoryFilter] = useState<string>('All Categories');
   const [taxPickerVisible, setTaxPickerVisible] = useState(false);
-  const [isGenerating, setIsGenerating] = useState<'idle' | 'loading' | 'success'>('idle');
   const [activePoint, setActivePoint] = useState<number | null>(null); 
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
-  const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number } | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number; receipt_url?: string } | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
 
-  const taxExemptions = [
-    { name: 'Tech / Lifestyle', amount: 1200, date: '12 May 2026' }, 
-    { name: 'Medical', amount: 150, date: '05 May 2026' }, 
-    { name: 'Education', amount: 200, date: '28 Apr 2026' }
-  ];
+  const [taxExemptions, setTaxExemptions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchClaims = async () => {
+      try {
+        const hardcodedUserId = "de458832-a0c0-45a6-a9b3-471db31a2f7e";
+        
+        let apiUrl = process.env.EXPO_PUBLIC_API_URL;
+        if (!apiUrl) {
+          if (typeof window !== 'undefined' && (window as any).location) {
+             apiUrl = "http://localhost:8000";
+          } else {
+             apiUrl = "http://10.0.2.16:8000"; 
+          }
+        }
+        
+        console.log(`[DEBUG] Fetching claims from: ${apiUrl}/api/claims/${hardcodedUserId}`);
+        
+        const response = await fetch(`${apiUrl}/api/claims/${hardcodedUserId}`);
+        console.log(`[DEBUG] Response status: ${response.status}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[DEBUG] Fetch failed: ${response.status} ${errorText}`);
+          throw new Error(`Failed to fetch claims: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`[DEBUG] Received data:`, JSON.stringify(data, null, 2));
+        
+        const formattedClaims = data.map((c: any) => ({
+          name: c.tax_relief_category || 'Uncategorized',
+          amount: c.amount || 0,
+          date: new Date(c.receipt_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+          receipt_url: c.receipt_image_url
+        }));
+        
+        console.log(`[DEBUG] Formatted claims:`, JSON.stringify(formattedClaims, null, 2));
+        setTaxExemptions(formattedClaims);
+      } catch (error) {
+        console.error("[DEBUG] Error in fetchClaims:", error);
+      }
+    };
+
+    fetchClaims();
+  }, []);
 
   const taxCategories = ['All Categories', 'Tech / Lifestyle', 'Medical', 'Education'];
 
   const filteredExemptions = useMemo(() => {
     if (taxCategoryFilter === 'All Categories') return taxExemptions;
     return taxExemptions.filter(item => item.name === taxCategoryFilter);
-  }, [taxCategoryFilter]);
-
-  const handleGenerateReport = () => {
-    setIsGenerating('loading');
-    // Simulate generation delay
-    setTimeout(() => {
-      setIsGenerating('success');
-      // Reset back to idle after a while
-      setTimeout(() => setIsGenerating('idle'), 2500);
-    }, 2000);
-  };
+  }, [taxCategoryFilter, taxExemptions]);
 
   const monthLabels: Record<string, string> = {
     month: "May 2026 (Current)",
@@ -529,7 +559,7 @@ export default function SummaryScreen() {
 
             <View style={[styles.receiptImageContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Image 
-                source={require('@/assets/images/receipt.png')} 
+                source={viewingReceipt?.receipt_url ? { uri: viewingReceipt.receipt_url } : require('@/assets/images/receipt.png')} 
                 style={styles.receiptImage}
                 resizeMode="contain"
               />
@@ -584,17 +614,11 @@ const styles = StyleSheet.create({
   totalCard: { borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, alignItems: 'center' },
   totalLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   totalAmount: { fontSize: 32, fontWeight: '800' },
-  generateReportBtn: { flexDirection: 'row', paddingVertical: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   taxItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1 },
   taxItemLeft: { flex: 1 },
   taxItemName: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
   taxItemAmount: { fontSize: 14, fontWeight: '700' },
   viewButton: { fontSize: 13, fontWeight: '700' },
-  notiOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 2000 },
-  notiCard: { width: width * 0.8, padding: 32, borderRadius: 32, borderWidth: 1.5, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.4, shadowRadius: 30, elevation: 20 },
-  notiIconWrapper: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  notiText: { fontSize: 20, fontWeight: '900', marginTop: 16, marginBottom: 8, fontFamily: 'sans-serif-rounded' },
-  notiSubText: { fontSize: 14, fontWeight: '500', textAlign: 'center', lineHeight: 20 },
   receiptModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   receiptModalContent: { width: '100%', borderRadius: 32, padding: 24 },
   receiptModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },

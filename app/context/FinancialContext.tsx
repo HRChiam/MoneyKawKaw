@@ -29,6 +29,8 @@ interface FinancialContextType {
   renameUserPocket: (id: string, name: string) => Promise<boolean>;
   deleteUserPocket: (id: string) => Promise<boolean>;
   transferFunds: (sourceId: string, destId: string, amount: number) => Promise<boolean>;
+  updateSalary: (amount: number) => Promise<boolean>;
+  refreshAllData: () => Promise<void>;
 }
 
 const FinancialContext = createContext<FinancialContextType | undefined>(undefined);
@@ -36,35 +38,39 @@ const FinancialContext = createContext<FinancialContextType | undefined>(undefin
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000';
 export const MOCK_USER_ID = 'de458832-a0c0-45a6-a9b3-471db31a2f7e';
 
-const defaultExpenses = {
-  'Loan': 1000,
-  'F&B': 800,
-  'Transport': 400,
-  'Groceries': 800,
-  'Entertainment': 800,
-};
-
-const fixedPocketNames = ['Saving', 'Loan', 'Insurance'];
-
 const pocketColors: Record<string, string> = {
   'Loan': '#FBBF24',
   'F&B': '#FB7185',
+  'Food': '#FB7185',
+  'Drinks': '#60A5FA',
   'Transport': '#60A5FA',
   'Groceries': '#34D399',
   'Entertainment': '#F472B6',
+  'Savings': '#15fabd',
   'Saving': '#15fabd',
   'Insurance': '#3b82f6',
+  'Rental/House Loan': '#A78BFA',
+  'PTPTN': '#F87171',
+  'Car Loan': '#34D399',
+  'Shopping': '#F472B6',
   'Other': '#94A3B8',
 };
 
 const pocketIcons: Record<string, string> = {
   'Loan': 'bank-outline',
   'F&B': 'food-fork-drink',
+  'Food': 'food-fork-drink',
+  'Drinks': 'coffee-outline',
   'Transport': 'car-side',
   'Groceries': 'cart-outline',
   'Entertainment': 'controller-classic-outline',
+  'Savings': 'safe',
   'Saving': 'safe',
   'Insurance': 'shield-check-outline',
+  'Rental/House Loan': 'home-outline',
+  'PTPTN': 'school-outline',
+  'Car Loan': 'car-outline',
+  'Shopping': 'shopping-outline',
   'Other': 'folder-outline',
 };
 
@@ -81,7 +87,7 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
   
   const refreshUserProfile = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/users/${MOCK_USER_ID}/daily-summary`);
+      const res = await fetch(`${API_BASE_URL}/api/user/${MOCK_USER_ID}`);
       if (res.ok) {
         const data = await res.json();
         setUsername(data.username || 'Xuan Wei');
@@ -89,6 +95,15 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
         setDailyLimit(data.daily_limit || 250.00);
         setTodaySpent(data.today_spent || 50.00);
         setStreak(data.current_streak || 0);
+        setIncome(data.monthly_income || 0);
+        
+        // Also fetch daily summary for limit and spent
+        const summaryRes = await fetch(`${API_BASE_URL}/api/users/${MOCK_USER_ID}/daily-summary`);
+        if (summaryRes.ok) {
+          const summaryData = await summaryRes.json();
+          setDailyLimit(summaryData.daily_limit || 250.00);
+          setTodaySpent(summaryData.today_spent || 50.50);
+        }
       }
     } catch (e) {
       console.error("Error fetching daily status metadata payload:", e);
@@ -207,6 +222,21 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
     return false;
   };
 
+  const updateSalary = async (amount: number) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/user/${MOCK_USER_ID}/salary`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ monthly_income: amount })
+      });
+      if (res.ok) {
+        await refreshUserProfile();
+        return true;
+      }
+    } catch (e) { console.error("Error updating salary state payload:", e); }
+    return false;
+  };
+
   const refreshAllData = async () => {
     setLoading(true);
     // Fires fetch operations sequentially
@@ -239,7 +269,9 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
       addNewPocket,
       renameUserPocket,
       deleteUserPocket,
-      transferFunds
+      transferFunds,
+      updateSalary,
+      refreshAllData
     }}>
       {children}
     </FinancialContext.Provider>

@@ -1,9 +1,12 @@
 import pandas as pd
 from AI.tax_exemption_AI import get_tax_category, TAX_KNOWLEDGE_BASE
 
+# actually not used in API route calling
 def tag_tax_exemptions_llm(df_transactions):
     """
     Scans a dataframe of transactions and classifies tax eligibility using the AI module.
+    
+    Expected columns: 'merchant', 'amount', and optionally 'reference'
     """
     df_transactions['tax_category'] = 'N/A'
     df_transactions['is_tax_claimable'] = False
@@ -12,9 +15,16 @@ def tag_tax_exemptions_llm(df_transactions):
     
     print("🤖 GX AI Tax Expert scanning transactions...")
     for index, row in df_transactions.iterrows():
-        print(f"  -> Analyzing: {row['merchant']} (RM{row['amount']})")
+        merchant = row['merchant']
+        amount = row['amount']
+        reference = row.get('reference', None) if 'reference' in df_transactions.columns else None
         
-        clean_result = get_tax_category(row['merchant'], row['amount'])
+        if reference:
+            print(f"  -> Analyzing: {merchant} (RM{amount}) | Reference: {reference}")
+        else:
+            print(f"  -> Analyzing: {merchant} (RM{amount})")
+        
+        clean_result = get_tax_category(merchant, amount, reference)
         
         if clean_result in valid_categories:
             df_transactions.at[index, 'tax_category'] = clean_result
@@ -28,17 +38,18 @@ def tag_tax_exemptions_llm(df_transactions):
 # ==========================================
 # 🚀 TEST BLOCK
 # ==========================================
-# if __name__ == "__main__":
-#     data = {
-#         'date': ['2026-05-01'],
-#         'merchant': [
-#             'Bicycle',             
-#         ],
-#         'amount': [150.00]
-#     }
-#     df_mock = pd.DataFrame(data)
+if __name__ == "__main__":
+    data = {
+        'date': ['2026-05-01'],
+        'merchant': [
+            'Apple'
+        ],
+        'amount': [150.00],
+        'reference': ['laptop']
+    }
+    df_mock = pd.DataFrame(data)
 
-#     df_tagged = tag_tax_exemptions_llm(df_mock)
+    df_tagged = tag_tax_exemptions_llm(df_mock)
     
-#     print("\n--- Final AI Tax Categorizer Results ---")
-#     print(df_tagged[['merchant', 'is_tax_claimable', 'tax_category']])
+    print("\n--- Final AI Tax Categorizer Results ---")
+    print(df_tagged[['merchant', 'reference', 'is_tax_claimable', 'tax_category']])

@@ -45,7 +45,7 @@ def allocate_monthly_budget(user_income, savings_mode, target_month, fixed_expen
                      'month_of_year', 'pocket_age_days', 'previous_allocated_limit'])
         
         # Predict!
-        predicted_spend = forecaster_model.predict(input_data)[0]
+        predicted_spend = float(forecaster_model.predict(input_data)[0])
         raw_predictions[pocket['pocket_id']] = predicted_spend
         total_predicted += predicted_spend
 

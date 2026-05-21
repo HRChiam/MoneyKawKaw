@@ -24,24 +24,24 @@ def calculate_cold_start_budget(monthly_income: float, fixed_expenses: dict, sav
     templates = {
         "Aggressive": { # High savings focus
             "Savings": 0.50,
-            "Food": 0.25,
+            "Food": 0.20,
+            "Drinks": 0.10,
             "Transport": 0.10,
-            "Entertainment": 0.05,
-            "Shopping": 0.10
+            "Entertainment": 0.10
         },
         "Balanced": { # Balanced approach
             "Savings": 0.40,
-            "Food": 0.30,
+            "Food": 0.25,
+            "Drinks": 0.10,
             "Transport": 0.10,
-            "Entertainment": 0.10,
-            "Shopping": 0.10
+            "Entertainment": 0.15
         },
         "Conservative": { # Moderate savings focus
             "Savings": 0.30,
-            "Food": 0.35,
+            "Food": 0.30,
+            "Drinks": 0.15,
             "Transport": 0.15,
-            "Entertainment": 0.10,
-            "Shopping": 0.10
+            "Entertainment": 0.10
         }
     }
     
