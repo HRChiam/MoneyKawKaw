@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
@@ -13,7 +13,14 @@ export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { pockets } = useFinancial();
+  const {
+    pockets,
+    username,
+    mainBalance,
+    dailyLimit,
+    todaySpent,
+    loading
+  } = useFinancial();
   const { streak } = useRewards();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
 
@@ -21,8 +28,8 @@ export default function HomeScreen() {
   const mainAccountBalance = 0.00; 
   const pocketsTotal = pockets.reduce((s, p) => s + p.balance, 0);
   
-  const spent = 20.50; // Current mock spent
-  const limit = 90;
+  const spent = todaySpent; // Current mock spent
+  const limit = dailyLimit > 0 ? dailyLimit : 1.0;
   const spendingProgress = spent / limit;
 
   // Traffic light logic with GX-inspired sophisticated shades
@@ -60,7 +67,14 @@ export default function HomeScreen() {
     if (hour < 18) return "Good afternoon";
     return "Good evening";
   };
-  
+
+  if (loading && pockets.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#771FFF" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView 
@@ -84,9 +98,13 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <View style={{ marginBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Text style={[styles.greetingSub, { color: colors.secondary, fontFamily: 'sans-serif-rounded', marginBottom: 0, fontSize: 18, fontWeight: '500' }]}>{getGreeting()},</Text>
-        <Text style={[styles.greeting, { color: colors.text, fontFamily: 'sans-serif-rounded', fontSize: 18, fontWeight: '800' }]}>Xuan Wei</Text>
+      <View style={{ marginBottom: 18, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+        <Text style={{ color: colors.secondary, fontFamily: 'sans-serif-rounded', fontSize: 20, fontWeight: '500' }}>
+          {getGreeting()},
+        </Text>
+        <Text style={{ color: colors.text, fontFamily: 'sans-serif-rounded', fontSize: 20, fontWeight: '800' }}>
+          {username}
+        </Text>
       </View>
 
       {/* Daily Spending Widget - High Impact Dark Redesign */}
@@ -115,17 +133,17 @@ export default function HomeScreen() {
 
           <View style={styles.amountDisplay}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={[styles.currencySymbol, { color: colors.text, fontSize: 20, width: 40 }]}>RM</Text>
-              <Text style={[styles.mainSpentAmount, { color: colors.text, fontSize: 36, marginLeft: 0 }]}>
+              <Text style={[styles.currencySymbol, { color: colors.text, fontSize: 22, fontWeight: '800' }]}>RM </Text>
+              <Text style={[styles.mainSpentAmount, { color: colors.text, fontSize: 38, fontWeight: '900' }]}>
                 {formatBalance(spent)}
               </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: -4 }}>
-              <Text style={[styles.currencySymbol, { color: colors.secondary, fontSize: 14, width: 40 }]}>RM</Text>
-              <Text style={[styles.limitTotal, { color: colors.secondary, fontSize: 14 }]}>
-                {formatBalance(limit)} <Text style={{ fontSize: 12, opacity: 0.8 }}>(Daily Limit)</Text>
+              <Text style={{ color: colors.secondary, fontSize: 18, fontWeight: '600' }}>
+                {" "}∕ RM {formatBalance(limit)}
               </Text>
             </View>
+            <Text style={{ color: colors.secondary, fontSize: 12, marginTop: 4, fontFamily: 'sans-serif-rounded', fontWeight: '500' }}>
+              Used today out of your optimized allowance limit
+            </Text>
           </View>
 
           <View style={[styles.spendingBarContainer, { backgroundColor: 'rgba(255,255,255,0.05)', height: 8 }]}>
@@ -173,20 +191,16 @@ export default function HomeScreen() {
       {/* Accounts Summary Cards (Side by Side) */}
       <View style={styles.accountsContainer}>
         {/* Main Account (Left) */}
-        <TouchableOpacity
-          style={[styles.mainAccountCard, { backgroundColor: colors.primary }]}
-          activeOpacity={0.9}
-        >
+        <TouchableOpacity style={[styles.mainAccountCard, { backgroundColor: colors.primary }]} activeOpacity={0.9}>
           <View style={styles.cardTopRow}>
             <Text style={styles.cardLabelWhite}>Main Account</Text>
             <Ionicons name="wallet-outline" size={20} color="rgba(255,255,255,0.8)" />
           </View>
-          {/* Use numberOfLines={1} to force a single line, and adjustsFontSizeToFit to shrink if too long */}
           <Text style={styles.cardAmountWhite} numberOfLines={1} adjustsFontSizeToFit>
             <Text style={styles.currencyPrefixWhite}>RM </Text>
-            {formatBalance(formatCurrency(mainAccountBalance))}
+            {formatBalance((mainBalance ?? mainAccountBalance))}
           </Text>
-          <Text style={styles.cardSubTextWhite}>Available</Text>
+          <Text style={styles.cardSubTextWhite}>Available Balance</Text>
         </TouchableOpacity>
 
         {/* Pockets Overview (Right) */}

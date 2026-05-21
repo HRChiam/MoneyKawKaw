@@ -10,6 +10,11 @@ export interface Pocket {
 }
 
 interface FinancialContextType {
+  username: string;
+  mainBalance: number;
+  dailyLimit: number;
+  todaySpent: number;
+  refreshUserProfile: () => Promise<void>;
   income: number;
   setIncome: (val: number) => void;
   expenses: Record<string, number>;
@@ -63,10 +68,29 @@ const pocketIcons: Record<string, string> = {
 };
 
 export const FinancialProvider = ({ children }: { children: ReactNode }) => {
+  const [username, setUsername] = useState('User');
+  const [mainBalance, setMainBalance] = useState(0.00);
+  const [dailyLimit, setDailyLimit] = useState(100.00);
+  const [todaySpent, setTodaySpent] = useState(0.00);
   const [income, setIncome] = useState(5000);
   const [expenses, setExpenses] = useState<Record<string, number>>({});
   const [pockets, setPockets] = useState<Pocket[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const refreshUserProfile = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/${MOCK_USER_ID}/daily-summary`);
+      if (res.ok) {
+        const data = await res.json();
+        setUsername(data.username || 'Xuan Wei');
+        setMainBalance(data.main_balance || 0.0);
+        setDailyLimit(data.daily_limit || 250.00);
+        setTodaySpent(data.today_spent || 50.50);
+      }
+    } catch (e) {
+      console.error("Error fetching daily status metadata payload:", e);
+    }
+  };
 
   // GET: Fetch context payload
   const refreshPockets = async () => {
@@ -180,8 +204,25 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
     return false;
   };
 
+  const refreshAllData = async () => {
+    setLoading(true);
+    // Fires fetch operations sequentially
+    await refreshPockets();
+    await refreshUserProfile();
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    refreshAllData();
+  }, []);
+
   return (
     <FinancialContext.Provider value={{
+      username,
+      mainBalance,
+      dailyLimit,
+      todaySpent,
+      refreshUserProfile,
       income,
       setIncome,
       expenses,

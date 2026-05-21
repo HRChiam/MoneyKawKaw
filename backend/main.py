@@ -3,8 +3,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional
-import pandas as pd
 
 # Import Database module
 from database import (
@@ -21,18 +19,21 @@ from database import (
     delete_user_pocket,
     execute_pocket_transfer
 )
-from typing import Dict, List
+from typing import Dict, List, Optional
 from service_module.onboarding_math import calculate_cold_start_budget
 from AI.onboarding_AI import reality_check_budget
 from service_module.daily_limit_calculation import calculate_daily_limit
 from service_module.spending_forecast import allocate_monthly_budget
 from service_module.burn_rate_math import predict_deficit_risk
 from service_module.check_for_anomaly import check_for_anomaly
+from service_module.daily_limit_calculation import calculate_daily_limit
 from AI.salary_router_AI import explain_monthly_allocation
 from AI.risk_predictor_AI import generate_momentum_warning
 from AI.anomaly_detection_AI import generate_anomaly_interception
 from AI.debt_routing_AI import generate_debt_advice
 from AI.tax_exemption_AI import get_tax_category
+from datetime import date
+import pandas as pd
 
 app = FastAPI(title="MoneyKawKaw API", version="1.0.0")
 
@@ -396,3 +397,48 @@ def handle_pocket_transfer(req: TransferFundsRequest, db = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Transfer operation rejected. Check asset balance constraints.")
         
     return {"status": "success", "transfer_id": transfer_id, "message": "Transfer completed"}
+
+@app.get("/api/users/{user_id}/daily-summary")
+def get_daily_spending_summary(user_id: str, db = Depends(get_db)):
+    """
+    Computes a live, database-driven summary profile, pulling active variables
+    and calculating the remaining dynamic daily allowance.
+    """
+    supabase = db or _get_supabase_client()
+    
+    # 1. Fetch strict user properties
+    user_profile = get_user_profile(user_id, db=db)
+    if not user_profile:
+        raise HTTPException(status_code=404, detail="User account signature invalid")
+        
+    # 2. Extract variable pockets matching active user ID
+    pockets_data = get_user_pockets(user_id, db=db)
+    variable_sum = sum(
+        float(p["current_balance"]) 
+        for p in pockets_data 
+        if p["pocket_type"].upper() == "VARIABLE" and p["pocket_name"] != "Savings"
+    )
+    
+    # 3. Calculate dynamic live limit using the math module
+    # Mocking date to match your system core requirements: May 12, 2026
+    target_date = date(2026, 5, 12)
+    computed_limit = calculate_daily_limit(variable_sum, mock_today=target_date)
+    
+    # 4. Pull accumulated today spends safely
+    spend_res = (
+        supabase.table("daily_total_spends")
+        .select("today_total_spend")
+        .eq("user_id", str(user_id))
+        .eq("date", target_date.isoformat())
+        .execute()
+    )
+    
+    today_spent = float(spend_res.data[0]["today_total_spend"]) if spend_res.data else 0.0
+    
+    return {
+        "username": user_profile["username"],
+        "main_balance": float(user_profile["main_balance"]),
+        "daily_limit": computed_limit,
+        "today_spent": today_spent,
+        "current_streak": int(user_profile.get("current_streak") or 0)
+    }
