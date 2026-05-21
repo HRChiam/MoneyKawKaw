@@ -38,7 +38,7 @@ from AI.risk_predictor_AI import generate_momentum_warning
 from AI.anomaly_detection_AI import generate_anomaly_interception
 from AI.debt_routing_AI import generate_debt_advice
 from AI.tax_exemption_AI import get_tax_category
-from datetime import date
+from datetime import date, datetime
 import pandas as pd
 
 app = FastAPI(title="MoneyKawKaw API", version="1.0.0")
@@ -117,6 +117,12 @@ class TransferFundsRequest(BaseModel):
     destination_pocket_id: str
     amount: float
     
+@app.get("/api/debug/user/{user_id}")
+async def debug_user(user_id: str, db = Depends(get_db)):
+    supabase = db or _get_supabase_client()
+    res = supabase.table("users").select("*").eq("user_id", str(user_id)).execute()
+    return res.data[0] if res.data else {"error": "User not found"}
+
 @app.get("/api/user/{user_id}", response_model=UserProfileResponse)
 async def get_user(user_id: str, db = Depends(get_db)):
     """
@@ -162,7 +168,7 @@ async def get_transaction_history(user_id: str, limit: int = Query(30, ge=1, le=
     
 @app.post("/api/onboarding")
 def process_onboarding(req: OnboardingRequest, db = Depends(get_db)):
-    print(f"DEBUG: Onboarding request received: {req.dict()}")
+    print(f"DEBUG: ONBOARDING DATA RECEIVED -> income: {req.monthly_income}, mode: {req.savings_mode}, expenses: {req.fixed_expenses}")
     # 0. Update User Profile in Database
     db_update_success = update_user_onboarding_data(
         req.user_id,
@@ -214,7 +220,8 @@ def process_onboarding(req: OnboardingRequest, db = Depends(get_db)):
 
     # 4. Calculate Initial Daily Limit (Spendable balance = All variable pockets except Savings)
     spendable_balance = sum(v for k, v in final_pockets.items() if k != "Savings")
-    initial_daily_limit = calculate_daily_limit(spendable_balance)
+    today = datetime.now()
+    initial_daily_limit = calculate_daily_limit(spendable_balance, mock_today=today, onboarding_date=today)
 
     # 5. Initialize Pockets in Database
     pocket_init_success = initialize_user_pockets(
@@ -448,20 +455,31 @@ def get_daily_spending_summary(user_id: str, db = Depends(get_db)):
     variable_sum = sum(
         float(p["current_balance"]) 
         for p in pockets_data 
-        if p["pocket_type"].upper() == "VARIABLE" and p["pocket_name"] != "Savings"
+        if p["pocket_type"].upper() == "VARIABLE"
     )
     
     # 3. Calculate dynamic live limit using the math module
-    # Mocking date to match your system core requirements: May 12, 2026
-    target_date = date(2026, 5, 12)
-    computed_limit = calculate_daily_limit(variable_sum, mock_today=target_date)
+    # We use the user's account creation date as the onboarding reference point
+    created_at_str = user_profile.get("created_at")
+    onboarding_date = None
+    if created_at_str:
+        # Created at is typically "2026-05-21T08:24:45.123+00:00"
+        onboarding_date = pd.to_datetime(created_at_str)
+
+    # For the hackathon, we keep today's "real" time as the reference
+    today = datetime.now()
+    computed_limit = calculate_daily_limit(
+        variable_sum, 
+        mock_today=today, 
+        onboarding_date=onboarding_date
+    )
     
     # 4. Pull accumulated today spends safely
     spend_res = (
         supabase.table("daily_total_spends")
         .select("today_total_spend")
         .eq("user_id", str(user_id))
-        .eq("date", target_date.isoformat())
+        .eq("date", today.date().isoformat())
         .execute()
     )
     
