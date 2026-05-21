@@ -87,7 +87,7 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
         setUsername(data.username || 'Xuan Wei');
         setMainBalance(data.main_balance || 0.0);
         setDailyLimit(data.daily_limit || 250.00);
-        setTodaySpent(data.today_spent || 50.50);
+        setTodaySpent(data.today_spent || 50.00);
         setStreak(data.current_streak || 0);
       }
     } catch (e) {
