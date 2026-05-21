@@ -21,9 +21,14 @@ TAX_KNOWLEDGE_BASE = [
     { "category": "Food Waste Composting Machine", "keywords": "domestic food waste composting machine" }
 ]
 
-def get_tax_category(merchant_name, amount):
+def get_tax_category(merchant_name, amount, reference=None):
     """
     Classifies a transaction into a Malaysian LHDN tax relief category.
+    
+    Args:
+        merchant_name (str): The name of the merchant
+        amount (float): The transaction amount
+        reference (str, optional): User-provided reference/note (e.g., "lunch", "for baby", "sports equipment")
     """
     template = """
     You are a Malaysian LHDN Tax Expert AI. 
@@ -32,12 +37,15 @@ def get_tax_category(merchant_name, amount):
 
     Merchant Name: {merchant_name}
     Transaction Amount: RM{amount}
+    User Reference/Note: {reference}
 
     RULES:
-    1. If the merchant strongly matches a category, reply ONLY with that Category Name.
-    2. If it does not match (e.g., normal food, clothes, groceries), reply ONLY with: N/A
-    3. Do not guess. If in doubt, output N/A.
-    4. Output nothing else.
+    1. Consider BOTH merchant name AND user reference when determining category.
+    2. User reference is a helpful hint - use it to clarify ambiguous merchants.
+    3. If either merchant name OR reference strongly matches a category, and it makes sense, use that category.
+    4. If it does not match (e.g., normal food, clothes, groceries), reply ONLY with: N/A
+    5. Do not guess. If in doubt, output N/A.
+    6. Reply ONLY with the Category Name or N/A. Output nothing else.
     """
     
     kb_string = "\n".join([f"- {item['category']}: {item['keywords']}" for item in TAX_KNOWLEDGE_BASE])
@@ -49,6 +57,7 @@ def get_tax_category(merchant_name, amount):
         response = chain.invoke({
             "merchant_name": merchant_name,
             "amount": amount,
+            "reference": reference if reference else "None provided",
             "knowledge_base": kb_string
         })
         return response.content.strip()
