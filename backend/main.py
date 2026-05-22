@@ -302,28 +302,28 @@ def check_risk(req: RiskPredictorRequest):
         "ai_warning": ai_warning
     }
 
-@app.post("/api/check-anomaly")
-def check_transaction_anomaly(req: AnomalyCheckRequest):
-    # 1. LAYER 1: The Math Engine (Outlier Detection)
-    is_anomaly = check_for_anomaly(
-        req.amount,
-        req.monthly_income,
-        req.avg_category_spend
-    )
+# @app.post("/api/check-anomaly")
+# def check_transaction_anomaly(req: AnomalyCheckRequest):
+#     # 1. LAYER 1: The Math Engine (Outlier Detection)
+#     is_anomaly = check_for_anomaly(
+#         req.amount,
+#         req.monthly_income,
+#         req.avg_category_spend
+#     )
 
-    # 2. LAYER 3: The AI Interception Message (Only if anomaly)
-    ai_interception = None
-    if is_anomaly:
-        ai_interception = generate_anomaly_interception(
-            req.amount,
-            req.merchant
-        )
+#     # 2. LAYER 3: The AI Interception Message (Only if anomaly)
+#     ai_interception = None
+#     if is_anomaly:
+#         ai_interception = generate_anomaly_interception(
+#             req.amount,
+#             req.merchant
+#         )
 
-    return {
-        "status": "success",
-        "is_anomaly": is_anomaly,
-        "ai_interception": ai_interception
-    }
+#     return {
+#         "status": "success",
+#         "is_anomaly": is_anomaly,
+#         "ai_interception": ai_interception
+#     }
 
 @app.post("/api/transaction", response_model=TransactionResponse)
 def create_transaction(req: RecordTransactionRequest, background_tasks: BackgroundTasks, db = Depends(get_db)):
@@ -408,14 +408,14 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
         )
         
         # Task 2: Tax Relief Detection
-        # background_tasks.add_task(
-        #     run_tax_relief_detection,
-        #     transaction_id=transaction_id,
-        #     user_id=req.user_id,
-        #     counterparty_name=req.counterparty_name,
-        #     amount=req.amount,
-        #     reference=req.reference
-        # )
+        background_tasks.add_task(
+            run_tax_relief_detection,
+            transaction_id=transaction_id,
+            user_id=req.user_id,
+            counterparty_name=req.counterparty_name,
+            amount=req.amount,
+            reference=req.reference
+        )
         
         return response
         
@@ -468,41 +468,60 @@ def run_anomaly_detection(transaction_id: str, user_id: str, amount: float,
         print(f"Error in anomaly detection for transaction {transaction_id}: {e}")
 
 
-# def run_tax_relief_detection(transaction_id: str, user_id: str, counterparty_name: str, 
-#                             amount: float, reference: str | None):
-#     """
-#     Background task: Run tax relief detection on transaction
+def run_tax_relief_detection(transaction_id: str, user_id: str, counterparty_name: str, 
+                            amount: float, reference: str | None):
+    """
+    Background task: Run tax relief detection on transaction
     
-#     This runs asynchronously after transaction is saved to DB.
-#     Creates notification if tax relief is detected.
-#     """
-#     try:
-#         print(f"DEBUG: Starting tax relief detection for transaction {transaction_id}")
+    This runs asynchronously after transaction is saved to DB.
+    Updates transaction with tax relief info and creates notification if detected.
+    Same logic as /api/check-tax endpoint.
+    """
+    try:
+        print(f"DEBUG: Starting tax relief detection for transaction {transaction_id}")
         
-#         # LAYER 3: AI Tax Relief Detection
-#         try:
-#             tax_category = get_tax_category(
-#                 counterparty_name,
-#                 amount,
-#                 reference
-#             )
-#             tax_detected = tax_category and tax_category != "N/A"
-#             if tax_detected:
-#                 # Create notification in DB
-#                 create_notification(
-#                     user_id=user_id,
-#                     title="Tax Relief Available",
-#                     message=f"Your transaction qualifies for tax relief: {tax_category}",
-#                     notification_type="tax_relief_available"
-#                 )
-#                 print(f"DEBUG: Tax relief detected for transaction {transaction_id}: {tax_category}")
-#             else:
-#                 print(f"DEBUG: No tax relief eligible for transaction {transaction_id}")
-#         except Exception as e:
-#             print(f"Warning: Tax check failed for transaction {transaction_id}: {e}")
+        # LAYER 3: AI Tax Relief Detection
+        try:
+            tax_category = get_tax_category(
+                counterparty_name,
+                amount,
+                reference
+            )
+            is_claimable = tax_category != "N/A"
+            
+            # Update transaction record with tax information (same as /api/check-tax)
+            if is_claimable:
+                from database import get_db as get_db_client
+                # Create fresh db connection for background task
+                db = next(get_db_client())
+                supabase = db
+                
+                try:
+                    supabase.table("transactions") \
+                        .update({
+                            "is_tax_relief_detected": True,
+                            "tax_relief_category": tax_category
+                        }) \
+                        .eq("transaction_id", transaction_id) \
+                        .execute()
+                    
+                    # Create notification in DB
+                    create_notification(
+                        user_id=user_id,
+                        title="Tax Relief Available",
+                        message=f"Your transaction qualifies for tax relief: {tax_category}",
+                        notification_type="tax_relief_available"
+                    )
+                    print(f"DEBUG: Tax relief detected for transaction {transaction_id}: {tax_category}")
+                except Exception as db_err:
+                    print(f"Error updating database for transaction {transaction_id}: {db_err}")
+            else:
+                print(f"DEBUG: No tax relief eligible for transaction {transaction_id}")
+        except Exception as e:
+            print(f"Warning: Tax check failed for transaction {transaction_id}: {e}")
         
-#     except Exception as e:
-#         print(f"Error in tax relief detection for transaction {transaction_id}: {e}")
+    except Exception as e:
+        print(f"Error in tax relief detection for transaction {transaction_id}: {e}")
 
 
 
@@ -519,40 +538,40 @@ def get_debt_routing_advice(req: DebtRoutingRequest):
         "ai_advice": ai_advice
     }
 
-@app.post("/api/check-tax")
-def check_tax_eligibility(req: TaxExemptionRequest, db = Depends(get_db)):
-    supabase = db
-    results = []
+# @app.post("/api/check-tax")
+# def check_tax_eligibility(req: TaxExemptionRequest, db = Depends(get_db)):
+#     supabase = db
+#     results = []
     
-    for tx in req.transactions:
-        reference = tx.reference
-        category = get_tax_category(tx.merchant, tx.amount, reference)
-        is_claimable = category != "N/A"
+#     for tx in req.transactions:
+#         reference = tx.reference
+#         category = get_tax_category(tx.merchant, tx.amount, reference)
+#         is_claimable = category != "N/A"
         
-        if is_claimable:
-            try:
-                supabase.table("transactions") \
-                    .update({
-                        "is_tax_relief_detected": True,
-                        "tax_relief_category": category
-                    }) \
-                    .eq("reference", reference) \
-                    .execute()
-            except Exception as e:
-                print(f"Error updating database for reference {reference}: {e}")
+#         if is_claimable:
+#             try:
+#                 supabase.table("transactions") \
+#                     .update({
+#                         "is_tax_relief_detected": True,
+#                         "tax_relief_category": category
+#                     }) \
+#                     .eq("reference", reference) \
+#                     .execute()
+#             except Exception as e:
+#                 print(f"Error updating database for reference {reference}: {e}")
 
-        results.append({
-            "merchant": tx.merchant,
-            "amount": tx.amount,
-            "reference": reference,
-            "tax_category": category,
-            "is_tax_claimable": is_claimable
-        })
+#         results.append({
+#             "merchant": tx.merchant,
+#             "amount": tx.amount,
+#             "reference": reference,
+#             "tax_category": category,
+#             "is_tax_claimable": is_claimable
+#         })
 
-    return {
-        "status": "success",
-        "results": results
-    }
+#     return {
+#         "status": "success",
+#         "results": results
+#     }
 
 
 
