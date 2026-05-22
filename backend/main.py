@@ -114,6 +114,7 @@ class RecordTransactionRequest(BaseModel):
     transaction_type: str  # e.g., "expense", "income", "transfer"
     counterparty_name: str  # merchant/vendor name
     reference: str | None = None
+    confirm_anomaly: bool = False
 
 class CreatePocketRequest(BaseModel):
     pocket_name: str
@@ -325,7 +326,7 @@ def check_risk(req: RiskPredictorRequest):
 #         "ai_interception": ai_interception
 #     }
 
-@app.post("/api/transaction", response_model=TransactionResponse)
+@app.post("/api/transaction")
 def create_transaction(req: RecordTransactionRequest, background_tasks: BackgroundTasks, db = Depends(get_db)):
     """
     Record a transaction (Requires AI feature: Anomaly detection & Tax relief detection)
@@ -339,8 +340,28 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
     runs asynchronously without blocking app operations.
     """
     try:
-        # xw
-        # Deduct or Add to pocket balance FIRST (Validation)
+        # 1. Validate user exists
+        user_profile = get_user_profile(req.user_id, db=db)
+        if not user_profile:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # 2. Check for anomalies before any write unless the user has already confirmed.
+        if not req.confirm_anomaly:
+            avg_category_spend = 50.0  # TODO: Calculate from user's transaction history
+            is_anomaly = check_for_anomaly(
+                req.amount,
+                user_profile["monthly_income"],
+                avg_category_spend,
+            )
+
+            if is_anomaly:
+                message = (
+                    f"We paused this transaction because we know your account balance. "
+                    "You so broke, you sure you wanna proceed ah?"
+                )
+                raise HTTPException(status_code=409, detail=message)
+
+        # 3. Deduct or Add to pocket balance FIRST (Validation)
         balance_updated = False
         if req.transaction_type.upper() == 'EXPENSE':
             balance_updated = deduct_from_pocket(
@@ -356,13 +377,8 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
                 amount=req.amount,
                 db=db
             )
-
-        # 1. Validate user exists
-        user_profile = get_user_profile(req.user_id, db=db)
-        if not user_profile:
-            raise HTTPException(status_code=404, detail="User not found")
         
-        # 2. IMMEDIATE: Save transaction to database (blocking, returns to app)
+        # 4. IMMEDIATE: Save transaction to database (blocking, returns to app)
         transaction_id = save_transaction(
             user_id=req.user_id,
             pocket_id=req.pocket_id,
@@ -378,7 +394,7 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
         if not transaction_id:
             raise HTTPException(status_code=500, detail="Failed to save transaction to database")
         
-        # 3. Return immediate response to app (transaction recorded)
+        # 5. Return immediate response to app (transaction recorded)
         response = {
             "transaction_id": transaction_id,
             "amount": req.amount,
@@ -396,18 +412,7 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
         
         print(f"DEBUG: Transaction recorded - ID: {transaction_id}")
         
-        # 4. BACKGROUND (fire-and-forget): Run two separate AI tasks asynchronously
-        # Task 1: Anomaly Detection
-        background_tasks.add_task(
-            run_anomaly_detection,
-            transaction_id=transaction_id,
-            user_id=req.user_id,
-            amount=req.amount,
-            counterparty_name=req.counterparty_name,
-            monthly_income=user_profile["monthly_income"]
-        )
-        
-        # Task 2: Tax Relief Detection
+        # 6. BACKGROUND (fire-and-forget): Run tax relief detection asynchronously
         background_tasks.add_task(
             run_tax_relief_detection,
             transaction_id=transaction_id,
@@ -449,18 +454,18 @@ def run_anomaly_detection(transaction_id: str, user_id: str, amount: float,
         
         # LAYER 3: AI Interception (Only if anomaly detected)
         if is_anomaly:
-            ai_interception = generate_anomaly_interception(
-                amount,
-                counterparty_name
+            message = (
+                f"Attempted charge of RM{amount:.2f} at {counterparty_name}. "
+                "We paused this transaction because we know your account balance. "
+                "You so broke, you sure you wanna proceed ah?"
             )
-            # Create notification in DB
-            create_notification(
-                user_id=user_id,
-                title="Unusual Spending Detected",
-                message=ai_interception,
-                notification_type="anomaly_detection"
-            )
-            print(f"DEBUG: Anomaly detected for transaction {transaction_id}: {ai_interception}")
+            # create_notification(
+            #     user_id=user_id,
+            #     title="Unusual Spending Detected",
+            #     message=message,
+            #     notification_type="anomaly_detection"
+            # )
+            print(f"DEBUG: Anomaly detected for transaction {transaction_id}: {message}")
         else:
             print(f"DEBUG: No anomaly detected for transaction {transaction_id}")
         
