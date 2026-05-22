@@ -42,8 +42,8 @@ export default function HomeScreen() {
 
   const trafficColor = getTrafficColor();
 
-  // Fix date to May 12, 2026 for all features
-  const mockToday = new Date(2026, 4, 12); // May 12, 2026 (0-indexed month)
+  // Use actual system date
+  const mockToday = new Date();
 
   // Helper to mask all numbers including dots and ensure 2 decimal places for numbers
   const formatBalance = (amount: string | number) => {

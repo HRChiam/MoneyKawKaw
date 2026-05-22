@@ -189,10 +189,40 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
         tax_category: Tax category if applicable
         warning_triggered: Whether warning was triggered
         db: Optional database session. If None, creates new session.
-    Returns: Transaction ID if successful, None otherwise
+    Returns: Transaction ID if successful
+    """
+    supabase = db or _get_supabase_client()
+    transaction_id = str(uuid_lib.uuid4())
+
+    payload = {
+        "transaction_id": transaction_id,
+        "user_id": str(user_id),
+        "pocket_id": str(pocket_id),
+        "amount": amount,
+        "transaction_type": transaction_type,
+        "counterparty_name": counterparty_name,
+        "status": "SUCCESS",
+        "is_tax_relief_detected": tax_detected,
+        "tax_relief_category": tax_category,
+        "triggers_warning": warning_triggered,
+        "transaction_time": datetime.utcnow().isoformat(),
+    }
+
+    response = supabase.table("transactions").insert(payload).execute()
+    if response.data:
+        return transaction_id
+    
+    # If no data but no exception, it might be a silent failure or empty result
+    raise Exception(f"Supabase insert failed: {response}")
+
+def deduct_from_pocket(pocket_id: str, amount: float, db=None) -> bool:
+    """
+    Deducts an amount from a pocket's balance safely.
+    Returns True if successful, False if pocket not found or insufficient funds.
     """
     try:
         supabase = db or _get_supabase_client()
+<<<<<<< HEAD
         transaction_id = str(uuid_lib.uuid4())
 
         payload = {
@@ -214,9 +244,53 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
             return transaction_id
         return None
 
+=======
+        
+        # 1. Fetch current balance
+        res = supabase.table("pockets").select("current_pocket_balance").eq("pocket_id", str(pocket_id)).execute()
+        if not res.data:
+            print(f"Deduct failed: Pocket {pocket_id} not found")
+            return False
+            
+        current_bal = float(res.data[0].get("current_pocket_balance") or 0.0)
+        
+        # 2. Check for sufficient funds
+        if current_bal < amount:
+            print(f"Deduct failed: Insufficient funds in pocket {pocket_id}. Available: {current_bal}, Required: {amount}")
+            return False
+        
+        # 3. Update balance
+        new_bal = current_bal - amount
+        
+        upd_res = supabase.table("pockets").update({"current_pocket_balance": new_bal}).eq("pocket_id", str(pocket_id)).execute()
+        return len(upd_res.data) > 0
+>>>>>>> 040e37d9003e639081ba42e705fa7ecda8b7c14c
     except Exception as e:
-        print(f"Error saving transaction: {e}")
-        return None
+        print(f"Error deducting from pocket: {e}")
+        return False
+
+def add_to_pocket(pocket_id: str, amount: float, db=None) -> bool:
+    """
+    Adds an amount to a pocket's balance safely.
+    """
+    try:
+        supabase = db or _get_supabase_client()
+        
+        # 1. Fetch current balance
+        res = supabase.table("pockets").select("current_pocket_balance").eq("pocket_id", str(pocket_id)).execute()
+        if not res.data:
+            return False
+            
+        current_bal = float(res.data[0].get("current_pocket_balance") or 0.0)
+        
+        # 2. Update balance
+        new_bal = current_bal + amount
+        
+        upd_res = supabase.table("pockets").update({"current_pocket_balance": new_bal}).eq("pocket_id", str(pocket_id)).execute()
+        return len(upd_res.data) > 0
+    except Exception as e:
+        print(f"Error adding to pocket: {e}")
+        return False
 
 def update_user_salary(user_id: str, monthly_income: float, db=None) -> bool:
     """
@@ -239,43 +313,46 @@ def update_user_salary(user_id: str, monthly_income: float, db=None) -> bool:
 
 def update_user_onboarding_data(user_id: str, monthly_income: float, savings_mode: str, db=None) -> bool:
     """
-    Updates the monthly_income and savings_mode for a user in the database during onboarding.
+    Updates the monthly_income, savings_mode, and resets created_at for a user during onboarding.
     """
     try:
         supabase = db or _get_supabase_client()
-        # Enums in Postgres are often lowercase
-        formatted_mode = savings_mode.lower() if savings_mode else "balanced"
+        # Ensure savings_mode is full UPPERCASE for DB matching
+        formatted_mode = savings_mode.upper() if savings_mode else "BALANCED"
         
-        print(f"DEBUG: Attempting to update user {user_id} with income={monthly_income}, mode={formatted_mode}")
+        # Reset created_at to NOW so onboarding acts as Day 1 of the month
+        now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
         
-        # Try updating monthly_income and savings_mode
+        print(f"DEBUG: STARTING FULL UPDATE for user {user_id}")
+        print(f"DEBUG: Values -> income: {monthly_income}, mode: {formatted_mode}, date: {now_iso}")
+        
+        update_payload = {
+            "monthly_income": monthly_income,
+            "savings_mode": formatted_mode,
+            "created_at": now_iso,
+            "updated_at": now_iso
+        }
+        
         response = (
             supabase.table("users")
-            .update({
-                "monthly_income": monthly_income,
-                "savings_mode": formatted_mode
-            })
+            .update(update_payload)
             .eq("user_id", str(user_id))
             .select()
             .execute()
         )
         
         if response.data:
-            print(f"DEBUG: Update successful. New data: {response.data}")
+            print(f"DEBUG: Full update successful! Verified DB state: {response.data[0]}")
             return True
         else:
-            print(f"DEBUG: Update failed - no rows matched user_id {user_id}")
-            # Diagnostic: check if the user exists at all
-            check_res = supabase.table("users").select("user_id").eq("user_id", str(user_id)).execute()
-            if not check_res.data:
-                print(f"DEBUG: CRITICAL - User {user_id} does not exist in the database.")
+            print(f"DEBUG: Full update failed - no matching user found for ID {user_id}")
             return False
             
     except Exception as e:
-        print(f"DEBUG: Exception during update: {str(e)}")
-        # Try updating ONLY monthly_income as a fallback if it's an enum issue
+        print(f"DEBUG: Full update CRASHED with error: {str(e)}")
+        # Try a simpler fallback to at least save the income
         try:
-            print("DEBUG: Retrying update with only monthly_income...")
+            print("DEBUG: Executing fallback update (income only)...")
             response = (
                 supabase.table("users")
                 .update({"monthly_income": monthly_income})
@@ -285,7 +362,7 @@ def update_user_onboarding_data(user_id: str, monthly_income: float, savings_mod
             )
             return len(response.data) > 0
         except Exception as e2:
-            print(f"DEBUG: Fallback update also failed: {str(e2)}")
+            print(f"DEBUG: Fallback also failed: {str(e2)}")
             return False
 
 
@@ -308,18 +385,21 @@ def initialize_user_pockets(user_id: str, fixed_pockets: dict, variable_pockets:
                 "user_id": str(user_id),
                 "pocket_name": name,
                 "pocket_type": "FIXED",
-                "current_pocket_balance": float(amount)
-                # Removed monthly_limit as it doesn't exist in the current schema
+                "current_pocket_balance": float(amount),
+                "monthly_limit": float(amount)
             })
             
         # 3. Prepare Variable Pockets
         for name, amount in variable_pockets.items():
+            # If name is 'Savings', force it to be a FIXED pocket as requested
+            is_savings = name.lower() == "savings"
+            
             pocket_payloads.append({
                 "user_id": str(user_id),
                 "pocket_name": name,
-                "pocket_type": "VARIABLE",
-                "current_pocket_balance": float(amount)
-                # Removed monthly_limit as it doesn't exist in the current schema
+                "pocket_type": "FIXED" if is_savings else "VARIABLE",
+                "current_pocket_balance": float(amount),
+                "monthly_limit": float(amount)
             })
             
         # 4. Batch insert all pockets
@@ -526,7 +606,7 @@ def execute_pocket_transfer(user_id: str, source_id: str, dest_id: str, amount: 
                 "source_pocket_id": str(source_id),
                 "destination_pocket_id": str(dest_id),
                 "amount": amount,
-                "status": "completed"
+                "status": "SUCCESS"
             }
             log_res = supabase.table("pocket_transfers").insert(transfer_payload).execute()
             

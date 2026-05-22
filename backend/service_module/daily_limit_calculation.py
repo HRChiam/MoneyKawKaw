@@ -1,29 +1,38 @@
 # core/daily_limit_calculation.py
-from datetime import datetime
+from datetime import datetime, date
 import calendar
 
-def calculate_daily_limit(variable_pockets_balance: float, mock_today: datetime = None):
+def calculate_daily_limit(variable_pockets_balance: float, mock_today: datetime = None, onboarding_date: datetime = None):
     """
     Calculates the 'Safe to Spend' daily limit.
-    Core Logic: Remaining Variable Money ÷ Remaining Days in Month.
+    Core Logic: Remaining Variable Money ÷ Remaining Days in Cycle.
     
     Args:
         variable_pockets_balance (float): The SUM of current_balance for all VARIABLE pockets.
         mock_today (datetime): Optional. Used to force a specific date during hackathon testing.
+        onboarding_date (datetime): Optional. The date the user joined. We act as if this was the start of the month.
     """
     # 1. Determine "Today" (Use mock_today for testing, otherwise real system time)
     today = mock_today if mock_today else datetime.now()
     
-    # 2. Get the total number of days in the current month
+    # 2. Get the total number of days in the current month (as the cycle length)
     _, total_days_in_month = calendar.monthrange(today.year, today.month)
     
-    # 3. Calculate Days Left (including today)
-    days_passed = today.day
-    days_left = total_days_in_month - days_passed + 1 
+    # 3. Calculate Days Left
+    if onboarding_date:
+        # If we have an onboarding date, calculate how many days have passed since then
+        # Onboarding date is "Day 1"
+        delta = today.date() - onboarding_date.date()
+        days_passed = delta.days + 1
+        days_left = total_days_in_month - days_passed + 1
+    else:
+        # Fallback to standard calendar month logic
+        days_passed = today.day
+        days_left = total_days_in_month - days_passed + 1 
     
     # 4. Handle Edge Cases
     if days_left <= 0:
-        days_left = 1 # Prevent division by zero on the absolute last day
+        days_left = 1 # Prevent division by zero on the absolute last day or if over cycle
         
     if variable_pockets_balance <= 0:
         return 0.00 # User is completely broke in their discretionary funds!

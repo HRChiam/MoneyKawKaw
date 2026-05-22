@@ -91,66 +91,6 @@ export default function FlexiCreditScreen() {
 
   const curvedLinePath = `M 0 ${leftTopY} L ${leftX} ${leftTopY} C ${leftX + BAR_DISTANCE/2} ${leftTopY}, ${leftX + BAR_DISTANCE/2} ${rightTopY}, ${rightX} ${rightTopY} L ${totalSvgWidth} ${rightTopY}`;
 
-  if (!isSetupComplete) {
-    return (
-      <View style={[styles.container, { backgroundColor: GXB_PURPLE, justifyContent: 'center', padding: 24 }]}>
-        <TouchableOpacity 
-            onPress={() => router.back()} 
-            style={{ position: 'absolute', top: 60, left: 24, zIndex: 100 }}
-        >
-            <Feather name="arrow-left" size={32} color={GXB_WHITE} style={{ opacity: 0.8 }} />
-        </TouchableOpacity>
-
-        <Animated.View entering={FadeInDown.duration(600).springify()}>
-            
-            <Text style={{ color: GXB_TEAL, fontSize: 36, fontWeight: '900', marginBottom: 8 }}>FlexiCredit</Text>
-            <Text style={{ color: GXB_WHITE, fontSize: 18, marginBottom: 40, opacity: 0.7 }}>Setup your credit simulation</Text>
-            
-            <View style={{ marginBottom: 24 }}>
-                <Text style={{ color: GXB_WHITE, fontSize: 14, fontWeight: '700', marginBottom: 12, letterSpacing: 1 }}>CREDIT AMOUNT (RM)</Text>
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-                    <TextInput 
-                        style={{ color: GXB_WHITE, padding: 20, fontSize: 24, fontWeight: '700' }}
-                        placeholder="0.00"
-                        placeholderTextColor="rgba(255,255,255,0.2)"
-                        keyboardType="numeric"
-                        value={creditAmount}
-                        onChangeText={setCreditAmount}
-                        autoFocus
-                    />
-                </View>
-            </View>
-
-            <View style={{ marginBottom: 40 }}>
-                <Text style={{ color: GXB_WHITE, fontSize: 14, fontWeight: '700', marginBottom: 12, letterSpacing: 1 }}>ANNUAL INTEREST RATE (%)</Text>
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-                    <TextInput 
-                        style={{ color: GXB_WHITE, padding: 20, fontSize: 24, fontWeight: '700' }}
-                        placeholder="6.45"
-                        placeholderTextColor="rgba(255,255,255,0.2)"
-                        keyboardType="numeric"
-                        value={interestRateInput}
-                        onChangeText={setInterestRateInput}
-                    />
-                </View>
-            </View>
-
-            <TouchableOpacity 
-                style={{ backgroundColor: GXB_TEAL, padding: 22, borderRadius: 20, alignItems: 'center', shadowColor: GXB_TEAL, shadowOpacity: 0.3, shadowRadius: 15, elevation: 8 }}
-                onPress={() => {
-                    if (parsedAmount > 0 && parsedRate > 0) {
-                        setIsSetupComplete(true);
-                        setMonthlyPayment(Math.max(parsedAmount * 0.05, 50));
-                    }
-                }}
-            >
-                <Text style={{ color: GXB_PURPLE, fontWeight: '900', fontSize: 18, letterSpacing: 0.5 }}>View Simulation</Text>
-            </TouchableOpacity>
-        </Animated.View>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* 🎯 UNIFIED STANDARD ADAPTIVE TOP BAR HEADER */}
@@ -164,6 +104,15 @@ export default function FlexiCreditScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
+        <View style={styles.section}>
+          <View style={[styles.infoBanner, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Ionicons name="information-circle" size={20} color={GXB_BAR_PURPLE} style={{ marginRight: 10, marginTop: 1 }} />
+            <Text style={[styles.infoText, { color: colors.text }]}>
+              Enter your details below to calculate your monthly repayment instantly.
+            </Text>
+          </View>
+        </View>
+        
         {/* Input Parameters Reference Bar */}
         <View style={styles.section}>
           <View style={styles.inputRow}>
@@ -176,19 +125,25 @@ export default function FlexiCreditScreen() {
                   value={creditAmount}
                   onChangeText={setCreditAmount}
                   keyboardType="numeric"
+                  placeholder="0.00"
+                  placeholderTextColor={colorScheme === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'}
                 />
               </View>
             </View>
+
             <View style={styles.inputHalf}>
               <Text style={[styles.inputLabel, { color: colors.text }]}>Interest Rate</Text>
-              <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {/* 🚀 FIXED: Added styles.rateInputContainer to align elements to the far sides */}
+              <View style={[styles.inputContainer, styles.rateInputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <TextInput
-                  style={[styles.amountInput, { color: colors.text, textAlign: 'right' }]}
+                  style={[styles.amountInput, { color: colors.text, flex: 1 }]}
                   value={interestRateInput}
                   onChangeText={setInterestRateInput}
                   keyboardType="numeric"
+                  placeholder="6.45"
+                  placeholderTextColor={colorScheme === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'}
                 />
-                <Text style={[styles.currencyPrefix, { color: colors.secondary, marginLeft: 4 }]}>%</Text>
+                <Text style={[styles.currencyPrefix, { color: colors.secondary, marginLeft: 8 }]}>%</Text>
               </View>
             </View>
           </View>
@@ -262,20 +217,22 @@ export default function FlexiCreditScreen() {
           <View style={[styles.breakdownContainer, { backgroundColor: 'rgba(0,0,0,0.3)', marginTop: 24 }]}>
             <Text style={[styles.breakdownTitle, { color: 'rgba(255,255,255,0.4)' }]}>REPAYMENT VOLUMETRIC SPLIT</Text>
 
+            {/* 🚀 ROW 1: PRINCIPAL */}
             <View style={styles.breakdownRow}>
               <View style={styles.breakdownLeft}>
                 <View style={[styles.indicatorDot, { backgroundColor: GXB_BAR_PURPLE }]} />
-                <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Principal Principal portion</Text>
+                <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Principal Portion</Text>
               </View>
               <Text style={[styles.breakdownValue, { color: GXB_WHITE }]}>RM {actualPrincipalPortion.toFixed(2)}</Text>
             </View>
 
+            {/* 🚀 ROW 2: INTEREST */}
             <View style={[styles.breakdownRow, { marginBottom: 0 }]}>
               <View style={styles.breakdownLeft}>
                 <View style={[styles.indicatorDot, { backgroundColor: GXB_ORANGE }]} />
-                <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Compounded Interest Share</Text>
+                <Text style={[styles.breakdownLabel, { color: GXB_WHITE }]}>Interest</Text>
               </View>
-              <Text style={[styles.breakdownValue, { color: GXB_ORANGE }]}>RM {actualInterestPortion.toFixed(2)}</Text>
+              <Text style={[styles.breakdownValue, { color: GXB_ORANGE }]}>RM{actualInterestPortion.toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -311,11 +268,26 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'sans-serif-rounded',
   },
+  infoBanner: {
+    flexDirection: 'row',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'flex-start',
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    fontFamily: 'sans-serif-rounded',
+  },
   section: { paddingHorizontal: 16, marginVertical: 8 },
   inputRow: { flexDirection: 'row', gap: 12 },
   inputHalf: { flex: 1 },
   inputLabel: { fontSize: 14, fontWeight: '700', marginBottom: 8 },
   inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12 },
+  rateInputContainer: { justifyContent: 'space-between' },
   currencyPrefix: { fontSize: 16, fontWeight: '700', marginRight: 4 },
   amountInput: { flex: 1, fontSize: 16, fontWeight: '600' },
   chartContainer: { marginHorizontal: 16, marginVertical: 12, borderRadius: 24, padding: 20, borderWidth: 1.5 },
@@ -327,13 +299,45 @@ const styles = StyleSheet.create({
   barFill: { width: '100%', borderRadius: 10 },
   barLabelTop: { fontSize: 14, fontWeight: '800' },
   barLabelBottom: { fontSize: 12, fontWeight: '700' },
-  breakdownContainer: { borderRadius: 18, padding: 18, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
-  breakdownTitle: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginBottom: 14 },
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  breakdownLeft: { flexDirection: 'row', alignItems: 'center' },
-  indicatorDot: { width: 8, height: 8, borderRadius: 4, marginRight: 10 },
-  breakdownLabel: { fontSize: 14, fontWeight: '600' },
-  breakdownValue: { fontSize: 15, fontWeight: '800' },
+  breakdownContainer: {
+    borderRadius: 18,
+    padding: 20,          
+  },
+  breakdownTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    marginBottom: 16,    
+    fontFamily: 'sans-serif-rounded'
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    marginBottom: 14 
+  },
+  breakdownLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  indicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 12     
+  },
+  breakdownLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'sans-serif-rounded'
+  },
+  breakdownValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    fontFamily: 'sans-serif-rounded',
+    textAlign: 'right'   
+  },
   statusBadge: { paddingVertical: 12, borderRadius: 16, marginBottom: 24 },
   sliderValueContainer: { alignItems: 'center', marginBottom: 12 },
   sliderHeroText: { fontSize: 32, fontWeight: '900' },

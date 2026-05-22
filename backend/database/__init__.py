@@ -11,6 +11,7 @@ from .db import (
     get_user_pockets,
     get_user_claims,
     save_transaction, 
+    deduct_from_pocket,
     create_user_pocket,
     update_user_pocket,
     delete_user_pocket,

@@ -12,11 +12,15 @@ from database import (
     get_user_notifications,
     get_user_claims,
     UserProfileResponse,
+    TransactionResponse,
     TransactionListResponse,
     TransactionResponse,
+    TransactionRequest,
     NotificationResponse, 
     ClaimResponse, 
     get_user_pockets,
+    save_transaction,
+    deduct_from_pocket,
     create_user_pocket,
     update_user_pocket,
     delete_user_pocket,
@@ -41,6 +45,7 @@ from AI.risk_predictor_AI import generate_momentum_warning
 from AI.anomaly_detection_AI import generate_anomaly_interception
 from AI.debt_routing_AI import generate_debt_advice
 from AI.tax_exemption_AI import get_tax_category
+from datetime import date, datetime
 from datetime import date, datetime
 import pandas as pd
 
@@ -76,7 +81,7 @@ class RiskPredictorRequest(BaseModel):
     days_left: int
     daily_spend_avg: float
 
-class TransactionRequest(BaseModel):
+class AnomalyCheckRequest(BaseModel):
     amount: float
     merchant: str
     monthly_income: float
@@ -169,7 +174,7 @@ async def get_transaction_history(user_id: str, limit: int = Query(30, ge=1, le=
     
 @app.post("/api/onboarding")
 def process_onboarding(req: OnboardingRequest, db = Depends(get_db)):
-    print(f"DEBUG: Onboarding request received: {req.dict()}")
+    print(f"DEBUG: ONBOARDING DATA RECEIVED -> income: {req.monthly_income}, mode: {req.savings_mode}, expenses: {req.fixed_expenses}")
     # 0. Update User Profile in Database
     db_update_success = update_user_onboarding_data(
         req.user_id,
@@ -221,7 +226,8 @@ def process_onboarding(req: OnboardingRequest, db = Depends(get_db)):
 
     # 4. Calculate Initial Daily Limit (Spendable balance = All variable pockets except Savings)
     spendable_balance = sum(v for k, v in final_pockets.items() if k != "Savings")
-    initial_daily_limit = calculate_daily_limit(spendable_balance)
+    today = datetime.now()
+    initial_daily_limit = calculate_daily_limit(spendable_balance, mock_today=today, onboarding_date=today)
 
     # 5. Initialize Pockets in Database
     pocket_init_success = initialize_user_pockets(
@@ -296,7 +302,7 @@ def check_risk(req: RiskPredictorRequest):
     }
 
 @app.post("/api/check-anomaly")
-def check_transaction_anomaly(req: TransactionRequest):
+def check_transaction_anomaly(req: AnomalyCheckRequest):
     # 1. LAYER 1: The Math Engine (Outlier Detection)
     is_anomaly = check_for_anomaly(
         req.amount,
@@ -332,6 +338,24 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
     runs asynchronously without blocking app operations.
     """
     try:
+        # xw
+        # Deduct or Add to pocket balance FIRST (Validation)
+        balance_updated = False
+        if req.transaction_type.upper() == 'EXPENSE':
+            balance_updated = deduct_from_pocket(
+                pocket_id=req.pocket_id,
+                amount=req.amount,
+                db=db
+            )
+            if not balance_updated:
+                raise HTTPException(status_code=400, detail="Insufficient funds in pocket or pocket not found")
+        elif req.transaction_type.upper() == 'INCOME':
+            balance_updated = add_to_pocket(
+                pocket_id=req.pocket_id,
+                amount=req.amount,
+                db=db
+            )
+
         # 1. Validate user exists
         user_profile = get_user_profile(req.user_id, db=db)
         if not user_profile:
@@ -342,7 +366,7 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
             user_id=req.user_id,
             pocket_id=req.pocket_id,
             amount=req.amount,
-            transaction_type=req.transaction_type,
+            transaction_type=req.transaction_type.upper(),
             counterparty_name=req.counterparty_name,
             tax_detected=False,  # Will be updated by background task
             tax_category=None,   # Will be updated by background task
@@ -495,18 +519,33 @@ def get_debt_routing_advice(req: DebtRoutingRequest):
     }
 
 @app.post("/api/check-tax")
-def check_tax_eligibility(req: TaxExemptionRequest):
-    # LAYER 3: The AI Tax Expert
+def check_tax_eligibility(req: TaxExemptionRequest, db = Depends(get_db)):
+    supabase = db
     results = []
+    
     for tx in req.transactions:
         reference = tx.reference
         category = get_tax_category(tx.merchant, tx.amount, reference)
+        is_claimable = category != "N/A"
+        
+        if is_claimable:
+            try:
+                supabase.table("transactions") \
+                    .update({
+                        "is_tax_relief_detected": True,
+                        "tax_relief_category": category
+                    }) \
+                    .eq("reference", reference) \
+                    .execute()
+            except Exception as e:
+                print(f"Error updating database for reference {reference}: {e}")
+
         results.append({
             "merchant": tx.merchant,
             "amount": tx.amount,
             "reference": reference,
             "tax_category": category,
-            "is_tax_claimable": category != "N/A"
+            "is_tax_claimable": is_claimable
         })
 
     return {
@@ -618,20 +657,31 @@ def get_daily_spending_summary(user_id: str, db = Depends(get_db)):
     variable_sum = sum(
         float(p["current_balance"]) 
         for p in pockets_data 
-        if p["pocket_type"].upper() == "VARIABLE" and p["pocket_name"] != "Savings"
+        if p["pocket_type"].upper() == "VARIABLE"
     )
     
     # 3. Calculate dynamic live limit using the math module
-    # Mocking date to match your system core requirements: May 12, 2026
-    target_date = date(2026, 5, 12)
-    computed_limit = calculate_daily_limit(variable_sum, mock_today=target_date)
+    # We use the user's account creation date as the onboarding reference point
+    created_at_str = user_profile.get("created_at")
+    onboarding_date = None
+    if created_at_str:
+        # Created at is typically "2026-05-21T08:24:45.123+00:00"
+        onboarding_date = pd.to_datetime(created_at_str)
+
+    # For the hackathon, we keep today's "real" time as the reference
+    today = datetime.now()
+    computed_limit = calculate_daily_limit(
+        variable_sum, 
+        mock_today=today, 
+        onboarding_date=onboarding_date
+    )
     
     # 4. Pull accumulated today spends safely
     spend_res = (
         supabase.table("daily_total_spends")
         .select("today_total_spend")
         .eq("user_id", str(user_id))
-        .eq("date", target_date.isoformat())
+        .eq("date", today.date().isoformat())
         .execute()
     )
     
