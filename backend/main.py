@@ -30,7 +30,8 @@ from database import (
     update_user_salary,
     SalaryUpdateRequest,
     update_user_onboarding_data,
-    initialize_user_pockets
+    initialize_user_pockets,
+    add_to_pocket,
 )
 from typing import Dict, List, Optional
 from service_module.onboarding_math import calculate_cold_start_budget

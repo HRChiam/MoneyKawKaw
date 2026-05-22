@@ -18,7 +18,8 @@ from .db import (
     execute_pocket_transfer,
     update_user_salary,
     update_user_onboarding_data,
-    initialize_user_pockets
+    initialize_user_pockets,
+    add_to_pocket
 )
 
 from .models import (

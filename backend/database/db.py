@@ -195,17 +195,17 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
     transaction_id = str(uuid_lib.uuid4())
 
     payload = {
-        "transaction_id": transaction_id,
-        "user_id": str(user_id),
-        "pocket_id": str(pocket_id),
-        "amount": amount,
-        "transaction_type": transaction_type,
-        "counterparty_name": counterparty_name,
-        "status": "SUCCESS",
-        "is_tax_relief_detected": tax_detected,
-        "tax_relief_category": tax_category,
-        "triggers_warning": warning_triggered,
-        "transaction_time": datetime.utcnow().isoformat(),
+            "transaction_id": transaction_id,
+            "user_id": str(user_id),
+            "pocket_id": str(pocket_id),
+            "amount": amount,
+            "transaction_type": transaction_type.upper(),
+            "counterparty_name": counterparty_name,
+            "is_tax_relief_detected": tax_detected,
+            "tax_relief_category": tax_category,
+            "triggers_warning": warning_triggered,
+            "transaction_time": datetime.utcnow().isoformat(),
+            "status": "SUCCESS",
     }
 
     response = supabase.table("transactions").insert(payload).execute()
@@ -222,29 +222,6 @@ def deduct_from_pocket(pocket_id: str, amount: float, db=None) -> bool:
     """
     try:
         supabase = db or _get_supabase_client()
-<<<<<<< HEAD
-        transaction_id = str(uuid_lib.uuid4())
-
-        payload = {
-            "transaction_id": transaction_id,
-            "user_id": str(user_id),
-            "pocket_id": str(pocket_id),
-            "amount": amount,
-            "transaction_type": transaction_type.upper(),
-            "counterparty_name": counterparty_name,
-            "is_tax_relief_detected": tax_detected,
-            "tax_relief_category": tax_category,
-            "triggers_warning": warning_triggered,
-            "transaction_time": datetime.utcnow().isoformat(),
-            "status": "SUCCESS",
-        }
-
-        response = supabase.table("transactions").insert(payload).execute()
-        if response.data:
-            return transaction_id
-        return None
-
-=======
         
         # 1. Fetch current balance
         res = supabase.table("pockets").select("current_pocket_balance").eq("pocket_id", str(pocket_id)).execute()
@@ -264,7 +241,6 @@ def deduct_from_pocket(pocket_id: str, amount: float, db=None) -> bool:
         
         upd_res = supabase.table("pockets").update({"current_pocket_balance": new_bal}).eq("pocket_id", str(pocket_id)).execute()
         return len(upd_res.data) > 0
->>>>>>> 040e37d9003e639081ba42e705fa7ecda8b7c14c
     except Exception as e:
         print(f"Error deducting from pocket: {e}")
         return False
