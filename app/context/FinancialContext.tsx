@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction, useCallback } from 'react';
 
 export interface Pocket {
   id: string;
@@ -85,35 +85,49 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [streak, setStreak] = useState(0);
   
-  const refreshUserProfile = async () => {
+  const refreshUserProfile = async (skipLoading = false) => {
     try {
+      if (!skipLoading) setLoading(true);
       const res = await fetch(`${API_BASE_URL}/api/user/${MOCK_USER_ID}`);
       if (res.ok) {
         const data = await res.json();
-        setUsername(data.username || 'Xuan Wei');
-        setMainBalance(data.main_balance || 0.0);
-        setDailyLimit(data.daily_limit || 250.00);
-        setTodaySpent(data.today_spent || 50.00);
-        setStreak(data.current_streak || 0);
-        setIncome(data.monthly_income || 0);
         
-        // Also fetch daily summary for limit and spent
-        const summaryRes = await fetch(`${API_BASE_URL}/api/users/${MOCK_USER_ID}/daily-summary`);
-        if (summaryRes.ok) {
-          const summaryData = await summaryRes.json();
-          setDailyLimit(summaryData.daily_limit || 250.00);
-          setTodaySpent(summaryData.today_spent || 50.50);
+        let finalDailyLimit = data.daily_limit ?? 250.0;
+        let finalTodaySpent = data.today_spent ?? 0.0;
+        let finalStreak = data.current_streak ?? 0;
+        
+        // Also fetch daily summary for limit and spent - this is more up-to-date as it syncs with DB
+        try {
+          const summaryRes = await fetch(`${API_BASE_URL}/api/users/${MOCK_USER_ID}/daily-summary`);
+          if (summaryRes.ok) {
+            const summaryData = await summaryRes.json();
+            if (summaryData.daily_limit !== undefined) finalDailyLimit = summaryData.daily_limit;
+            if (summaryData.today_spent !== undefined) finalTodaySpent = summaryData.today_spent;
+            if (summaryData.current_streak !== undefined) finalStreak = summaryData.current_streak;
+          }
+        } catch (summaryErr) {
+          console.error("Optional daily summary fetch failed:", summaryErr);
         }
+
+        // Batch updates to avoid multiple re-renders
+        setUsername(data.username || 'Xuan Wei');
+        setMainBalance(data.main_balance ?? 0.0);
+        setDailyLimit(finalDailyLimit);
+        setTodaySpent(finalTodaySpent);
+        setStreak(finalStreak);
+        setIncome(data.monthly_income ?? 0);
       }
     } catch (e) {
       console.error("Error fetching daily status metadata payload:", e);
+    } finally {
+      if (!skipLoading) setLoading(false);
     }
   };
 
   // GET: Fetch context payload
-  const refreshPockets = async () => {
+  const refreshPockets = async (skipLoading = false) => {
     try {
-      setLoading(true);
+      if (!skipLoading) setLoading(true);
       const res = await fetch(`${API_BASE_URL}/api/users/${MOCK_USER_ID}/pockets`);
       const data = await res.json();
 
@@ -143,11 +157,11 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       console.error("Error synchronizing tracking store states: ", e);
     } finally {
-      setLoading(false);
+      if (!skipLoading) setLoading(false);
     }
   };
 
-  useEffect(() => { refreshPockets(); }, []);
+  // useEffect(() => { refreshPockets(); }, []); // Removed redundant call as refreshAllData covers this
 
   // Backwards compatibility layer for older code blocks
   const syncPocketsWithExpenses = () => {
@@ -237,17 +251,24 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
     return false;
   };
 
-  const refreshAllData = async () => {
+  const refreshAllData = useCallback(async () => {
     setLoading(true);
-    // Fires fetch operations sequentially
-    await refreshPockets();
-    await refreshUserProfile();
-    setLoading(false);
-  };
+    try {
+      // Fires fetch operations in parallel for better performance and less flickering
+      await Promise.all([
+        refreshPockets(true),
+        refreshUserProfile(true)
+      ]);
+    } catch (e) {
+      console.error("Error refreshing all data:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     refreshAllData();
-  }, []);
+  }, [refreshAllData]);
 
   return (
     <FinancialContext.Provider value={{

@@ -319,7 +319,11 @@ export default function TransactionHistoryScreen() {
       }
     });
 
-    return groups;
+    return groups.sort((groupA, groupB) => {
+      const latestA = new Date(groupA.items[0]?.date || 0).getTime();
+      const latestB = new Date(groupB.items[0]?.date || 0).getTime();
+      return latestB - latestA;
+    });
   }, [processedTransactions, sortOrder]);
 
   const getCategoryIcon = (category: string) => {

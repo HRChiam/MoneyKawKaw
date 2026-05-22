@@ -1,6 +1,6 @@
 """Database connection and query functions."""
 
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 import os
 import uuid as uuid_lib
 
@@ -10,6 +10,7 @@ from supabase import create_client, Client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 _SUPABASE_CLIENT: Client | None = None
+_MYT = timezone(timedelta(hours=8))
 
 
 def _get_supabase_client() -> Client:
@@ -45,6 +46,106 @@ def _is_inflow_transaction(transaction_type: str | None) -> bool:
         "receive",
     )
     return any(marker in normalized for marker in inflow_markers)
+
+
+def _myt_now() -> datetime:
+    """Current Kuala Lumpur time (UTC+08:00)."""
+    return datetime.now(_MYT)
+
+
+def sync_daily_total_spend(
+    user_id: str,
+    *,
+    spend_date: date | None = None,
+    daily_limit: float | None = None,
+    db=None,
+) -> dict | None:
+    """
+    Rebuild a user's daily spending aggregate from transactions and persist it
+    into daily_total_spends for a given date.
+    """
+    try:
+        supabase = db or _get_supabase_client()
+        target_date = spend_date or _myt_now().date()
+
+        day_start = datetime.combine(target_date, datetime.min.time(), tzinfo=_MYT)
+        next_day_start = day_start + timedelta(days=1)
+
+        tx_res = (
+            supabase.table("transactions")
+            .select("amount, transaction_type")
+            .eq("user_id", str(user_id))
+            .gte("transaction_time", day_start.isoformat())
+            .lt("transaction_time", next_day_start.isoformat())
+            .execute()
+        )
+
+        transactions = tx_res.data or []
+        total_spent = sum(
+            float(tx.get("amount") or 0)
+            for tx in transactions
+            if not _is_inflow_transaction(tx.get("transaction_type"))
+        )
+
+        existing_res = (
+            supabase.table("daily_total_spends")
+            .select("spend_id, today_daily_limit")
+            .eq("user_id", str(user_id))
+            .eq("date", target_date.isoformat())
+            .limit(1)
+            .execute()
+        )
+
+        existing_row = existing_res.data[0] if existing_res.data else None
+        persisted_daily_limit = (
+            float(daily_limit)
+            if daily_limit is not None
+            else float((existing_row or {}).get("today_daily_limit") or 0)
+        )
+
+        payload = {
+            "today_total_spend": round(total_spent, 2),
+            "today_daily_limit": round(persisted_daily_limit, 2),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        if existing_row:
+            response = (
+                supabase.table("daily_total_spends")
+                .update(payload)
+                .eq("spend_id", existing_row["spend_id"])
+                .execute()
+            )
+            row = response.data[0] if response.data else None
+        else:
+            response = (
+                supabase.table("daily_total_spends")
+                .insert(
+                    {
+                        "user_id": str(user_id),
+                        "date": target_date.isoformat(),
+                        **payload,
+                    }
+                )
+                .execute()
+            )
+            row = response.data[0] if response.data else None
+
+        if row:
+            return {
+                "date": row.get("date", target_date.isoformat()),
+                "today_total_spend": float(row.get("today_total_spend") or 0),
+                "today_daily_limit": float(row.get("today_daily_limit") or 0),
+            }
+
+        return {
+            "date": target_date.isoformat(),
+            "today_total_spend": round(total_spent, 2),
+            "today_daily_limit": round(persisted_daily_limit, 2),
+        }
+    except Exception as e:
+        print(f"Error syncing daily total spend: {e}")
+        return None
 
 
 # ===== QUERY FUNCTIONS =====
@@ -204,7 +305,7 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
             "is_tax_relief_detected": tax_detected,
             "tax_relief_category": tax_category,
             "triggers_warning": warning_triggered,
-            "transaction_time": datetime.utcnow().isoformat(),
+            "transaction_time": _myt_now().isoformat(),
             "status": "SUCCESS",
     }
 
