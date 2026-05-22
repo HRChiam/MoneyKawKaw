@@ -1,6 +1,6 @@
 # main.py
 # API routes to fetch and read data from db and call AI/ML service
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -13,6 +13,7 @@ from database import (
     get_user_claims,
     UserProfileResponse,
     TransactionListResponse,
+    TransactionResponse,
     NotificationResponse, 
     ClaimResponse, 
     get_user_pockets,
@@ -20,6 +21,8 @@ from database import (
     update_user_pocket,
     delete_user_pocket,
     execute_pocket_transfer,
+    save_transaction,
+    create_notification,
     update_user_salary,
     SalaryUpdateRequest,
     update_user_onboarding_data,
@@ -38,7 +41,7 @@ from AI.risk_predictor_AI import generate_momentum_warning
 from AI.anomaly_detection_AI import generate_anomaly_interception
 from AI.debt_routing_AI import generate_debt_advice
 from AI.tax_exemption_AI import get_tax_category
-from datetime import date
+from datetime import date, datetime
 import pandas as pd
 
 app = FastAPI(title="MoneyKawKaw API", version="1.0.0")
@@ -94,13 +97,17 @@ class Transaction(BaseModel):
     amount: float
     reference: str | None = None
 
-class Transaction(BaseModel):
-    merchant: str
-    amount: float
-    reference: str | None = None
-
 class TaxExemptionRequest(BaseModel):
     transactions: List[Transaction]
+
+class RecordTransactionRequest(BaseModel):
+    """Request model for recording a new transaction"""
+    user_id: str
+    pocket_id: str
+    amount: float
+    transaction_type: str  # e.g., "expense", "income", "transfer"
+    counterparty_name: str  # merchant/vendor name
+    reference: str | None = None
 
 class CreatePocketRequest(BaseModel):
     pocket_name: str
@@ -311,6 +318,169 @@ def check_transaction_anomaly(req: TransactionRequest):
         "ai_interception": ai_interception
     }
 
+@app.post("/api/transaction", response_model=TransactionResponse)
+def create_transaction(req: RecordTransactionRequest, background_tasks: BackgroundTasks, db = Depends(get_db)):
+    """
+    Record a transaction (Requires AI feature: Anomaly detection & Tax relief detection)
+    
+    Flow:
+    1. SAVE TRANSACTION IMMEDIATELY (blocking) - app gets instant confirmation
+    2. RETURN RESPONSE (non-blocking) - user continues with app
+    3. RUN AI + CREATE NOTIFICATIONS IN BACKGROUND - only creates notifications
+    
+    This ensures transaction is recorded in DB first, then AI analysis
+    runs asynchronously without blocking app operations.
+    """
+    try:
+        # 1. Validate user exists
+        user_profile = get_user_profile(req.user_id, db=db)
+        if not user_profile:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # 2. IMMEDIATE: Save transaction to database (blocking, returns to app)
+        transaction_id = save_transaction(
+            user_id=req.user_id,
+            pocket_id=req.pocket_id,
+            amount=req.amount,
+            transaction_type=req.transaction_type,
+            counterparty_name=req.counterparty_name,
+            tax_detected=False,  # Will be updated by background task
+            tax_category=None,   # Will be updated by background task
+            warning_triggered=False,  # Will be updated by background task
+            db=db
+        )
+        
+        if not transaction_id:
+            raise HTTPException(status_code=500, detail="Failed to save transaction to database")
+        
+        # 3. Return immediate response to app (transaction recorded)
+        response = {
+            "transaction_id": transaction_id,
+            "amount": req.amount,
+            "counterparty_name": req.counterparty_name,
+            "transaction_type": req.transaction_type,
+            "tax_relief_detected": False,  # Default until AI runs
+            "tax_category": None,  # Default until AI runs
+            "reference": req.reference,
+            "status": "completed",
+            "is_warning_triggered": False,  # Default until AI runs
+            "signed_amount": req.amount if "income" in req.transaction_type.lower() else -req.amount,
+            "transaction_time": datetime.utcnow().isoformat(),
+            "created_at": datetime.utcnow().isoformat(),
+        }
+        
+        print(f"DEBUG: Transaction recorded - ID: {transaction_id}")
+        
+        # 4. BACKGROUND (fire-and-forget): Run two separate AI tasks asynchronously
+        # Task 1: Anomaly Detection
+        background_tasks.add_task(
+            run_anomaly_detection,
+            transaction_id=transaction_id,
+            user_id=req.user_id,
+            amount=req.amount,
+            counterparty_name=req.counterparty_name,
+            monthly_income=user_profile["monthly_income"]
+        )
+        
+        # Task 2: Tax Relief Detection
+        # background_tasks.add_task(
+        #     run_tax_relief_detection,
+        #     transaction_id=transaction_id,
+        #     user_id=req.user_id,
+        #     counterparty_name=req.counterparty_name,
+        #     amount=req.amount,
+        #     reference=req.reference
+        # )
+        
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error recording transaction: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def run_anomaly_detection(transaction_id: str, user_id: str, amount: float, 
+                          counterparty_name: str, monthly_income: float):
+    """
+    Background task: Run anomaly detection on transaction
+    
+    This runs asynchronously after transaction is saved to DB.
+    Creates notification if anomaly is detected.
+    """
+    try:
+        print(f"DEBUG: Starting anomaly detection for transaction {transaction_id}")
+        
+        # Get average spend for the category (for anomaly detection)
+        avg_category_spend = 50.0  # TODO: Calculate from user's transaction history
+        
+        # LAYER 1: Math Engine - Check for anomalies
+        is_anomaly = check_for_anomaly(
+            amount,
+            monthly_income,
+            avg_category_spend
+        )
+        
+        # LAYER 3: AI Interception (Only if anomaly detected)
+        if is_anomaly:
+            ai_interception = generate_anomaly_interception(
+                amount,
+                counterparty_name
+            )
+            # Create notification in DB
+            create_notification(
+                user_id=user_id,
+                title="Unusual Spending Detected",
+                message=ai_interception,
+                notification_type="anomaly_detection"
+            )
+            print(f"DEBUG: Anomaly detected for transaction {transaction_id}: {ai_interception}")
+        else:
+            print(f"DEBUG: No anomaly detected for transaction {transaction_id}")
+        
+    except Exception as e:
+        print(f"Error in anomaly detection for transaction {transaction_id}: {e}")
+
+
+# def run_tax_relief_detection(transaction_id: str, user_id: str, counterparty_name: str, 
+#                             amount: float, reference: str | None):
+#     """
+#     Background task: Run tax relief detection on transaction
+    
+#     This runs asynchronously after transaction is saved to DB.
+#     Creates notification if tax relief is detected.
+#     """
+#     try:
+#         print(f"DEBUG: Starting tax relief detection for transaction {transaction_id}")
+        
+#         # LAYER 3: AI Tax Relief Detection
+#         try:
+#             tax_category = get_tax_category(
+#                 counterparty_name,
+#                 amount,
+#                 reference
+#             )
+#             tax_detected = tax_category and tax_category != "N/A"
+#             if tax_detected:
+#                 # Create notification in DB
+#                 create_notification(
+#                     user_id=user_id,
+#                     title="Tax Relief Available",
+#                     message=f"Your transaction qualifies for tax relief: {tax_category}",
+#                     notification_type="tax_relief_available"
+#                 )
+#                 print(f"DEBUG: Tax relief detected for transaction {transaction_id}: {tax_category}")
+#             else:
+#                 print(f"DEBUG: No tax relief eligible for transaction {transaction_id}")
+#         except Exception as e:
+#             print(f"Warning: Tax check failed for transaction {transaction_id}: {e}")
+        
+#     except Exception as e:
+#         print(f"Error in tax relief detection for transaction {transaction_id}: {e}")
+
+
+
 @app.post("/api/debt-routing")
 def get_debt_routing_advice(req: DebtRoutingRequest):
     # LAYER 3: The AI Debt Strategist
@@ -436,7 +606,7 @@ def get_daily_spending_summary(user_id: str, db = Depends(get_db)):
     Computes a live, database-driven summary profile, pulling active variables
     and calculating the remaining dynamic daily allowance.
     """
-    supabase = db or _get_supabase_client()
+    supabase = db
     
     # 1. Fetch strict user properties
     user_profile = get_user_profile(user_id, db=db)

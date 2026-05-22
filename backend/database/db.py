@@ -200,13 +200,13 @@ def save_transaction(user_id: str, pocket_id: str, amount: float,
             "user_id": str(user_id),
             "pocket_id": str(pocket_id),
             "amount": amount,
-            "transaction_type": transaction_type,
+            "transaction_type": transaction_type.upper(),
             "counterparty_name": counterparty_name,
-            "status": "completed",
             "is_tax_relief_detected": tax_detected,
             "tax_relief_category": tax_category,
             "triggers_warning": warning_triggered,
             "transaction_time": datetime.utcnow().isoformat(),
+            "status": "SUCCESS",
         }
 
         response = supabase.table("transactions").insert(payload).execute()
@@ -348,6 +348,43 @@ def get_user_notifications(user_id: str, db=None):
     except Exception as e:
         print(f"Error fetching notifications: {e}")
         return []
+
+
+def create_notification(user_id: str, title: str, message: str, notification_type: str, db=None) -> str | None:
+    """
+    Create a new notification for a user
+    
+    Args:
+        user_id: User ID to create notification for
+        title: Notification title
+        message: Notification message/content
+        notification_type: Type of notification (e.g., "anomaly_warning", "tax_relief_available")
+        db: Optional database session. If None, creates new session.
+    
+    Returns: Notification ID if successful, None otherwise
+    """
+    try:
+        supabase = db if db is not None else _get_supabase_client()
+        notification_id = str(uuid_lib.uuid4())
+        
+        payload = {
+            "notification_id": notification_id,
+            "user_id": str(user_id),
+            "title": title,
+            "message": message,
+            "notification_type": notification_type,
+            "is_read": False,
+            "created_at": datetime.utcnow().isoformat(),
+        }
+        
+        response = supabase.table("notifications").insert(payload).execute()
+        if response.data:
+            return notification_id
+        return None
+        
+    except Exception as e:
+        print(f"Error creating notification: {e}")
+        return None
 
 def get_user_claims(user_id: str, db=None):
     results = []
