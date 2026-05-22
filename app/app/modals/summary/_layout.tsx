@@ -22,57 +22,65 @@ export default function SummaryScreen() {
   const [taxPickerVisible, setTaxPickerVisible] = useState(false);
   const [activePoint, setActivePoint] = useState<number | null>(null); 
   const [activeCategoryIndex, setActiveCategoryIndex] = useState<number | null>(null); 
-  const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number; receipt_url?: string } | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<{ name: string; amount: number; receipt_url?: string | number } | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
 
   const [taxExemptions, setTaxExemptions] = useState<any[]>([]);
 
+  // useEffect(() => {
+  //   const fetchClaims = async () => {
+  //     try {
+  //       const hardcodedUserId = "de458832-a0c0-45a6-a9b3-471db31a2f7e";
+        
+  //       let apiUrl = process.env.EXPO_PUBLIC_API_URL;
+  //       if (!apiUrl) {
+  //         if (typeof window !== 'undefined' && (window as any).location) {
+  //            apiUrl = "http://localhost:8000";
+  //         } else {
+  //            apiUrl = "http://10.0.2.16:8000"; 
+  //         }
+  //       }
+        
+  //       console.log(`[DEBUG] Fetching claims from: ${apiUrl}/api/claims/${hardcodedUserId}`);
+        
+  //       const response = await fetch(`${apiUrl}/api/claims/${hardcodedUserId}`);
+  //       console.log(`[DEBUG] Response status: ${response.status}`);
+        
+  //       if (!response.ok) {
+  //         const errorText = await response.text();
+  //         console.error(`[DEBUG] Fetch failed: ${response.status} ${errorText}`);
+  //         throw new Error(`Failed to fetch claims: ${response.status}`);
+  //       }
+        
+  //       const data = await response.json();
+  //       console.log(`[DEBUG] Received data:`, JSON.stringify(data, null, 2));
+        
+  //       const formattedClaims = data.map((c: any) => ({
+  //         name: c.tax_relief_category || 'Uncategorized',
+  //         amount: c.amount || 0,
+  //         date: new Date(c.receipt_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+  //         receipt_url: c.receipt_image_url
+  //       }));
+        
+  //       console.log(`[DEBUG] Formatted claims:`, JSON.stringify(formattedClaims, null, 2));
+  //       setTaxExemptions(formattedClaims);
+  //     } catch (error) {
+  //       console.error("[DEBUG] Error in fetchClaims:", error);
+  //     }
+  //   };
+
+  //   fetchClaims();
+  // }, []);
+
+  // Use mock data for tax exemptions (avoid calling real DB/backend during demo)
   useEffect(() => {
-    const fetchClaims = async () => {
-      try {
-        const hardcodedUserId = "de458832-a0c0-45a6-a9b3-471db31a2f7e";
-        
-        let apiUrl = process.env.EXPO_PUBLIC_API_URL;
-        if (!apiUrl) {
-          if (typeof window !== 'undefined' && (window as any).location) {
-             apiUrl = "http://localhost:8000";
-          } else {
-             apiUrl = "http://10.0.2.16:8000"; 
-          }
-        }
-        
-        console.log(`[DEBUG] Fetching claims from: ${apiUrl}/api/claims/${hardcodedUserId}`);
-        
-        const response = await fetch(`${apiUrl}/api/claims/${hardcodedUserId}`);
-        console.log(`[DEBUG] Response status: ${response.status}`);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[DEBUG] Fetch failed: ${response.status} ${errorText}`);
-          throw new Error(`Failed to fetch claims: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log(`[DEBUG] Received data:`, JSON.stringify(data, null, 2));
-        
-        const formattedClaims = data.map((c: any) => ({
-          name: c.tax_relief_category || 'Uncategorized',
-          amount: c.amount || 0,
-          date: new Date(c.receipt_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-          receipt_url: c.receipt_image_url
-        }));
-        
-        console.log(`[DEBUG] Formatted claims:`, JSON.stringify(formattedClaims, null, 2));
-        setTaxExemptions(formattedClaims);
-      } catch (error) {
-        console.error("[DEBUG] Error in fetchClaims:", error);
-      }
-    };
-
-    fetchClaims();
+    const mock = [
+      { name: 'Medical', amount: 800, date: '12 May 2026', receipt_url: require('../../../assets/images/receipt.png') },
+      { name: 'Education', amount: 750, date: '03 May 2026', receipt_url: require('../../../assets/images/receipt.png') }
+    ];
+    setTaxExemptions(mock);
   }, []);
-
   const taxCategories = ['All Categories', 'Tech / Lifestyle', 'Medical', 'Education'];
 
   const filteredExemptions = useMemo(() => {
@@ -441,7 +449,7 @@ export default function SummaryScreen() {
       <View>
         <View style={[styles.totalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.totalLabel, { color: colors.secondary }]}>Potential Tax Relief (LHDN)</Text>
-          <Text style={[styles.totalAmount, { color: colors.primary }]}>RM 1,550</Text>
+          <Text style={[styles.totalAmount, { color: colors.primary }]}>{`RM ${filteredTotal.toLocaleString()}`}</Text>
         </View>
         <View style={[styles.listSection, { backgroundColor: colors.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border, zIndex: 1000 }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, zIndex: 1100 }}>
@@ -558,8 +566,12 @@ export default function SummaryScreen() {
             </View>
 
             <View style={[styles.receiptImageContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Image 
-                source={viewingReceipt?.receipt_url ? { uri: viewingReceipt.receipt_url } : require('@/assets/images/receipt.png')} 
+              <Image
+                source={
+                  viewingReceipt?.receipt_url
+                    ? (typeof viewingReceipt.receipt_url === 'string' ? { uri: viewingReceipt.receipt_url } : viewingReceipt.receipt_url)
+                    : require('../../../assets/images/receipt.png')
+                }
                 style={styles.receiptImage}
                 resizeMode="contain"
               />

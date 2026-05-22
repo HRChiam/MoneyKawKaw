@@ -358,7 +358,19 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
 
         # 2. Check for anomalies before any write unless the user has already confirmed.
         if not req.confirm_anomaly:
-            avg_category_spend = 50.0  # TODO: Calculate from user's transaction history
+            # Resolve pocket_name from pocket_id, then compute avg using CSV
+            pocket_name = req.pocket_id
+            try:
+                pockets = get_user_pockets(req.user_id, db=db) or []
+                for p in pockets:
+                    if str(p.get('pocket_id')) == str(req.pocket_id):
+                        pocket_name = p.get('pocket_name') or pocket_name
+                        break
+            except Exception:
+                # If lookup fails, fall back to using pocket_id as name
+                pocket_name = req.pocket_id
+
+            avg_category_spend = compute_avg_category_spend(pocket_name)
             is_anomaly = check_for_anomaly(
                 req.amount,
                 user_profile["monthly_income"],
@@ -449,46 +461,46 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def run_anomaly_detection(transaction_id: str, user_id: str, amount: float, 
-                          counterparty_name: str, monthly_income: float):
-    """
-    Background task: Run anomaly detection on transaction
+# def run_anomaly_detection(transaction_id: str, user_id: str, amount: float, 
+#                           counterparty_name: str, monthly_income: float):
+#     """
+#     Background task: Run anomaly detection on transaction
     
-    This runs asynchronously after transaction is saved to DB.
-    Creates notification if anomaly is detected.
-    """
-    try:
-        print(f"DEBUG: Starting anomaly detection for transaction {transaction_id}")
+#     This runs asynchronously after transaction is saved to DB.
+#     Creates notification if anomaly is detected.
+#     """
+#     try:
+#         print(f"DEBUG: Starting anomaly detection for transaction {transaction_id}")
         
-        # Get average spend for the category (for anomaly detection)
-        avg_category_spend = 50.0  # TODO: Calculate from user's transaction history
+#         # Get average spend for the category (for anomaly detection)
+#         avg_category_spend = 50.0  # TODO: Calculate from user's transaction history
         
-        # LAYER 1: Math Engine - Check for anomalies
-        is_anomaly = check_for_anomaly(
-            amount,
-            monthly_income,
-            avg_category_spend
-        )
+#         # LAYER 1: Math Engine - Check for anomalies
+#         is_anomaly = check_for_anomaly(
+#             amount,
+#             monthly_income,
+#             avg_category_spend
+#         )
         
-        # LAYER 3: AI Interception (Only if anomaly detected)
-        if is_anomaly:
-            message = (
-                f"Attempted charge of RM{amount:.2f} at {counterparty_name}. "
-                "We paused this transaction because we know your account balance. "
-                "You so broke, you sure you wanna proceed ah?"
-            )
-            # create_notification(
-            #     user_id=user_id,
-            #     title="Unusual Spending Detected",
-            #     message=message,
-            #     notification_type="anomaly_detection"
-            # )
-            print(f"DEBUG: Anomaly detected for transaction {transaction_id}: {message}")
-        else:
-            print(f"DEBUG: No anomaly detected for transaction {transaction_id}")
+#         # LAYER 3: AI Interception (Only if anomaly detected)
+#         if is_anomaly:
+#             message = (
+#                 f"Attempted charge of RM{amount:.2f} at {counterparty_name}. "
+#                 "We paused this transaction because we know your account balance. "
+#                 "You so broke, you sure you wanna proceed ah?"
+#             )
+#             # create_notification(
+#             #     user_id=user_id,
+#             #     title="Unusual Spending Detected",
+#             #     message=message,
+#             #     notification_type="anomaly_detection"
+#             # )
+#             print(f"DEBUG: Anomaly detected for transaction {transaction_id}: {message}")
+#         else:
+#             print(f"DEBUG: No anomaly detected for transaction {transaction_id}")
         
-    except Exception as e:
-        print(f"Error in anomaly detection for transaction {transaction_id}: {e}")
+#     except Exception as e:
+#         print(f"Error in anomaly detection for transaction {transaction_id}: {e}")
 
 
 def run_tax_relief_detection(transaction_id: str, user_id: str, counterparty_name: str, 
@@ -539,6 +551,30 @@ def run_tax_relief_detection(transaction_id: str, user_id: str, counterparty_nam
         
     except Exception as e:
         print(f"Error in tax relief detection for transaction {transaction_id}: {e}")
+
+
+def compute_avg_category_spend(pocket_id: str) -> float:
+    """Compute average spend for a pocket/category using the local CSV only.
+    Returns default 50.0 if the category isn't found or parsing fails.
+    """
+    try:
+        import os
+        csv_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "app", "app", "data", "transaction data.csv"))
+        if not os.path.exists(csv_path):
+            return 50.0
+
+        df = pd.read_csv(csv_path)
+        df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
+
+        # Treat pocket_id as pocket_name when looking up CSV
+        pocket_name = pocket_id
+        grp = df[df['pocket_name'] == pocket_name]
+        if grp.empty:
+            return 50.0
+
+        return round(float(grp['amount'].mean()), 2)
+    except Exception:
+        return 50.0
 
 
 
