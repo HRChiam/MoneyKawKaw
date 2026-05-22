@@ -218,7 +218,7 @@ useFocusEffect(
         router.push('../modals/flexicredit' as any);
         break;
       case 'ai_learning':
-        router.push('../modals/limit-adjustment' as any);
+        router.push({ pathname: '../modals/limit-adjustment', params: { source: 'forecast' } } as any);
         break;
       default:
         router.push('../modals/limit-adjustment' as any);

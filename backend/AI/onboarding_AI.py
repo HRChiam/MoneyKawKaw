@@ -41,19 +41,20 @@ def reality_check_budget(income: float, fixed_total: float, disposable: float, m
     2. HIERARCHY OF FUNDS: Essential survival beats savings goals. If the baseline leaves 'Food' or 'Transport' with unlivable amounts, you MUST override the persona. You are explicitly authorized and required to slash 'Savings', 'Entertainment', and 'Drinks' down to zero if necessary, just to ensure 'Food' and 'Transport' have enough raw RM to survive the month.
     3. RESPECT PERSONA (WHEN SAFE): Only if basic needs (Food/Transport) are comfortably met should you apply their chosen persona (Conservative/Balanced/Aggressive) to distribute the remaining funds into Savings and Lifestyle.
     4. ZERO-SUM MATH: The sum of all output categories (Savings + Food + Drinks + Transport + Entertainment) MUST exactly equal their Disposable Income (RM{disposable}). Do not invent or lose money.
-    
+    5. PRETTY NUMBERS: Use clean, rounded Malaysian amounts. Prefer multiples of 10 or 50 (e.g., RM1250, RM400, RM150) rather than odd numbers like RM432.17. It makes it easier for users to track.
+
     OUTPUT INSTRUCTIONS:
     Return ONLY a valid JSON object with the adjusted amounts. Use these exact keys: "Savings", "Food", "Drinks", "Transport", "Entertainment". Do not wrap it in markdown block quotes.
     """
-    
+
     prompt = PromptTemplate(
         template=template,
         input_variables=["income", "fixed_total", "disposable", "mode", "baseline"]
     )
-    
+
     # JsonOutputParser forces the LLM to return a clean Python dictionary!
     chain = prompt | llm | JsonOutputParser()
-    
+
     try:
         ai_adjusted_pockets = chain.invoke({
             "income": income,

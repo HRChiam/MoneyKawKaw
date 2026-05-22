@@ -2,12 +2,34 @@ import joblib
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
+import os
 
 # Load the AI model and the translators (Encoders) when the server starts
 NOTEBOOK_PATH = Path(__file__).resolve().parents[1] / 'Notebook'
 forecaster_model = joblib.load(NOTEBOOK_PATH / 'spending_forecaster_v2.pkl')
 le_mode = joblib.load(NOTEBOOK_PATH / 'encoder_savings_mode.pkl')
 le_category = joblib.load(NOTEBOOK_PATH / 'encoder_parent_category.pkl')
+
+CSV_PATH = Path(__file__).resolve().parents[2] / 'app' / 'app' / 'data' / 'transaction data.csv'
+
+def get_historical_trend():
+    """Reads transaction data CSV and returns average monthly spending per pocket category."""
+    try:
+        if not os.path.exists(CSV_PATH):
+            print(f"Warning: CSV file not found at {CSV_PATH}")
+            return {}
+            
+        df = pd.read_csv(CSV_PATH)
+        # Filter for expenses
+        df_expenses = df[df['transaction_type'] == 'EXPENSE'].copy()
+        
+        # Simple aggregation: sum by pocket_name
+        # Since we don't know the exact time span of the CSV, we'll treat it as 'representative month'
+        trend = df_expenses.groupby('pocket_name')['amount'].sum().to_dict()
+        return trend
+    except Exception as e:
+        print(f"Error processing historical trend: {e}")
+        return {}
 
 def allocate_monthly_budget(user_income, savings_mode, target_month, fixed_expenses_total, user_pockets_data):
     """
@@ -25,33 +47,58 @@ def allocate_monthly_budget(user_income, savings_mode, target_month, fixed_expen
     total_predicted = 0.0
 
     # 2. ML Layer: Get raw predictions for every pocket
-    mode_encoded = le_mode.transform([savings_mode])[0]
+    # Handle savings_mode encoding (case insensitive)
+    try:
+        mode_encoded = le_mode.transform([savings_mode.capitalize()])[0]
+    except:
+        mode_encoded = le_mode.transform(['Balanced'])[0] # Fallback
+        
     today = datetime.now()
+    
+    # Get historical trend to influence predictions
+    historical_trend = get_historical_trend()
 
     for pocket in user_pockets_data:
         # Translate the parent category to a number
-        # Note: In production, wrap this in a try-except in case of unknown categories
-        category_encoded = le_category.transform([pocket['parent_category']])[0]
+        category_name = pocket.get('parent_category') or pocket.get('pocket_name', 'Other')
+        
+        try:
+            category_encoded = le_category.transform([category_name])[0]
+        except:
+            category_encoded = le_category.transform(['Food'])[0] # Fallback
         
         # Calculate pocket age
-        created_date = datetime.strptime(pocket['created_at'], '%Y-%m-%d')
+        created_at = pocket.get('created_at', datetime.now().strftime('%Y-%m-%d'))
+        try:
+            created_date = datetime.strptime(created_at, '%Y-%m-%d')
+        except:
+            # Handle ISO format if provided
+            try:
+                created_date = datetime.fromisoformat(created_at.replace('Z', '+00:00')).replace(tzinfo=None)
+            except:
+                created_date = today
+                
         pocket_age_days = (today - created_date).days
         
         # Format the data row exactly how we trained it
         input_data = pd.DataFrame([[
             user_income, mode_encoded, category_encoded, target_month, 
-            pocket_age_days, pocket['previous_limit']
+            pocket_age_days, pocket.get('previous_limit', 0)
         ]], columns=['monthly_income', 'savings_mode_encoded', 'parent_category_encoded', 
                      'month_of_year', 'pocket_age_days', 'previous_allocated_limit'])
         
         # Predict!
         predicted_spend = float(forecaster_model.predict(input_data)[0])
+        
+        # Influence with historical trend if available
+        if category_name in historical_trend:
+            # Weighted average: 70% ML prediction, 30% historical trend
+            predicted_spend = (predicted_spend * 0.7) + (historical_trend[category_name] * 0.3)
+            
         raw_predictions[pocket['pocket_id']] = predicted_spend
         total_predicted += predicted_spend
 
     # 3. Math Engine: Normalize the ML predictions
-    # The ML model might predict they need RM 2000, but they only have RM 1500 left!
-    # We mathematically scale all pockets down (or up) to fit the exact budget.
     final_allocations = {}
     
     for pocket_id, raw_amount in raw_predictions.items():
@@ -67,15 +114,3 @@ def allocate_monthly_budget(user_income, savings_mode, target_month, fixed_expen
         "savings_locked": round(mandatory_savings, 2),
         "pocket_allocations": final_allocations
     }
-
-# --- Let's Test It! ---
-# Alex earns RM 3500. He pays RM 1000 in rent/loans. 
-# He has three pockets. Notice the "Concert" pocket is brand new!
-# alex_pockets = [
-#     {'pocket_id': 'p1_food', 'parent_category': 'Food', 'created_at': '2025-01-01', 'previous_limit': 800},
-#     {'pocket_id': 'p2_transport', 'parent_category': 'Transport', 'created_at': '2025-01-01', 'previous_limit': 300},
-#     {'pocket_id': 'p3_concert', 'parent_category': 'Entertainment', 'created_at': '2026-05-15', 'previous_limit': 150} # Just created 2 days ago!
-# ]
-
-# final_budget = allocate_monthly_budget(3500, 'Aggressive', 6, 1000, alex_pockets)
-# print(final_budget)

@@ -39,6 +39,9 @@ from service_module.onboarding_math import calculate_cold_start_budget
 from AI.onboarding_AI import reality_check_budget
 from service_module.daily_limit_calculation import calculate_daily_limit
 from service_module.spending_forecast import allocate_monthly_budget
+from service_module.lifestyle_limit_update import process_lifestyle_limit_update
+from AI.onboarding_AI import reality_check_budget
+from AI.salary_router_AI import explain_monthly_allocation, refine_forecast_with_ai
 from service_module.burn_rate_math import predict_deficit_risk
 from service_module.check_for_anomaly import check_for_anomaly
 from service_module.daily_limit_calculation import calculate_daily_limit
@@ -240,6 +243,13 @@ def process_onboarding(req: OnboardingRequest, db = Depends(get_db)):
         db=db
     )
     print(f"DEBUG: Pockets initialization success: {pocket_init_success}")
+
+    # 6. TRIGGER LIFESTYLE LIMIT UPDATE (AI Forecast & Notification)
+    # This runs after pockets are initialized so it has current data to work with.
+    try:
+        process_lifestyle_limit_update(req.user_id, db=db)
+    except Exception as e:
+        print(f"Warning: Lifestyle limit update failed: {e}")
 
     return {
         "status": "success",
@@ -600,6 +610,83 @@ def list_pockets(user_id: str, db = Depends(get_db)):
     pockets = get_user_pockets(user_id, db=db)
     return {"pockets": pockets, "count": len(pockets)}
 
+@app.get("/api/user/{user_id}/lifestyle-forecast")
+def get_lifestyle_forecast(user_id: str, db = Depends(get_db)):
+    """
+    Returns AI-suggested pocket allocations based on latest income and trends.
+    """
+    try:
+        user = get_user_profile(user_id, db=db)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        pockets = get_user_pockets(user_id, db=db)
+        
+        user_pockets_data = []
+        fixed_expenses_total = 0.0
+        
+        for p in pockets:
+            if p['pocket_type'].upper() == 'FIXED' and p['pocket_name'].lower() != 'savings':
+                fixed_expenses_total += float(p.get('monthly_limit') or 0.0)
+            
+            user_pockets_data.append({
+                'pocket_id': p['pocket_id'],
+                'pocket_name': p['pocket_name'],
+                'parent_category': p['pocket_name'],
+                'created_at': user['created_at'][:10] if user['created_at'] else datetime.now().strftime('%Y-%m-%d'),
+                'previous_limit': float(p.get('monthly_limit') or 0.0)
+            })
+            
+        target_month = datetime.now().month
+        forecast_results = allocate_monthly_budget(
+            user_income=user['monthly_income'],
+            savings_mode=user['savings_mode'],
+            target_month=target_month,
+            fixed_expenses_total=fixed_expenses_total,
+            user_pockets_data=user_pockets_data
+        )
+        
+        if isinstance(forecast_results, str):
+            raise HTTPException(status_code=400, detail=forecast_results)
+            
+        # AI Refinement Layer (Zero-Sum check across ALL pockets)
+        all_pockets_raw = {}
+        # Build the full list for AI to see
+        for p in pockets:
+            if p['pocket_type'].upper() == 'FIXED' and p['pocket_name'].lower() != 'savings':
+                all_pockets_raw[p['pocket_name']] = float(p.get('monthly_limit') or 0.0)
+            elif p['pocket_name'].lower() == 'savings':
+                all_pockets_raw[p['pocket_name']] = forecast_results['savings_locked']
+            else:
+                # Variable pocket
+                amount = forecast_results['pocket_allocations'].get(p['pocket_id'], 0.0)
+                all_pockets_raw[p['pocket_name']] = amount
+
+        refined_pockets = refine_forecast_with_ai(
+            income=user['monthly_income'],
+            mode=user['savings_mode'],
+            math_forecast=all_pockets_raw
+        )
+
+        # Map refined amounts back to pocket IDs
+        name_to_pocket_id = {p['pocket_name']: p['pocket_id'] for p in user_pockets_data}
+        final_pocket_allocations = {}
+        final_savings_locked = refined_pockets.get('Savings', forecast_results['savings_locked'])
+
+        for name, amount in refined_pockets.items():
+            if name == 'Savings':
+                continue
+            if name in name_to_pocket_id:
+                final_pocket_allocations[name_to_pocket_id[name]] = amount
+
+        return {
+            "discretionary_total": forecast_results['discretionary_total'],
+            "savings_locked": final_savings_locked,
+            "pocket_allocations": final_pocket_allocations
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/users/{user_id}/pockets")
 def add_pocket(user_id: str, req: CreatePocketRequest, db = Depends(get_db)):
     if req.pocket_type not in ["FIXED", "VARIABLE", "fixed", "variable"]:
@@ -629,7 +716,12 @@ def add_pocket(user_id: str, req: CreatePocketRequest, db = Depends(get_db)):
 
 @app.put("/api/pockets/{pocket_id}")
 def rename_pocket(pocket_id: str, req: UpdatePocketRequest, db = Depends(get_db)):
-    updated = update_user_pocket(pocket_id=pocket_id, pocket_name=req.pocket_name, db=db)
+    updated = update_user_pocket(
+        pocket_id=pocket_id, 
+        pocket_name=req.pocket_name, 
+        monthly_limit=req.monthly_limit,
+        db=db
+    )
     if not updated:
         raise HTTPException(status_code=404, detail="Target tracking pocket structural entity not found")
         

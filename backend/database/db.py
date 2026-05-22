@@ -251,7 +251,7 @@ def get_user_pockets(user_id: str, db=None):
         response = (
             supabase.table("pockets")
             .select(
-                "pocket_id, pocket_name, pocket_type, current_pocket_balance"
+                "pocket_id, pocket_name, pocket_type, current_pocket_balance, monthly_limit"
             )
             .eq("user_id", str(user_id).strip())
             .execute()
@@ -263,7 +263,7 @@ def get_user_pockets(user_id: str, db=None):
                 "pocket_id": p.get("pocket_id"),
                 "pocket_name": p.get("pocket_name"),
                 "pocket_type": p.get("pocket_type"),
-                "monthly_limit": 0.00,
+                "monthly_limit": float(p.get("monthly_limit") or 0.0),
                 "current_balance": p.get("current_pocket_balance"),
             }
             for p in pockets
@@ -615,13 +615,15 @@ def create_user_pocket(user_id: str, pocket_name: str, pocket_type: str, monthly
         return None
 
 
-def update_user_pocket(pocket_id: str, pocket_name: str = None, db=None) -> dict | None:
+def update_user_pocket(pocket_id: str, pocket_name: str = None, monthly_limit: float = None, db=None) -> dict | None:
     """Updates fields inside an isolated pocket bucket."""
     try:
         supabase = db or _get_supabase_client()
         payload = {}
         if pocket_name is not None:
             payload["pocket_name"] = pocket_name
+        if monthly_limit is not None:
+            payload["monthly_limit"] = monthly_limit
 
         if not payload:
             return None

@@ -4,6 +4,7 @@ export interface Pocket {
   id: string;
   name: string;
   balance: number;
+  monthlyLimit: number;
   icon: string;
   color: string;
   isFixed: boolean;
@@ -27,6 +28,7 @@ interface FinancialContextType {
   refreshPockets: () => Promise<void>;
   addNewPocket: (name: string, isFixed: boolean) => Promise<boolean>;
   renameUserPocket: (id: string, name: string) => Promise<boolean>;
+  updatePocketLimit: (id: string, limit: number) => Promise<boolean>;
   deleteUserPocket: (id: string) => Promise<boolean>;
   transferFunds: (sourceId: string, destId: string, amount: number) => Promise<boolean>;
   updateSalary: (amount: number) => Promise<boolean>;
@@ -147,6 +149,7 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
             id: p.pocket_id || p.id,
             name: p.pocket_name || p.name || 'Unnamed Pocket',
             balance: isNaN(parsedBalance) ? 0 : parsedBalance,
+            monthlyLimit: parseFloat(p.monthly_limit || 0),
             isFixed: typeString === 'fixed',
             icon: pocketIcons[p.pocket_name || p.name] || 'folder-outline',
             color: pocketColors[p.pocket_name || p.name] || '#771FFF'
@@ -194,6 +197,21 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pocket_name: name })
+      });
+      if (res.ok) {
+        await refreshPockets();
+        return true;
+      }
+    } catch (e) { console.error(e); }
+    return false;
+  };
+
+  const updatePocketLimit = async (id: string, limit: number) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/pockets/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ monthly_limit: limit })
       });
       if (res.ok) {
         await refreshPockets();
@@ -289,6 +307,7 @@ export const FinancialProvider = ({ children }: { children: ReactNode }) => {
       refreshPockets,
       addNewPocket,
       renameUserPocket,
+      updatePocketLimit,
       deleteUserPocket,
       transferFunds,
       updateSalary,
