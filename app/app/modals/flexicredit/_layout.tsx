@@ -29,8 +29,10 @@ export default function FlexiCreditScreen() {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
 
-  const parsedAmount = parseInt(creditAmount) || 0;
-  const parsedRate = (parseFloat(interestRateInput) || 0) / 100; 
+const parsedAmount = creditAmount === '' ? 1000 : (parseInt(creditAmount) || 0);
+  
+  const FIXED_RATE = 6.45;
+  const parsedRate = FIXED_RATE / 100;
 
   // --- LOGIC FIX: CALCULATE INTEREST FIRST ---
   const firstMonthInterest = (parsedAmount * parsedRate) / 12;
@@ -134,16 +136,11 @@ export default function FlexiCreditScreen() {
             <View style={styles.inputHalf}>
               <Text style={[styles.inputLabel, { color: colors.text }]}>Interest Rate</Text>
               {/* 🚀 FIXED: Added styles.rateInputContainer to align elements to the far sides */}
-              <View style={[styles.inputContainer, styles.rateInputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <TextInput
-                  style={[styles.amountInput, { color: colors.text, flex: 1 }]}
-                  value={interestRateInput}
-                  onChangeText={setInterestRateInput}
-                  keyboardType="numeric"
-                  placeholder="6.45"
-                  placeholderTextColor={colorScheme === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.3)'}
-                />
-                <Text style={[styles.currencyPrefix, { color: colors.secondary, marginLeft: 8 }]}>%</Text>
+              <View style={[styles.inputContainer, styles.rateInputContainer, { backgroundColor: colors.card, borderColor: colors.border, opacity: 0.85 }]}>
+                <Text style={[styles.staticRateText, { color: colors.text }]}>
+                  {FIXED_RATE.toFixed(2)}
+                </Text>
+                <Text style={[styles.currencyPrefix, { color: colors.secondary }]}>% p.a.</Text>
               </View>
             </View>
           </View>
@@ -286,10 +283,17 @@ const styles = StyleSheet.create({
   inputRow: { flexDirection: 'row', gap: 12 },
   inputHalf: { flex: 1 },
   inputLabel: { fontSize: 14, fontWeight: '700', marginBottom: 8 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12 },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 56,
+  },
   rateInputContainer: { justifyContent: 'space-between' },
   currencyPrefix: { fontSize: 16, fontWeight: '700', marginRight: 4 },
-  amountInput: { flex: 1, fontSize: 16, fontWeight: '600' },
+  amountInput: { flex: 1, fontSize: 16, fontWeight: '600', fontFamily: 'sans-serif-rounded', paddingVertical: 0 },
   chartContainer: { marginHorizontal: 16, marginVertical: 12, borderRadius: 24, padding: 20, borderWidth: 1.5 },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   chartTitle: { fontSize: 18, fontWeight: '800' },
@@ -338,6 +342,7 @@ const styles = StyleSheet.create({
     fontFamily: 'sans-serif-rounded',
     textAlign: 'right'   
   },
+  staticRateText: { fontSize: 16, fontWeight: '700', fontFamily: 'sans-serif-rounded' }, // 🚀 FIXED: ADDED TO STYLESHEET MATRIX
   statusBadge: { paddingVertical: 12, borderRadius: 16, marginBottom: 24 },
   sliderValueContainer: { alignItems: 'center', marginBottom: 12 },
   sliderHeroText: { fontSize: 32, fontWeight: '900' },
