@@ -31,6 +31,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { FinancialProvider } from '@/context/FinancialContext';
 import { RewardsProvider } from '@/components/rewards/context';
+import TaxEligibilityModalWatcher from '@/components/TaxEligibilityModalWatcher';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -115,6 +116,7 @@ export default function RootLayout() {
           }} 
         />
       </Stack>
+      <TaxEligibilityModalWatcher />
       <StatusBar style="auto" />
     </ThemeProvider>
     </FinancialProvider>

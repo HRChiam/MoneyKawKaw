@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useState, useCallback } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
@@ -152,15 +152,17 @@ interface Notification {
 
 const fetchNotifications = async () => {
   try {
-    const hardcodedUserId = "de458832-a0c0-45a6-a9b3-471d4d3a6839"; 
+    const USER_ID = 'de458832-a0c0-45a6-a9b3-471db31a2f7e';
+    const API_URL = process.env.EXPO_PUBLIC_API_URL;
     
-    const response = await fetch(`http://localhost:8000/api/notifications/${hardcodedUserId}`);
+    const response = await fetch(`${API_URL}/api/notifications/${USER_ID}`);
     
     if (!response.ok) {
       throw new Error(`Error: ${response.status}`);
     }
     
     const data = await response.json();
+    console.log("Successfully fetched notifications:", data);
     
     const uiFormatted = data.map(mapDbNotificationToUi);
     setNotifications(uiFormatted);
@@ -170,26 +172,17 @@ const fetchNotifications = async () => {
   }
 };
 
+// Fetch on initial mount
 useEffect(() => {
-const USER_ID = 'de458832-a0c0-45a6-a9b3-471db31a2f7e';
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
-fetch(`${API_URL}/api/notifications/${USER_ID}`)
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  })
-  .then(data => {
-    console.log("Successfully fetched notifications:", data);
-    const formatted = data.map(mapDbNotificationToUi);
-    setNotifications(formatted);; 
-  })
-  .catch(error => {
-    console.error("Error fetching notifications:", error);
-  });
+  fetchNotifications();
 }, []);
+
+// Refresh notifications when screen comes into focus
+useFocusEffect(
+  useCallback(() => {
+    fetchNotifications();
+  }, [])
+);
 
   const primaryBrand = '#771FFF'; 
   const white = '#FFFFFF';
