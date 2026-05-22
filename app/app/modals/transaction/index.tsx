@@ -63,7 +63,7 @@ export default function TransactionScreen() {
   const variablePockets = pockets.filter(p => !p.isFixed);
 
   const handleConfirm = async () => {
-    if (!toAccount || !amount || !selectedSource) {
+    if (!toAccount || !amount || !selectedSource || !merchantName) {
       alert('Please fill in all required fields');
       return;
     }
@@ -102,7 +102,7 @@ export default function TransactionScreen() {
         pocket_id: selectedPocket.id,
         amount: enteredAmount,
         transaction_type: 'EXPENSE',
-        counterparty_name: merchantName || toBank,
+      counterparty_name: merchantName || toBank,
         reference,
         confirm_anomaly: false
       };
@@ -284,13 +284,12 @@ export default function TransactionScreen() {
             </View>
 
               {/* Merchant Name Section */}
-            <View style={styles.glassSection}>
-              <View style={styles.glassInputWrapper}>
+              <View style={[styles.glassInputWrapper, { marginTop: 16 }]}>
                 <View style={[styles.itemIconCircle, { backgroundColor: '#EC4899' + '20' }]}>
                   <MaterialCommunityIcons name="store" size={18} color="#EC4899" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Merchant Name (Optional)</Text>
+                  <Text style={[styles.itemSubtitle, { color: colors.secondary }]}>Merchant Name</Text>
                   <TextInput
                     style={[styles.glassInput, { color: colors.text }]}
                     placeholder="Enter merchant name"
@@ -301,7 +300,6 @@ export default function TransactionScreen() {
                 </View>
               </View>
             </View>
-          </View>         
 
           {/* Source Account Selection */}
           <View style={styles.glassSection}>
@@ -446,14 +444,14 @@ export default function TransactionScreen() {
       <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: 'rgba(255,255,255,0.08)' }]}>
         <TouchableOpacity
           onPress={handleConfirm}
-          disabled={isLoading || !toAccount || !amount || !selectedSource}
+          disabled={isLoading || !toAccount || !amount || !selectedSource || !merchantName}
           style={styles.confirmButtonWrapper}
         >
           <LinearGradient
-            colors={(!toAccount || !amount || !selectedSource) ? ['#3f3751', '#3f3751'] : ['#771FFF', '#F8326D']}
+            colors={(!toAccount || !amount || !selectedSource || !merchantName) ? ['#3f3751', '#3f3751'] : ['#771FFF', '#F8326D']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={[styles.gradientButton, { opacity: (!toAccount || !amount || !selectedSource) ? 0.6 : 1 }]}
+            style={[styles.gradientButton, { opacity: (!toAccount || !amount || !selectedSource || !merchantName) ? 0.6 : 1 }]}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
