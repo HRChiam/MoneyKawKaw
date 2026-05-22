@@ -1,0 +1,57 @@
+pocket_name,amount,transaction_type,counterparty_name,reference,transaction_time
+Other Loan,450,EXPENSE,Credit Card/Personal Loan,Receipt #8888,2026-05-01 10:00:00+08
+Food,21.65,EXPENSE,McDonalds,Receipt #3726,2026-05-01 09:18:00+08
+Entertainment,44.9,EXPENSE,Netflix,Receipt #7503,2026-05-02 16:03:00+08
+Food,8.7,EXPENSE,Ah Ma Zap Fan,Receipt #8673,2026-05-03 10:09:00+08
+Food,23.65,EXPENSE,Nasi Kandar Pelita,Receipt #3012,2026-05-03 08:04:00+08
+Food,13,EXPENSE,S11 Food Court,Receipt #6024,2026-05-04 18:32:00+08
+Transport,4.5,EXPENSE,RapidKL,Receipt #4564,2026-05-04 15:09:00+08
+Food,18.99,EXPENSE,KFC,Receipt #6367,2026-05-04 08:42:00+08
+Food,7.6,EXPENSE,Kim Seng Zap Fan,Receipt #7074,2026-05-05 13:09:00+08
+Transport,2.3,EXPENSE,RapidKL,Receipt #4564,2026-05-05 15:09:00+08
+Food,14.77,EXPENSE,Mamak,Receipt #3066,2026-05-05 14:27:00+08
+Food,12,EXPENSE,Ho Yee Kee Restaurant,Receipt #3586,2026-05-06 09:42:00+08
+Transport,2.6,EXPENSE,RapidKL,Receipt #4564,2026-05-06 15:09:00+08
+Entertainment,15.9,EXPENSE,Spotify,Receipt #8663,2026-05-06 10:37:00+08
+Food,12.15,EXPENSE,Nasi Kandar Pelita,Receipt #2565,2026-05-07 08:41:00+08
+Transport,2.6,EXPENSE,RapidKL,Receipt #4564,2026-05-07 15:09:00+08
+Food,25.82,EXPENSE,McDonalds,Receipt #1064,2026-05-07 11:56:00+08
+Transport,3.6,EXPENSE,RapidKL,Receipt #4564,2026-05-08 15:09:00+08
+Food,27.7,EXPENSE,McDonalds,Receipt #7689,2026-05-08 19:19:00+08
+Drinks,20.99,EXPENSE,Starbucks,Receipt #9111,2026-05-09 17:49:00+08
+Food,12,EXPENSE,Ho Yee Kee Restaurant,Receipt #3586,2026-05-09 09:42:00+08
+Entertainment,20,EXPENSE,TGV Cinemas,Receipt #9968,2026-05-10 10:06:00+08
+Food,27.7,EXPENSE,McDonalds,Receipt #7689,2026-05-10 19:19:00+08
+Transport,15,EXPENSE,Grab,Receipt #4309,2026-05-11 17:34:00+08
+Food,14.9,EXPENSE,Nasi Lemak Village Park,Receipt #2565,2026-05-11 08:41:00+08
+Transport,2.6,EXPENSE,RapidKL,Receipt #4564,2026-05-12 15:09:00+08
+Drinks,8.57,EXPENSE,Tealive,Receipt #9985,2026-05-12 20:02:00+08
+Food,11,EXPENSE,S11 Food Court,Receipt #6024,2026-05-12 18:32:00+08
+Food,15.65,EXPENSE,BurgerKing,Receipt #8908,2026-05-12 13:49:00+08
+Transport,2.3,EXPENSE,RapidKL,Receipt #4564,2026-05-13 15:09:00+08
+Drinks,17.71,EXPENSE,Gigi Coffee,Receipt #7399,2026-05-13 15:43:00+08
+Food,17.45,EXPENSE,Nasi Kandar Pelita,Receipt #4446,2026-05-13 18:56:00+08
+Transport,5.95,EXPENSE,RapidKL,Receipt #2827,2026-05-14 12:40:00+08
+Food,14.9,EXPENSE,Nasi Lemak Village Park,Receipt #2565,2026-05-14 08:41:00+08
+Drinks,11.89,EXPENSE,ZUS Coffee,Receipt #2466,2026-05-14 16:52:00+08
+Transport,8,EXPENSE,Grab,Receipt #5031,2026-05-15 16:11:00+08
+Food,15.97,EXPENSE,Nasi Kandar Pelita,Receipt #8434,2026-05-15 17:36:00+08
+Food,18.67,EXPENSE,Nasi Kandar Pelita,Receipt #2958,2026-05-16 11:32:00+08
+Food,8,EXPENSE,S11 Food Court,Receipt #6024,2026-05-16 18:32:00+08
+Food,18.95,EXPENSE,McDonalds,Receipt #1619,2026-05-17 15:09:00+08
+Food,12.95,EXPENSE,McDonalds,Receipt #1990,2026-05-17 08:08:00+08
+Transport,2.3,EXPENSE,RapidKL,Receipt #4564,2026-05-18 15:09:00+08
+Food,9.5,EXPENSE,S11 Food Court,Receipt #6024,2026-05-18 18:32:00+08
+Drinks,15.21,EXPENSE,Starbucks,Receipt #7996,2026-05-18 17:38:00+08
+Transport,2.3,EXPENSE,RapidKL,Receipt #4564,2026-05-19 15:09:00+08
+Food,7.8,EXPENSE,Nasi Kandar Pelita,Receipt #2462,2026-05-19 08:02:00+08
+Food,24.7,EXPENSE,KFC,Receipt #4800,2026-05-19 08:06:00+08
+Transport,2.3,EXPENSE,RapidKL,Receipt #4564,2026-05-20 15:09:00+08
+Food,13.55,EXPENSE,McDonalds,Receipt #9461,2026-05-20 18:26:00+08
+Transport,7,EXPENSE,Grab,Receipt #6178,2026-05-20 18:32:00+08
+Transport,2.3,EXPENSE,RapidKL,Receipt #4564,2026-05-21 15:09:00+08
+Food,7.8,EXPENSE,Nasi Kandar Pelita,Receipt #5166,2026-05-21 16:05:00+08
+Food,9.5,EXPENSE,S11 Food Court,Receipt #6024,2026-05-21 18:32:00+08
+Transport,2.3,EXPENSE,RapidKL,Receipt #4564,2026-05-22 15:09:00+08
+Food,15.65,EXPENSE,BurgerKing,Receipt #8908,2026-05-22 13:49:00+08
+Food,9.5,EXPENSE,S11 Food Court,Receipt #6024,2026-05-22 18:32:00+08
