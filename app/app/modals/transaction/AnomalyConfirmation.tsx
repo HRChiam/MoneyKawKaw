@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 
 import { Colors } from '@/constants/theme';
@@ -41,11 +41,9 @@ export default function AnomalyConfirmationScreen() {
     params.message,
     'This transaction was flagged for anomaly review.'
   );
+  const availableBalance = firstParam(params.availableBalance, '0');
 
   const primaryBrand = '#771FFF';
-  const warningBrand = '#F97316';
-  const accentBrand = '#15fabd';
-
   const handleProceed = async () => {
     if (!amount || !selectedSource || !pocketId) {
       alert('Missing transaction details');
@@ -72,8 +70,15 @@ export default function AnomalyConfirmationScreen() {
         const errorData = await response.json();
         if (response.status === 400 && String(errorData.detail || '').toLowerCase().includes('insufficient funds')) {
           router.push({
-            pathname: './insufficient-funds',
-            params: { toAccount, toBank, amount, reference, selectedSource },
+            pathname: '../insufficient-funds',
+            params: {
+              toAccount,
+              toBank,
+              amount,
+              reference,
+              selectedSource,
+              availableBalance,
+            },
           });
           return;
         }

@@ -74,12 +74,33 @@ export default function TransactionScreen() {
       return;
     }
 
+    const enteredAmount = parseFloat(amount);
+    if (!Number.isFinite(enteredAmount) || enteredAmount <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    if (enteredAmount > selectedPocket.balance) {
+      router.push({
+        pathname: '/modals/insufficient-funds',
+        params: {
+          toAccount,
+          toBank,
+          amount,
+          reference,
+          selectedSource,
+          availableBalance: String(selectedPocket.balance),
+        },
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const transactionPayload = {
         user_id: MOCK_USER_ID,
         pocket_id: selectedPocket.id,
-        amount: parseFloat(amount),
+        amount: enteredAmount,
         transaction_type: 'EXPENSE',
         counterparty_name: merchantName || toBank,
         reference,
@@ -115,8 +136,15 @@ export default function TransactionScreen() {
         const errorData = await response.json();
         if (response.status === 400 && errorData.detail.toLowerCase().includes('insufficient funds')) {
           router.push({
-            pathname: './insufficient-funds',
-            params: { toAccount, toBank, amount, reference, selectedSource }
+            pathname: '../insufficient-funds',
+            params: {
+              toAccount,
+              toBank,
+              amount,
+              reference,
+              selectedSource,
+              availableBalance: String(selectedPocket.balance),
+            }
           });
           return;
         }
