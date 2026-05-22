@@ -62,4 +62,5 @@ def get_tax_category(merchant_name, amount, reference=None):
         })
         return response.content.strip()
     except Exception as e:
+        print(f"Error in get_tax_category: {e}")
         return "N/A"

@@ -487,6 +487,7 @@ def run_tax_relief_detection(transaction_id: str, user_id: str, counterparty_nam
                 amount,
                 reference
             )
+            print(f"DEBUG: Tax category for transaction {transaction_id}: {tax_category}")
             is_claimable = tax_category != "N/A"
             
             # Update transaction record with tax information (same as /api/check-tax)
@@ -505,13 +506,6 @@ def run_tax_relief_detection(transaction_id: str, user_id: str, counterparty_nam
                         .eq("transaction_id", transaction_id) \
                         .execute()
                     
-                    # Create notification in DB
-                    create_notification(
-                        user_id=user_id,
-                        title="Tax Relief Available",
-                        message=f"Your transaction qualifies for tax relief: {tax_category}",
-                        notification_type="tax_relief_available"
-                    )
                     print(f"DEBUG: Tax relief detected for transaction {transaction_id}: {tax_category}")
                 except Exception as db_err:
                     print(f"Error updating database for transaction {transaction_id}: {db_err}")
