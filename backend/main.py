@@ -32,6 +32,7 @@ from database import (
     update_user_onboarding_data,
     initialize_user_pockets,
     add_to_pocket,
+    sync_daily_total_spend,
 )
 from typing import Dict, List, Optional
 from service_module.onboarding_math import calculate_cold_start_budget
@@ -46,11 +47,11 @@ from AI.risk_predictor_AI import generate_momentum_warning
 from AI.anomaly_detection_AI import generate_anomaly_interception
 from AI.debt_routing_AI import generate_debt_advice
 from AI.tax_exemption_AI import get_tax_category
-from datetime import date, datetime
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 import pandas as pd
 
 app = FastAPI(title="MoneyKawKaw API", version="1.0.0")
+MYT = timezone(timedelta(hours=8))
 
 # CORS Configuration
 app.add_middleware(
@@ -393,6 +394,13 @@ def create_transaction(req: RecordTransactionRequest, background_tasks: Backgrou
         
         if not transaction_id:
             raise HTTPException(status_code=500, detail="Failed to save transaction to database")
+
+        # Keep the daily aggregate table in sync with today's transaction rows.
+        sync_daily_total_spend(
+            user_id=req.user_id,
+            spend_date=datetime.now(MYT).date(),
+            db=db,
+        )
         
         # 5. Return immediate response to app (transaction recorded)
         response = {
@@ -688,28 +696,28 @@ def get_daily_spending_summary(user_id: str, db = Depends(get_db)):
         onboarding_date = pd.to_datetime(created_at_str)
 
     # For the hackathon, we keep today's "real" time as the reference
-    today = datetime.now()
+    today = datetime.now(MYT)
     computed_limit = calculate_daily_limit(
         variable_sum, 
         mock_today=today, 
         onboarding_date=onboarding_date
     )
     
-    # 4. Pull accumulated today spends safely
-    spend_res = (
-        supabase.table("daily_total_spends")
-        .select("today_total_spend")
-        .eq("user_id", str(user_id))
-        .eq("date", today.date().isoformat())
-        .execute()
+    # 4. Recompute from today's transactions and persist to daily_total_spends.
+    synced_summary = sync_daily_total_spend(
+        user_id=user_id,
+        spend_date=today.date(),
+        daily_limit=computed_limit,
+        db=db,
     )
-    
-    today_spent = float(spend_res.data[0]["today_total_spend"]) if spend_res.data else 0.0
+
+    today_spent = float((synced_summary or {}).get("today_total_spend") or 0.0)
+    persisted_limit = float((synced_summary or {}).get("today_daily_limit") or computed_limit)
     
     return {
         "username": user_profile["username"],
         "main_balance": float(user_profile["main_balance"]),
-        "daily_limit": computed_limit,
+        "daily_limit": persisted_limit,
         "today_spent": today_spent,
         "current_streak": int(user_profile.get("streak") or user_profile.get("current_streak") or 0)
     }

@@ -34,10 +34,13 @@ def reality_check_budget(income: float, fixed_total: float, disposable: float, m
     {baseline}
     
     YOUR MISSION:
-    Review the baseline for realism. 
-    1. If their Fixed Expenses take up a massive chunk of their income (e.g., > 60%), they are in survival mode. You MUST heavily reduce 'Entertainment' to ensure 'Food' and 'Transport' have enough raw RM to survive the month, regardless of their chosen persona.
-    2. If they have plenty of disposable income, respect their chosen persona (Conservative/Balanced/Aggressive).
-    3. The sum of all categories MUST exactly equal their Disposable Income (RM{disposable}). Do not invent money.
+    Review the baseline for realism based on the actual current cost of living in Malaysia. 
+    
+    CRITICAL RULES:
+    1. THE REALISM CHECK (SURVIVAL OVERRIDE): Evaluate the absolute RM amount for 'Food' and 'Transport'. For example, RM300/month for food is only RM10/day, which is highly unrealistic for a working adult. 
+    2. HIERARCHY OF FUNDS: Essential survival beats savings goals. If the baseline leaves 'Food' or 'Transport' with unlivable amounts, you MUST override the persona. You are explicitly authorized and required to slash 'Savings', 'Entertainment', and 'Drinks' down to zero if necessary, just to ensure 'Food' and 'Transport' have enough raw RM to survive the month.
+    3. RESPECT PERSONA (WHEN SAFE): Only if basic needs (Food/Transport) are comfortably met should you apply their chosen persona (Conservative/Balanced/Aggressive) to distribute the remaining funds into Savings and Lifestyle.
+    4. ZERO-SUM MATH: The sum of all output categories (Savings + Food + Drinks + Transport + Entertainment) MUST exactly equal their Disposable Income (RM{disposable}). Do not invent or lose money.
     
     OUTPUT INSTRUCTIONS:
     Return ONLY a valid JSON object with the adjusted amounts. Use these exact keys: "Savings", "Food", "Drinks", "Transport", "Entertainment". Do not wrap it in markdown block quotes.

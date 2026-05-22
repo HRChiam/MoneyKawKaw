@@ -1,13 +1,12 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useState, useCallback } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Feather, AntDesign, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useFinancial } from '@/context/FinancialContext';
-import { useRewards } from '@/components/rewards/context';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -20,10 +19,17 @@ export default function HomeScreen() {
     dailyLimit,
     todaySpent,
     streak,
-    loading
+    loading,
+    refreshAllData,
   } = useFinancial();
 
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshAllData();
+    }, [refreshAllData])
+  );
 
   // Financial summary based on context data
   const mainAccountBalance = 0.00;

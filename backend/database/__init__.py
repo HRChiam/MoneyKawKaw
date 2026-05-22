@@ -19,7 +19,8 @@ from .db import (
     update_user_salary,
     update_user_onboarding_data,
     initialize_user_pockets,
-    add_to_pocket
+    add_to_pocket,
+    sync_daily_total_spend,
 )
 
 from .models import (
@@ -50,6 +51,7 @@ __all__ = [
     'update_user_salary',
     'update_user_onboarding_data',
     'initialize_user_pockets',
+    'sync_daily_total_spend',
     'UserProfileResponse',
     'TransactionResponse',
     'TransactionListResponse',
