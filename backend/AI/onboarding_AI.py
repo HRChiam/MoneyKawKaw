@@ -22,7 +22,7 @@ def reality_check_budget(income: float, fixed_total: float, disposable: float, m
     income-to-debt ratio, the AI modifies the percentages.
     """
     template = """
-    You are a realistic Malaysian Financial Planner AI for the GX Catalyst app.
+    You are a realistic Malaysian Financial Planner AI for the app.
     
     USER FINANCIAL PROFILE:
     - Monthly Income: RM{income}
